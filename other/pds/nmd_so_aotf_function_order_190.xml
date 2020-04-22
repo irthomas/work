@@ -1,0 +1,65 @@
+<?xml version='1.0' encoding='utf-8'?>
+<?xml-model href="http://pds.nasa.gov/pds4/pds/v1/PDS4_PDS_1B00.sch" schematypens="http://purl.oclc.org/dsdl/schematron"?>
+<?xml-model href="http://psa.esa.int/psa/v1/PDS4_PSA_1101.sch" schematypens="http://purl.oclc.org/dsdl/schematron"?>
+<?xml-model href="http://psa.esa.int/psa/em16/tgo/nmd/v1/PDS4_PSA_EM16_TGO_NMD_1000.sch" schematypens="http://purl.oclc.org/dsdl/schematron"?>
+<Product_Ancillary xmlns:em16_tgo_nmd="http://psa.esa.int/psa/em16/tgo/nmd/v1" xmlns:psa="http://psa.esa.int/psa/v1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://pds.nasa.gov/pds4/pds/v1" xsi:schemaLocation="http://pds.nasa.gov/pds4/pds/v1     http://pds.nasa.gov/pds4/pds/v1/PDS4_PDS_1B00.xsd     http://psa.esa.int/psa/v1     http://psa.esa.int/psa/v1/PDS4_PSA_1101.xsd     http://psa.esa.int/psa/em16/tgo/nmd/v1     http://psa.esa.int/psa/em16/tgo/nmd/v1/PDS4_PSA_EM16_TGO_NMD_1000.xsd">
+  <Identification_Area>
+    <logical_identifier>urn:esa:psa:em16_tgo_nmd:calibration:nmd_so_aotf_function_order_190</logical_identifier>
+    <version_id>1.0</version_id>
+    <title>NOMAD Experiment</title>
+    <information_model_version>1.11.0.0</information_model_version>
+    <product_class>Product_Ancillary</product_class>
+    <Modification_History>
+      <Modification_Detail>
+        <modification_date>2019-08-14</modification_date>
+        <version_id>1.0</version_id>
+        <description>First Version</description>
+      </Modification_Detail>
+    </Modification_History>
+  </Identification_Area>
+  <Reference_List>
+    <Internal_Reference>
+      <lid_reference>urn:esa:psa:em16_tgo_nmd:calibration:nmd_so_aotf_function_order_190</lid_reference>
+      <reference_type>browse_to_data</reference_type>
+    </Internal_Reference>
+  </Reference_List>
+  <File_Area_Ancillary>
+    <File>
+      <file_name>nmd_so_aotf_function_order_190.xml</file_name>
+      <local_identifier>nmd_so_aotf_function_order_190.xml</local_identifier>
+      <creation_date_time>2019-08-14T17:21:08.277Z</creation_date_time>
+      <file_size unit="byte">-999</file_size>
+      <records>-999</records>
+      <comment>AOTF function in relative wavenumbers</comment>
+    </File>
+    <Table_Character>
+      <name>NOMAD_SO_AOTF_ORDER_190</name>
+      <offset unit="byte">0</offset>
+      <records>-999</records>
+      <description>AOTF function in relative wavenumbers</description>
+      <record_delimiter>Carriage-Return Line-Feed</record_delimiter>
+      <Record_Character>
+        <fields>2</fields>
+        <groups>0</groups>
+        <record_length unit="byte">-999</record_length>
+        <Field_Character>
+          <name>Wavenumber</name>
+          <field_number>1</field_number>
+          <field_location unit="byte">1</field_location>
+          <data_type>ASCII_Real</data_type>
+          <field_length unit="byte">-999</field_length>
+          <unit>wavenumbers</unit>
+          <description>Relative wavenumber from AOTF centre</description>
+        </Field_Character>
+        <Field_Character>
+          <name>AOTF Function</name>
+          <field_number>2</field_number>
+          <field_location unit="byte">-999</field_location>
+          <data_type>ASCII_Real</data_type>
+          <field_length unit="byte">-999</field_length>
+          <description>Relative wavenumber from AOTF centre</description>
+        </Field_Character>
+      </Record_Character>
+    </Table_Character>
+  </File_Area_Ancillary>
+</Product_Ancillary>

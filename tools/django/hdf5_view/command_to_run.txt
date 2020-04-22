@@ -1,0 +1,2 @@
+cd C:\Users\iant\Dropbox\NOMAD\Python\
+python C:\Users\iant\Documents\PROGRAMS\anaconda3\Scripts\django-admin.py runserver --settings=viewer --pythonpath=.\django\hdf5_view

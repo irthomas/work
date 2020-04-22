@@ -1,0 +1,10 @@
+__pycache__/
+analysis/asimut/
+analysis/retrievals/
+analysis/simulations/
+analysis/so/
+old_scripts
+output
+reference_files
+severine
+shohei
