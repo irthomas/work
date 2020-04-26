@@ -5,53 +5,12 @@ Created on Mon Apr  6 20:43:33 2020
 @author: iant
 """
 import numpy as np
-from scipy import interpolate
+
 
 from instrument.nomad_so_instrument import nu_mp, spec_res_order, F_blaze, F_aotf_goddard18b
+from tools.spectra.solar_spectrum import get_solar_hr
+from tools.spectra.nu_hr_grid import nu_hr_grid
 
-def get_solar_hr(nu_hr, solspec_filepath):
-    """get high res solar spectrum interpolated to input nu_hr wavenumber grid"""
-
-    nu_solar = []
-    I0_solar = []
-    nu_min = nu_hr[0] - 1.
-    nu_max = nu_hr[-1] + 1.
-    with open(solspec_filepath, "r") as f:
-        f.readline()
-        f.readline()
-        f.readline()
-        f.readline()
-        f.readline()
-        f.readline()
-        for line in f:
-
-            nu, I0 = [float(val) for val in line.split()]
-            if nu < nu_min:
-                continue
-            if nu > nu_max:
-                break
-            nu_solar.append(nu)
-            I0_solar.append(I0)
-    
-    f_solar = interpolate.interp1d(nu_solar, I0_solar)
-    I0_solar_hr = f_solar(nu_hr)
-
-    return I0_solar_hr
-
-
-    
-    
-def nu_hr_grid(diffraction_order, adj_orders, instrument_temperature):
-    """make high res wavenumber grid for given diffraction order +- n adjacent orders"""
-    nu_hr_min = nu_mp(diffraction_order - adj_orders, 0, instrument_temperature) - 5.
-    nu_hr_max = nu_mp(diffraction_order + adj_orders, 320., instrument_temperature) + 5.
-    dnu = 0.001
-    Nbnu_hr = int(np.ceil((nu_hr_max-nu_hr_min)/dnu)) + 1
-    nu_hr = np.linspace(nu_hr_min, nu_hr_max, Nbnu_hr)
-    dnu = nu_hr[1]-nu_hr[0]
-    return nu_hr, dnu
-    
-    
 
 
 def solar_hr_orders(diffraction_order, adj_orders, instrument_temperature, solspec_file):

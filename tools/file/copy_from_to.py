@@ -60,14 +60,16 @@ OVERWRITE = False
 #regex = "20(18|19|20)[0-1][0-9][0-9][0-9]_.*_LNO_.*_D_(178|167|166|162)"
 #regex = "20(18|19|20)[0-1][0-9][0-9][0-9]_.*_SO_.*_[IE]_(129|130)"
 #regex = "20(18|19|20)[0-1][0-9][0-9][0-9]_.*_SO"
-regex = "2019[0-1][0-9][0-9][0-9]_.*_LNO.*"
+regex = "20(18|19|20)[0-1][0-9][0-9][0-9]_.*_LNO.*"
 #regex = "20(18|19|20)[0-1][0-9][0-9][0-9]_.*_(LNO|SO)_[0-9]_C"
+#regex = re.compile("(20161121_233000|20180702_112352|20181101_213226|20190314_021825|20190609_011514|20191207_051654)_0p1a_LNO_1")
 r = re.compile(regex)
 
 
+#level = "hdf5_l01a"
 #level = "hdf5_l02a"
-#level = "hdf5_l03a"
-level = "hdf5_l10a"
+level = "hdf5_l03a"
+#level = "hdf5_l10a"
 folderName = "hdf5_level_%sp%s" %(level[-3:-2], level[-2:])
 
 print("Finding files matching regex %s" %regex)

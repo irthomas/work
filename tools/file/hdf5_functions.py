@@ -28,7 +28,7 @@ if SYSTEM == "Windows":
     import pysftp
 #    import spiceypy as sp
 
-PASSWORD = ""
+PASSWORD = "" #make global variable so it doesn't ask for pword for every file
 
 
 
@@ -88,7 +88,7 @@ def get_hdf5_filename_list(root_directory,check_for_calibration_file=False):
     return data_filenames_sorted
 
 
-def make_filepath(hdf5_filename):
+def get_filepath(hdf5_filename):
     """get full file path from name"""
 
     import os
@@ -106,15 +106,15 @@ def make_filepath(hdf5_filename):
 
 
 
-def getFilesFromDatastore(hdf5_filenames, file_level):
+def get_files_from_datastore(hdf5_filenames, file_level):
     for hdf5_filename in hdf5_filenames:
         year_in = hdf5_filename[0:4]
         month_in = hdf5_filename[4:6]
         day_in = hdf5_filename[6:8]
-        getFileFromDatastore(file_level, year_in, month_in, day_in, hdf5_filename, DATASTORE_PATHS["DATASTORE_SERVER"], DATASTORE_PATHS["DATASTORE_DIRECTORY"])
+        get_file_from_datastore(file_level, year_in, month_in, day_in, hdf5_filename, DATASTORE_PATHS["DATASTORE_SERVER"], DATASTORE_PATHS["DATASTORE_DIRECTORY"])
     
 
-def getFileFromDatastore(file_level, year_in, month_in, day_in, filename_in, server, server_directory):
+def get_file_from_datastore(file_level, year_in, month_in, day_in, filename_in, server, server_directory):
     silent = False
     global PASSWORD
 
@@ -132,7 +132,7 @@ def getFileFromDatastore(file_level, year_in, month_in, day_in, filename_in, ser
     os.chdir(paths["BASE_DIRECTORY"])
 
 
-def getFile(obspath, file_level, count, model="INFLIGHT", silent=False, open_files=True):
+def get_file(obspath, file_level, count, model="INFLIGHT", silent=False, open_files=True):
     """check if file exists in data directory; if not download from server"""
 
 #    if model == "INFLIGHT":
@@ -177,7 +177,7 @@ def getFile(obspath, file_level, count, model="INFLIGHT", silent=False, open_fil
     else:
         if DATASTORE_PATHS["SEARCH_DATASTORE"]:
             print("File %s not found. Getting from datastore (%s, %s, %s)" %(filename, DATASTORE_PATHS["DATASTORE_SERVER"][0], DATASTORE_PATHS["DATASTORE_SERVER"][1], DATASTORE_DIRECTORY_IN))
-            getFileFromDatastore(file_level, year, month, day, obspath, DATASTORE_PATHS["DATASTORE_SERVER"], DATASTORE_DIRECTORY_IN)
+            get_file_from_datastore(file_level, year, month, day, obspath, DATASTORE_PATHS["DATASTORE_SERVER"], DATASTORE_DIRECTORY_IN)
             if DATASTORE_PATHS["DIRECTORY_STRUCTURE"]:
                 filename = os.path.join(DATA_DIRECTORY_IN, file_level, year, month, day, obspath+".h5") #choose a file
             else:
@@ -194,7 +194,7 @@ def getFile(obspath, file_level, count, model="INFLIGHT", silent=False, open_fil
 
 
 
-def makeFileList(obs_paths, file_level, model="INFLIGHT", silent=False, open_files=True):
+def make_filelist(obs_paths, file_level, model="INFLIGHT", silent=False, open_files=True):
     """make list of filenames containing matching attributes and datasets"""
     """new version uses regex"""
     if model == "INFLIGHT":
@@ -231,7 +231,7 @@ def makeFileList(obs_paths, file_level, model="INFLIGHT", silent=False, open_fil
         if badFile:
             print("Warning: Bad file %s (%s) not added to list" %(obspath,BAD_FILE_DICTIONARY[found_bad_file]))
         else:
-            filename, hdf5_file = getFile(obspath, file_level, fileIndex, model=model, silent=silent, open_files=open_files)
+            filename, hdf5_file = get_file(obspath, file_level, fileIndex, model=model, silent=silent, open_files=open_files)
             hdf5_files_out.append(hdf5_file) #add open file to list
             hdf5_filenames_out.append(obspath) #add open file to list
             titles.append(title)
@@ -241,7 +241,7 @@ def makeFileList(obs_paths, file_level, model="INFLIGHT", silent=False, open_fil
     return hdf5_files_out, hdf5_filenames_out, titles
 
 
-def writeFile(file_name, lines_to_write):
+def write_file(file_name, lines_to_write):
     """function to write text file"""
     txtFile = open(file_name, 'w')
     for line_to_write in lines_to_write:
@@ -249,7 +249,7 @@ def writeFile(file_name, lines_to_write):
     txtFile.close()
 
 
-def writeFileList(file_level):
+def write_filelist(file_level):
     
     outputFilelist = []
     
@@ -257,7 +257,7 @@ def writeFileList(file_level):
     for hdf5Filename in hdf5Filenames:
         outputFilelist.append(hdf5Filename)
 
-    writeFile(os.path.join(paths["BASE_DIRECTORY"], "hdf5_filename_list_%s.txt" %file_level), outputFilelist)
+    write_file(os.path.join(paths["BASE_DIRECTORY"], "hdf5_filename_list_%s.txt" %file_level), outputFilelist)
 
 
 
