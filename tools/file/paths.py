@@ -26,6 +26,10 @@ if SYSTEM == "Linux": #linux system
     paths["DB_DIRECTORY"] = os.path.normcase(r"/home/iant/linux/DATA/db")
     paths["KERNEL_DIRECTORY"] = os.path.normcase(r"/bira-iasb/data/SATELLITE/TRACE-GAS-ORBITER/NOMAD/kernels/mk")
     paths["COP_TABLE_DIRECTORY"] = os.path.normcase(r"/bira-iasb/data/SATELLITE/TRACE-GAS-ORBITER/NOMAD/cop_tables")
+    paths["REFERENCE_DIRECTORY"] = os.path.normcase(r"/home/iant/linux/Python/reference_files")
+    paths["PFM_AUXILIARY_FILES"] = os.path.normcase(r"/bira-iasb/projects/NOMAD/Data/pfm_auxiliary_files")
+
+
     paths["FS_DATA_DIRECTORY"] = os.path.normcase(r"/bira-iasb/projects/NOMAD/data/flight_spare/hdf5")
 
     FIG_X = 8
