@@ -55,6 +55,7 @@ BAD_FILE_DICTIONARY = {
         "20190130_235926":"Wrong day",
         "20190308_235913":"Wrong day",
         "20190712_235957":"Wrong day",
+        "20191016_235331":"Wrong day",
 
         }
 

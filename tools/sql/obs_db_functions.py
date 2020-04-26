@@ -7,6 +7,9 @@ Created on Fri Apr 24 22:20:45 2020
 HEATERS_TEMP_DB IS NOW CREATED BY PIPELINE
 TGO TEMPERATURES ARE NOW IN HDF5 FILES. GET FROM FILE INSTEAD OF MAKING DB
 
+python3 tools/sql/obs_db_functions.py lno_nadir hdf5_level_0p3a 2018-03-01 2030-01-01 --regenerate=True
+python3 tools/sql/obs_db_functions.py so_occultation hdf5_level_1p0a 2018-03-01 2030-01-01 --regenerate=True
+
 """
 #import datetime
 #import re
@@ -21,10 +24,10 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument('command', type=str, help='Enter command: so_occultation, lno_nadir')
-    parser.add_argument('level', type=str, help='Enter level')
-    parser.add_argument('beg', type=str, help='Enter start date')
-    parser.add_argument('end', type=str, help='Enter end date')
-    parser.add_argument('--regenerate', type=str, default=False, help='Delete table and regenerate')
+    parser.add_argument('level', type=str, help='Enter full level name: e.g. hdf5_level_0p3a')
+    parser.add_argument('beg', type=str, help='Enter start date YYYY-MM-DD')
+    parser.add_argument('end', type=str, help='Enter end date YYYY-MM-DD')
+    parser.add_argument('--regenerate', type=str, default=False, help='Delete table and regenerate. Always use --regenerate=True on first run')
     args = parser.parse_args()
     command = args.command
 else:
@@ -41,34 +44,6 @@ if command != "":
     db_obj.process_channel_data(args)
     db_obj.close()
 
-
-
-#if command == "lno_nadir":
-#    """Add LNO data to sql"""
-#    regex = re.compile(".*_LNO.*_D_.*")
-#    #regex = re.compile("201808[0-9][0-9]_.*LNO.*_D_.*")
-#    
-#    
-##    tempDbName = "tgo_temperatures"
-##    temp_db_obj = obs_database(tempDbName)
-##    db_obj.processChannelData(channel, fileLevel, regex, temp_db_obj, overwrite=True)
-##    temp_db_obj.close()
-#elif command == "so_db":
-#    """Add SO data to sql"""
-#    channel = "so"
-#    dbName = "so_1p0a"
-#    fileLevel = "hdf5_level_1p0a"
-#    #regex = re.compile("201804[0-9][0-9]_.*_SO_A_[IE]_13[2-7]")
-#    regex = re.compile("20[1-2][0-9][0-9][0-9][0-9][0-9]_.*_SO_A_[IE]_13[2-7]")
-#    db_obj = obs_database(dbName)
-#    
-##    tempDbName = "tgo_temperatures"
-##    temp_db_obj = obs_database(tempDbName)
-##    db_obj.processChannelData(channel, fileLevel, regex, temp_db_obj, overwrite=True)
-##    temp_db_obj.close()
-##    db_obj.close()
-#
-#"""query temperature database"""
 
 #dbName = "tgo_temperatures"
 #db_obj = obsDB(dbName)
@@ -114,7 +89,7 @@ if command != "":
 
 
 
-"""write so occultations to text file for Sebastien"""
+#"""write so occultations to text file for Sebastien"""
 #channel = "so"
 #dbName = "so_1p0a"
 #db_obj = obsDB(dbName)
