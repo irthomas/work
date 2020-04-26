@@ -18,13 +18,14 @@ else:
 paths = {}
 
 if SYSTEM == "Linux": #linux system
-    paths["BASE_DIRECTORY"] = os.path.normcase(r"/home/iant/linux")
+    paths["BASE_DIRECTORY"] = os.path.normcase(r"/home/iant/linux/Python")
     paths["DATA_DIRECTORY"] = os.path.normcase(r"/bira-iasb/data/SATELLITE/TRACE-GAS-ORBITER/NOMAD/hdf5")
     paths["DATASTORE_ROOT_DIRECTORY"] = os.path.normcase(r"/bira-iasb/data/SATELLITE/TRACE-GAS-ORBITER/NOMAD")
-    paths["LOCAL_DIRECTORY"] = os.path.normcase(r"/home/iant/linux")
+    paths["LOCAL_DIRECTORY"] = os.path.normcase(r"/home/iant/linux/DATA")
     paths["RETRIEVAL_DIRECTORY"] = os.path.normcase(r"/home/iant/linux/input_tools/Tools")
-    paths["DB_DIRECTORY"] = os.path.normcase(r"/home/iant/linux")
+    paths["DB_DIRECTORY"] = os.path.normcase(r"/home/iant/linux/DATA/db")
     paths["KERNEL_DIRECTORY"] = os.path.normcase(r"/bira-iasb/data/SATELLITE/TRACE-GAS-ORBITER/NOMAD/kernels/mk")
+    paths["COP_TABLE_DIRECTORY"] = os.path.normcase(r"/bira-iasb/data/SATELLITE/TRACE-GAS-ORBITER/NOMAD/cop_tables")
     paths["FS_DATA_DIRECTORY"] = os.path.normcase(r"/bira-iasb/projects/NOMAD/data/flight_spare/hdf5")
 
     FIG_X = 8
@@ -48,6 +49,7 @@ elif os.path.exists(os.path.normcase(r"C:\Users\iant\Dropbox\NOMAD\Python")): #o
 #    paths["RETRIEVAL_DIRECTORY"] = os.path.normcase(r"X:\linux\input_tools\Tools")
     paths["DB_DIRECTORY"] = os.path.normcase(r"C:\Users\iant\Documents\DATA\db")
     paths["KERNEL_DIRECTORY"] = os.path.normcase(r"C:\Users\iant\Documents\DATA\local_spice_kernels\kernels\mk")
+    paths["COP_TABLE_DIRECTORY"] = os.path.normcase(r"C:\Users\iant\Documents\DATA\cop_tables")
     paths["REFERENCE_DIRECTORY"] = os.path.normcase(r"C:\Users\iant\Dropbox\NOMAD\Python\reference_files")
     paths["PFM_AUXILIARY_FILES"] = os.path.normcase(r"C:\Users\iant\Documents\DATA\pfm_auxiliary_files")
 #    paths["PFM_AUXILIARY_FILES"] = os.path.normcase(r"X:\projects\NOMAD\data\pfm_auxiliary_files")

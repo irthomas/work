@@ -4,7 +4,7 @@ Created on Mon Mar 23 18:25:37 2020
 
 @author: iant
 
-GET INFO FROM ALL SOLAR CALIBRATION OBS
+GET INFO FROM ALL SOLAR CALIBRATION OBS AND WRITE TO HTML PAGE TO COPY TO WEBSITE
 
 """
 import os
@@ -12,17 +12,15 @@ import glob
 import datetime
 #import numpy as np
 import h5py
-import platform
+#import platform
 
-from hdf5_functions_v04 import BASE_DIRECTORY, DATA_DIRECTORY, DATASTORE_ROOT_DIRECTORY
-
-SOLAR_DATA_DIRECTORY = os.path.join(DATA_DIRECTORY, "hdf5_level_0p2a")
-if platform.system() == "Windows":
-    COP_TABLE_DIRECTORY = os.path.join(r"C:\Users\iant\Dropbox\NOMAD\Python\data\cop_tables")
-else:
-    COP_TABLE_DIRECTORY = os.path.join(DATASTORE_ROOT_DIRECTORY, "cop_tables")
+from tools.file.paths import paths
 
 HDF5_FILENAME_FORMAT = "%Y%m%d_%H%M%S"
+
+
+SOLAR_DATA_DIRECTORY = os.path.join(paths["DATA_DIRECTORY"], "hdf5_level_0p2a")
+
 
 
 
@@ -31,10 +29,12 @@ calFilepathList = sorted(glob.glob(SOLAR_DATA_DIRECTORY+"/**/*_C.h5", recursive=
 calFilepathList = [filepath for filepath in calFilepathList if ("SO" in filepath) or ("LNO" in filepath)]
 calFilenameList = [os.path.split(filename)[1] for filename in calFilepathList]
 
-copDirs = sorted(os.listdir(COP_TABLE_DIRECTORY))
+copDirs = sorted(os.listdir(paths["COP_TABLE_DIRECTORY"]))
 copDirsGood = [dirname for dirname in copDirs if len(dirname)==15]
 
 copDirsDatetime = [datetime.datetime.strptime(dirname, HDF5_FILENAME_FORMAT) for dirname in copDirsGood]
+#add future cop table datetime so last value in table can be found
+copDirsDatetime.append(datetime.datetime(2050, 1, 1))
 
 h = "<table border=2><tr><th>Filename</th><th>COP Table Version</th><th>Observation Type</th><th>Description</th></tr>\n"
 
@@ -92,5 +92,5 @@ for calFilename, calFilepath in zip(calFilenameList, calFilepathList):
     
 h += "</table>"
 
-with open(os.path.join(BASE_DIRECTORY, "calibration_log.html"), "w") as f:
+with open(os.path.join(paths["BASE_DIRECTORY"], "calibration_log.html"), "w") as f:
     f.write(h)
