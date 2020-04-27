@@ -279,6 +279,10 @@ class obs_database(object):
             regex = re.compile("20.*_LNO.*_D.*")
         elif args.command == "so_occultation":
             regex = re.compile("20.*_SO.*_[IE].*")
+        elif args.command == "uvis_nadir":
+            regex = re.compile("20.*_UVIS.*_D")
+        elif args.command == "uvis_occultation":
+            regex = re.compile("20.*_UVIS.*_[IE]")
             
         beg_datetime = datetime.datetime.strptime(args.beg, ARG_FORMAT)
         end_datetime = datetime.datetime.strptime(args.end, ARG_FORMAT)
@@ -304,7 +308,6 @@ class obs_database(object):
                 orbit = hdf5File.attrs["Orbit"]
                 filename = hdf5Filename
                 
-                mean_temperature_tgo = 1.0 + np.mean(hdf5File["Temperature/NominalLNO"][...])
                 diffraction_order = hdf5File["Channel/DiffractionOrder"][0]
                 sbsf = hdf5File["Channel/BackgroundSubtraction"][0]
                 utc_start_times = hdf5File["Geometry/ObservationDateTime"][:, 0]
@@ -314,10 +317,12 @@ class obs_database(object):
                 longitudes = hdf5File["Geometry/Point0/Lon"][:, 0]
                 latitudes = hdf5File["Geometry/Point0/Lat"][:, 0]
                 if args.command == "lno_nadir":        
+                    mean_temperature_tgo = 1.0 + np.mean(hdf5File["Temperature/NominalLNO"][...])
                     bin_index = np.ones(n_spectra)
                     incidence_angles = hdf5File["Geometry/Point0/IncidenceAngle"][:, 0]
                     altitudes = np.zeros(n_spectra) - 999.0
                 elif args.command == "so_occultation":
+                    mean_temperature_tgo = 1.0 + np.mean(hdf5File["Temperature/NominalSO"][...])
                     bin_index = hdf5File["Channel/IndBin"][...]
                     incidence_angles = np.zeros(n_spectra) - 999.0
                     altitudes = hdf5File["Geometry/Point0/TangentAltAreoid"][:, 0]

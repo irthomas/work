@@ -28,7 +28,7 @@ from tools.plotting.colours import get_colours
 from instrument.nomad_lno_instrument import nu_mp, A_aotf, temperature_p0
 from instrument.calibration.lno_radiance_factor.lno_rad_fac_orders import BEST_ABSORPTION_DICT
 from instrument.calibration.lno_radiance_factor.lno_rad_fac_functions import get_reference_dict
-from instrument.heaters_temp import get_temperature_range
+from tools.sql.heaters_temp import get_temperature_range
 from tools.spectra.nu_hr_grid import nu_hr_grid
 
 
@@ -108,22 +108,22 @@ pixels = np.arange(320.0)
 colours = get_colours(len(temperature_range), "plasma")
 
 
-#output_title = "LNO_Radiance_Factor_Calibration_Table"
-#hdf5File = h5py.File(os.path.join(BASE_DIRECTORY, outputTitle+".h5"), "w")
+output_title = "LNO_Radiance_Factor_Calibration_Table"
+hdf5_file_out = h5py.File(os.path.join(paths["BASE_DIRECTORY"], output_title+".h5"), "w")
     
 for diffraction_order in BEST_ABSORPTION_DICT.keys():
     
     reference_dict = get_reference_dict(diffraction_order)
     
     #plot in nu
-    fig1, (ax1a, ax1b) = plt.subplots(nrows=2, figsize=(FIG_X+6, FIG_Y+2), sharex=True)
+    fig1, (ax1a, ax1b) = plt.subplots(nrows=2, figsize=(FIG_X+6, FIG_Y+2))
     fig1.suptitle("Diffraction Order %i" %diffraction_order)
     #plot in px
-    fig2, (ax2a, ax2b) = plt.subplots(nrows=2, figsize=(FIG_X, FIG_Y), sharex=True)
+    fig2, (ax2a, ax2b) = plt.subplots(nrows=2, figsize=(FIG_X+6, FIG_Y+2))
     fig2.suptitle("Diffraction Order %i" %diffraction_order)
-#
+
 #    fig3, ax3 = plt.subplots(figsize=(FIG_X, FIG_Y))
-#    fig3.suptitle("Diffraction Order %i" %diffractionOrder)
+#    fig3.suptitle("Diffraction Order %i" %diffraction_order)
     
     nu_solar_hr = reference_dict["nu_hr"]
     solar_spectrum_hr = reference_dict["solar"]
@@ -131,7 +131,7 @@ for diffraction_order in BEST_ABSORPTION_DICT.keys():
     nu_px_p0 = nu_mp(diffraction_order, pixels, temperature_p0)
     nu_px_p0_hr = nu_mp(diffraction_order, px_hr, temperature_p0)
 
-    ax1a.plot(nu_solar_hr , solar_spectrum_hr)
+    ax1b.plot(nu_solar_hr , solar_spectrum_hr)
     
     solar_minimum_index = np.where(np.min(solar_spectrum_hr)==solar_spectrum_hr)[0][0]
     solar_minimum_nu = nu_solar_hr[solar_minimum_index]
@@ -141,7 +141,7 @@ for diffraction_order in BEST_ABSORPTION_DICT.keys():
     #get n points on either side
     n_points = 300
     solar_line_indices = range(solar_minimum_index - n_points, solar_minimum_index + n_points)
-    ax1a.scatter(nu_solar_hr[solar_line_indices], solar_spectrum_hr[solar_line_indices], color="b")
+    ax1b.scatter(nu_solar_hr[solar_line_indices], solar_spectrum_hr[solar_line_indices], color="b")
     
     #find all local minima in this range
     minimum_index = (np.diff(np.sign(np.diff(solar_spectrum_hr[solar_line_indices]))) > 0).nonzero()[0] + 1
@@ -156,7 +156,7 @@ for diffraction_order in BEST_ABSORPTION_DICT.keys():
         solar_minimum_px_p0 = px_hr[px_p0_hr_index]
         print("Solar line pixel (p0=0)= ", solar_minimum_px_p0)
         
-        ax2b.axvline(x=solar_minimum_px_p0, c="k", linestyle="--")
+        ax1a.axvline(x=solar_minimum_px_p0, c="k", linestyle="--")
 
     else:
         print("Error: %i minima found for order %i" %(len(minimum_index), diffraction_order))
@@ -217,25 +217,26 @@ for diffraction_order in BEST_ABSORPTION_DICT.keys():
 
 
 
-        """find centres of solar lines"""
-        #step1: find nearest pixels that contain the solar line
-        solarLinePixelIndex1 = (np.abs(nu_px - solar_minimum_nu)).argmin()
+        """find centres of solar lines. Spectral cal is approximate so first find solar line in data using approx cal"""
+        #step1: find nearest pixel number where calculated px nu = real solar line nu
+        solar_line_pixel_index1 = (np.abs(nu_px - solar_minimum_nu)).argmin()
         nPoints = 3
-        solarLinePixelIndices1 = range(max([0, solarLinePixelIndex1-nPoints]), min([320, solarLinePixelIndex1+nPoints+1]))
+        #get indices of pixels on either side
+        solar_line_pixel_indices1 = range(max([0, solar_line_pixel_index1-nPoints]), min([320, solar_line_pixel_index1+nPoints+1]))
     
 
-        #step2: find pixel containing minimum points
-        solarLinePixelIndex2 = (np.abs(y_corrected[solarLinePixelIndices1] - np.min(y_corrected[solarLinePixelIndices1]))).argmin() + solarLinePixelIndices1[0]
-
-        #step3: get pixel indices on either side of minimum
+        #step2: within this approximate range, find pixel number containing the minimum signal
+        solar_line_pixel_index2 = (np.abs(y_corrected[solar_line_pixel_indices1] - np.min(y_corrected[solar_line_pixel_indices1]))).argmin() + solar_line_pixel_indices1[0]
+        #step3: get pixel indices on either side of this minimum
         nPoints = 7
-        solarLinePixelIndices = range(max([0, solarLinePixelIndex2-nPoints]), min([320, solarLinePixelIndex2+nPoints+1]))
+        solar_line_pixel_indices = range(max([0, solar_line_pixel_index2-nPoints]), min([320, solar_line_pixel_index2+nPoints+1]))
 
+        #now that the pixel range containing the solar line has been found, 
         #do gaussian fit to find minimum
         #first in wavenumber
-        nu_pixels_solar_line_position_hr, solarLineAbsorptionHr, spectrum_minimum_nu = fit_gaussian_absorption(nu_px[solarLinePixelIndices], y_corrected[solarLinePixelIndices])
+        spectrum_solar_line_fit_nu_hr, solar_line_fit_hr, spectrum_minimum_nu = fit_gaussian_absorption(nu_px[solar_line_pixel_indices], y_corrected[solar_line_pixel_indices])
         #then in pixel space
-        pixels_solar_line_position_hr, solar_line_abs_pixel_hr, minimumPixel = fit_gaussian_absorption(pixels[solarLinePixelIndices], y_corrected[solarLinePixelIndices])
+        spectrum_solar_line_fit_px_hr, solar_line_fit_px_hr, spectrum_minimum_px = fit_gaussian_absorption(pixels[solar_line_pixel_indices], y_corrected[solar_line_pixel_indices])
 
         #calculate wavenumber error            
         delta_wavenumber = solar_minimum_nu - spectrum_minimum_nu
@@ -244,68 +245,78 @@ for diffraction_order in BEST_ABSORPTION_DICT.keys():
 
         #shift wavenumber scale to match solar line
         nu_obs = nu_px + delta_wavenumber
-        solarLineWavenumbersHr = nu_pixels_solar_line_position_hr + delta_wavenumber
-        ax1a.plot(nu_obs, y_corrected, color=colours[temperature_index], label="%0.1fC" %measurement_temperature)
+        ax1b.plot(nu_obs, y_corrected, color=colours[temperature_index], label="%0.1fC" %measurement_temperature)
+        ax1b.scatter(nu_obs[solar_line_pixel_indices], y_corrected[solar_line_pixel_indices], color=colours[temperature_index])
 
-        ax1a.scatter(nu_obs[solarLinePixelIndices], y_corrected[solarLinePixelIndices], color=colours[temperature_index])
-        ax1a.plot(solarLineWavenumbersHr, solarLineAbsorptionHr, color=colours[temperature_index], linestyle="--")
-        ax1a.axvline(x=spectrum_minimum_nu, color=colours[temperature_index], linestyle=":")
-        ax1a.axvline(x=spectrum_minimum_nu + delta_wavenumber, color=colours[temperature_index])
-#        ax2a.axvline(x=minimumPixel, color=colours[temperature_index])
-        print(measurement_temperature, minimumPixel, spectrum_minimum_nu)
+        #plot solar line gaussian fit, after correcting for wavenumber shift        
+        solar_line_fit_nu_hr = spectrum_solar_line_fit_nu_hr + delta_wavenumber
+        ax1b.plot(solar_line_fit_nu_hr, solar_line_fit_hr, color=colours[temperature_index], linestyle="--")
+
+        #plot vertical lines before and after wavenumber shift
+        ax1b.axvline(x=spectrum_minimum_nu, color=colours[temperature_index], linestyle=":")
+        ax1b.axvline(x=spectrum_minimum_nu + delta_wavenumber, color=colours[temperature_index])
+        print(measurement_temperature, spectrum_minimum_px, spectrum_minimum_nu)
         
-#        ax2a.plot(pixels, y_corrected, color=colours[temperature_index], label="%0.1fC" %measurement_temperature)
+        #plot on pixel grid
+        ax1a.plot(pixels, y_corrected, color=colours[temperature_index], label="%0.1fC" %measurement_temperature)
+        ax1a.scatter(pixels[solar_line_pixel_indices], y_corrected[solar_line_pixel_indices], color=colours[temperature_index])
+        ax1a.plot(spectrum_solar_line_fit_px_hr, solar_line_fit_px_hr, color=colours[temperature_index], linestyle="--")
+        ax1a.axvline(x=spectrum_minimum_px, color=colours[temperature_index])
         
         
         """make solar spectra and wavenumbers on high resolution grids"""
-        #interpolation method
-        #add points before and after spectrum to avoid messy fft edges
-        wavenumbers_hr = np.linspace(nu_obs[0], nu_obs[-1], num=6400)
-        spectrum_counts_hr = np.interp(wavenumbers_hr, nu_obs, spectrum_counts)
+        #interpolate solar spectrum using simple linear onto 20x grid
+        interpolated_nu_hr = np.linspace(nu_obs[0], nu_obs[-1], num=6400)
+        interpolated_counts_hr = np.interp(interpolated_nu_hr, nu_obs, spectrum_counts)
 
-        
-
-#        ax3.plot(wavenumbers, spectrum_counts, label=label, color=colours[fileIndex])
-        ax3.plot(wavenumbers_hr, spectrum_counts_hr, "--", color=colours[temperature_index], alpha=0.5)
+        ax2a.plot(pixels, spectrum_counts, "--", color=colours[temperature_index], alpha=0.7)
+        ax2b.plot(interpolated_nu_hr, interpolated_counts_hr, "--", color=colours[temperature_index], alpha=0.7)
         
         
         calibration_dict["%s" %hdf5_filename] = {
-                "aotf_frequency":aotfFrequencySelected,
-#                "integrationTimeRaw":integrationTimeRaw,
-                "integration_time":integrationTime,
-#                "numberOfAccumulationsRaw":numberOfAccumulationsRaw,
-                "number_of_accumulations":numberOfAccumulations,
-    #            "binningRaw":binningRaw,
+                "aotf_frequency":aotf_frequency,
+                "integration_time_raw":integration_time_raw,
+                "integration_time":integration_time,
+                "number_of_accumulations_raw":number_of_accumulations_raw,
+                "number_of_accumulations":number_of_accumulations,
+    #            "binning_raw":binning_raw,
     #            "binning":binning,
-                "measurementSeconds":measurementSeconds,
-                "measurementPixels":measurementPixels,
+                "measurement_seconds":measurement_seconds,
+                "pixels":pixels,
                 "spectrum_counts":spectrum_counts,
-                "measurementTemperature":measurementTemperature,
-                "wavenumbers_hr":wavenumbers_hr,
-                "spectrum_counts_hr":spectrum_counts_hr,
+                "measurement_temperature":measurement_temperature,
+                "interpolated_nu_hr":interpolated_nu_hr,
+                "interpolated_counts_hr":interpolated_counts_hr,
                 }
 
 
-    ax3.set_xlabel("Wavenumbers (cm-1)")
-    ax3.set_ylabel("Counts")
-#        ax3.legend()
+    ax1a.set_title("Solar line fit pixels")
+    ax1b.set_title("Solar line fit wavenumbers")
+
+    ax2a.set_xlabel("Pixels")
+    ax2a.set_ylabel("Counts")
+    ax2b.set_xlabel("Wavenumbers (cm-1)")
+    ax2b.set_ylabel("Counts")
+    ax2b.legend()
+    ax2a.grid()
+    ax2b.grid()
 
     
           
     ax1a.legend()
     ticks = ax1a.get_xticks()
-    ax1a.set_xticks(np.arange(ticks[0], ticks[-1], 2.0))
+    ax1a.set_xticks(np.arange(ticks[0], ticks[-1], 10.0))
+    ticks = ax1b.get_xticks()
     ax1b.set_xticks(np.arange(ticks[0], ticks[-1], 2.0))
     ax1a.grid()
     ax1b.grid()
 
-    fig1.savefig(os.path.join(BASE_DIRECTORY, "lno_solar_fullscan_order_%i_wavenumber_fit.png" %diffractionOrder))
-    fig2.savefig(os.path.join(BASE_DIRECTORY, "lno_solar_fullscan_order_%i_pixel.png" %diffractionOrder))
-    fig3.savefig(os.path.join(BASE_DIRECTORY, "lno_solar_fullscan_order_%i_counts.png" %diffractionOrder))
+    fig1.savefig(os.path.join(paths["BASE_DIRECTORY"], "lno_solar_fullscan_order_%i_nu_px.png" %diffraction_order))
+    fig2.savefig(os.path.join(paths["BASE_DIRECTORY"], "lno_solar_fullscan_order_%i_countspng" %diffraction_order))
+#    fig3.savefig(os.path.join(paths["BASE_DIRECTORY"], "lno_solar_fullscan_order_%i_counts.png" %diffraction_order))
     
-    fig1.close()
-    fig2.close()
-    fig3.close()
+    plt.close(fig1)
+    plt.close(fig2)
 
     
     
@@ -315,19 +326,20 @@ for diffraction_order in BEST_ABSORPTION_DICT.keys():
     POLYNOMIAL_DEGREE = 2
     
     #find min/max wavenumber of any temperature
-    first_wavenumber = np.max([calDict[obsName]["wavenumbers_hr"][0] for obsName in calDict.keys()])
-    last_wavenumber = np.min([calDict[obsName]["wavenumbers_hr"][-1] for obsName in calDict.keys()])
+    first_nu_hr = np.max([calibration_dict[hdf5_filename]["interpolated_nu_hr"][0] for hdf5_filename in calibration_dict.keys()])
+    last_nu_hr = np.min([calibration_dict[hdf5_filename]["interpolated_nu_hr"][-1] for hdf5_filename in calibration_dict.keys()])
     
-    wavenumber_grid = np.linspace(first_wavenumber, last_wavenumber, num=6720)
-    temperature_grid_unsorted = np.asfarray([calDict[obsName]["measurementTemperature"] for obsName in calDict.keys()])
+    #make new wavenumber grid covering all temperatures
+    wavenumber_grid = np.linspace(first_nu_hr, last_nu_hr, num=6720)
+    temperature_grid_unsorted = np.asfarray([calibration_dict[hdf5_filename]["measurement_temperature"] for hdf5_filename in calibration_dict.keys()])
     
     
     
     #get data from dictionary
     spectra_interpolated = []
-    for obsName in calDict.keys():
-        waven = calDict[obsName]["wavenumbers_hr"]
-        spectrum = calDict[obsName]["spectrum_counts_hr"]
+    for obsName in calibration_dict.keys():
+        waven = calibration_dict[obsName]["interpolated_nu_hr"]
+        spectrum = calibration_dict[obsName]["interpolated_counts_hr"]
         spectrum_interpolated = np.interp(wavenumber_grid, waven, spectrum)
         spectra_interpolated.append(spectrum_interpolated)
     spectra_grid_unsorted = np.asfarray(spectra_interpolated)
@@ -362,7 +374,7 @@ for diffraction_order in BEST_ABSORPTION_DICT.keys():
     plt.xlabel("Instrument temperature (Celsius)")
     plt.ylabel("Counts for given pixel (normalised to peak)")
     plt.title("Interpolating spectra w.r.t. temperature")
-    plt.savefig(os.path.join(BASE_DIRECTORY, "lno_solar_fullscan_order_%i_interpolation.png" %diffractionOrder))
+    plt.savefig(os.path.join(paths["BASE_DIRECTORY"], "lno_solar_fullscan_order_%i_interpolation.png" %diffraction_order))
     plt.close()
 
 
@@ -373,10 +385,10 @@ for diffraction_order in BEST_ABSORPTION_DICT.keys():
 #        groupName = "%i/%0.1f" %(diffractionOrder, calDict[obsName]["measurementTemperature"])
 #        hdf5File[groupName+"/wavenumbers"] = calDict[obsName]["wavenumbers_hr"]
 #        hdf5File[groupName+"/counts"] = calDict[obsName]["spectrum_counts_hr"]
-    hdf5File["%i" %diffractionOrder+"/wavenumber_grid"] = wavenumber_grid
-    hdf5File["%i" %diffractionOrder+"/spectra_grid"] = spectra_grid
-    hdf5File["%i" %diffractionOrder+"/temperature_grid"] = temperature_grid
-    hdf5File["%i" %diffractionOrder+"/coefficients"] = coefficientsAll
+    hdf5_file_out["%i" %diffraction_order+"/wavenumber_grid"] = wavenumber_grid
+    hdf5_file_out["%i" %diffraction_order+"/spectra_grid"] = spectra_grid
+    hdf5_file_out["%i" %diffraction_order+"/temperature_grid"] = temperature_grid
+    hdf5_file_out["%i" %diffraction_order+"/coefficients"] = coefficientsAll
     
     
 #    hdf5File.close()
