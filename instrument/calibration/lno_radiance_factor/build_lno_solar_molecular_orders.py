@@ -15,15 +15,17 @@ import matplotlib.pyplot as plt
 
 from tools.file.paths import paths
 from tools.spectra.smooth_hr import smooth_hr
-from tools.spectra.solar_spectrum_lno import get_solar_hr, nu_hr_grid
+from tools.spectra.solar_spectrum_lno import nu_hr_grid
+from tools.spectra.solar_spectrum import get_solar_hr
 from tools.spectra.molecular_spectrum_lno import get_molecular_hr
-from instrument.calibration.lno_radiance_factor.lno_rad_fac_orders import BEST_ABSORPTION_DICT
+from instrument.calibration.lno_radiance_factor.lno_rad_fac_orders import rad_fact_orders_dict
 
 FIG_X = 10
 FIG_Y = 5
 
 
 SMOOTHING_LEVEL = 600 #for LNO. must be even number
+#SMOOTHING_LEVEL_PFS = 300 #for LNO. must be even number
 
 
 def buildOrderFiles():
@@ -36,18 +38,25 @@ def buildOrderFiles():
 #            bestOrderMolecules[order] = ""
 
 
-    for diffractionOrder, bestAbsorption in BEST_ABSORPTION_DICT.items():
+    for diffractionOrder, rad_fact_order_dict in rad_fact_orders_dict.items():
 
-        solarOrMolecular = bestAbsorption[0] #"Solar", "Atmos" or ""
-        molecule = bestAbsorption[1] #Molecule name or ""
-        
+        if "solar_molecular" in rad_fact_order_dict.keys(): #"solar", "molecular" or no entry
+            solar_molecular = rad_fact_order_dict["solar_molecular"]
+        else:
+            solar_molecular == ""
+            
+        if "molecule" in rad_fact_order_dict.keys(): #molecule name or no entry
+            molecule = rad_fact_order_dict["molecule"]
+        else:
+            molecule = ""
+            
         #print the chosen detection method in solid line, otherwise dashed line.
         linestyles = {
-                "Solar":{"Solar":"-", "Molecular":"--", "":"--"}[solarOrMolecular],
-                "Molecular":{"Solar":"--", "Molecular":"-", "":"--"}[solarOrMolecular],
+                "solar":{"solar":"-", "molecular":"--", "":"--"}[solar_molecular],
+                "molecular":{"solar":"--", "molecular":"-", "":"--"}[solar_molecular],
                 }
          
-        print("diffractionOrder:", diffractionOrder, solarOrMolecular, molecule)
+        print("diffractionOrder:", diffractionOrder, solar_molecular, molecule)
 
 
         
@@ -58,17 +67,31 @@ def buildOrderFiles():
         #get high res wavenumber grid for diffraction order
         nuHr, _ = nu_hr_grid(diffractionOrder, adj_orders=0, instrument_temperature=0.0)
 
-        #get high res solar spectrum
-        solspecFilepath = os.path.join(paths["REFERENCE_DIRECTORY"], "nomad_solar_spectrum_solspec.txt")
-        solarHr = get_solar_hr(nuHr, solspecFilepath)
+        if diffractionOrder < 196:
+            #get high res ace solspec solar spectrum
+            solspecFilepath = os.path.join(paths["REFERENCE_DIRECTORY"], "nomad_solar_spectrum_solspec.txt")
+            solarHr = get_solar_hr(nuHr, solspecFilepath, nu_limit=2.0)
+            smoothing_level = SMOOTHING_LEVEL
+        else:
+            #get high res ace solspec solar spectrum
+            solspecFilepath = os.path.join(paths["REFERENCE_DIRECTORY"], "pfsolspec_hr.dat")
+            solarHr = get_solar_hr(nuHr, solspecFilepath, nu_limit=2.0)
+            smoothing_level = SMOOTHING_LEVEL
         
         #convolve high res solar spectrum to lower resolution. Normalise to 1
-        solarSpectrum = smooth_hr(solarHr, window_len=(SMOOTHING_LEVEL-1))
+        solarSpectrum = smooth_hr(solarHr, window_len=(smoothing_level-1))
 #        normalisedSolarSpectrum = (solarSpectrum / (np.max(solarSpectrum)))[int(SMOOTHING_LEVEL/2-1):-1*int(SMOOTHING_LEVEL/2-1)]
-        normalisedSolarSpectrum = solarSpectrum[int(SMOOTHING_LEVEL/2-1):-1*int(SMOOTHING_LEVEL/2-1)] / np.max(solarSpectrum)
+        normalisedSolarSpectrum = solarSpectrum[int(smoothing_level/2-1):-1*int(smoothing_level/2-1)] / np.max(solarSpectrum)
+
+        #fudge to remove the strongest doublet from solar data in an important order
+        if diffractionOrder == 193:
+            normalisedSolarSpectrum[27720:27920] = normalisedSolarSpectrum[27720]
+        
+
+
 
         ax1b.set_title("Solar Spectrum")
-        ax1b.plot(nuHr, normalisedSolarSpectrum, "k", linestyle=linestyles["Solar"])
+        ax1b.plot(nuHr, normalisedSolarSpectrum, "k", linestyle=linestyles["solar"])
         
         if molecule != "":
             
@@ -84,13 +107,13 @@ def buildOrderFiles():
             normalisedMolecularSpectrum = np.ones_like(nuHr)
 
         ax1a.set_title("Molecular Spectrum %s" %molecule)
-        ax1a.plot(nuHr, normalisedMolecularSpectrum, "k", linestyle=linestyles["Molecular"])
+        ax1a.plot(nuHr, normalisedMolecularSpectrum, "k", linestyle=linestyles["molecular"])
     
 
         #format and write output to text file, one per order
         output = []
         for nu, solar, molecular in zip(nuHr, normalisedSolarSpectrum, normalisedMolecularSpectrum):
-            output.append("%0.3f, %0.5f, %0.5f\n" %(nu, solar, molecular))
+            output.append("%0.4f, %0.8f, %0.8f\n" %(nu, solar, molecular))
         
         with open(os.path.join(paths["BASE_DIRECTORY"], "order_%i.txt" %diffractionOrder), "w") as f:
             for line in output:
@@ -98,5 +121,6 @@ def buildOrderFiles():
     
         plt.savefig(os.path.join(paths["BASE_DIRECTORY"], "order_%i.png" %diffractionOrder))
         plt.close()
+    
     
 buildOrderFiles()

@@ -162,7 +162,7 @@ def get_temperature(dt):
         db_obj.close()
 
 def get_temperature_range(beg_dt, end_dt):
-    logger.info("Getting temperature range from %s", DB_PATH)
+#    logger.info("Getting temperature range from %s", DB_PATH)
     db_obj = HeatersDB(DB_PATH)
     try:
         temps = db_obj.get_range(beg_dt, end_dt)

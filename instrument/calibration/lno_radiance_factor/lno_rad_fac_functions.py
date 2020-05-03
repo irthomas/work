@@ -17,6 +17,7 @@ TESTING=False
 
 import numpy as np
 import os
+import datetime
 #from scipy.optimize import curve_fit
 #from scipy import interpolate
 #import matplotlib.pyplot as plt
@@ -28,8 +29,11 @@ from tools.file.paths import paths, SYSTEM
 from tools.spectra.baseline_als import baseline_als
 from tools.spectra.fit_gaussian_absorption import fit_gaussian_absorption
 from tools.general.get_consecutive_indices import get_consecutive_indices
+from tools.general.get_nearest_datetime import get_nearest_datetime
+from tools.sql.heaters_temp import get_temperature_range
+
 #from tools.spectra.solar_spectrum_lno import 
-from instrument.calibration.lno_radiance_factor.lno_rad_fac_orders import BEST_ABSORPTION_DICT
+#from instrument.calibration.lno_radiance_factor.lno_rad_fac_orders import absorption_line_dict
 
 
 """set paths to calibration files"""
@@ -49,7 +53,41 @@ LNO_RADIANCE_FACTOR_CALIBRATION_TABLE_NAME = "LNO_Radiance_Factor_Calibration_Ta
 logger = logging.getLogger( __name__ )
 
 
-def get_reference_dict(diffraction_order):
+
+def get_diffraction_orders(aotf_frequencies):
+    """get orders from aotf"""
+    aotf_order_coefficients = np.array([3.9186850E-09, 6.3020400E-03, 1.3321030E+01])
+
+    diffraction_orders_calculated = [np.int(np.round(np.polyval(aotf_order_coefficients, aotf_frequency))) for aotf_frequency in aotf_frequencies]
+    #set darks to zero
+    diffraction_orders = np.asfarray([diffraction_order if diffraction_order > 50 else 0 for diffraction_order in diffraction_orders_calculated])
+    return diffraction_orders
+
+
+
+
+
+def get_nearest_temperature_measurement(hdf5_file, frame_index):
+    """get LNO nominal temperature readout closest to chosen frame in hdf5_file"""
+    utc_start_time = hdf5_file["Geometry/ObservationDateTime"][0, 0].decode()
+    utc_end_time = hdf5_file["Geometry/ObservationDateTime"][-1, 0].decode()
+    utc_start_datetime = datetime.datetime.strptime(utc_start_time, "%Y %b %d %H:%M:%S.%f")
+    utc_end_datetime = datetime.datetime.strptime(utc_end_time, "%Y %b %d %H:%M:%S.%f")
+    temperatures = get_temperature_range(utc_start_datetime, utc_end_datetime)
+
+    utc_obs_time = hdf5_file["Geometry/ObservationDateTime"][frame_index, 0].decode()
+    utc_obs_datetime = datetime.datetime.strptime(utc_obs_time, "%Y %b %d %H:%M:%S.%f")
+
+    obs_temperature_index = get_nearest_datetime([i[0] for i in temperatures], utc_obs_datetime)
+    #get LNO nominal temperature
+    measurement_temperature = float(temperatures[obs_temperature_index][2])
+
+    return measurement_temperature
+
+
+
+
+def get_reference_dict(diffraction_order, rad_fact_order_dict):
     """get dict of high res smoothed reference spectra from files and additional information"""
     hr_spectra = np.loadtxt(os.path.join(PFM_AUXILIARY_FILES, "radiometric_calibration", "lno_radiance_factor_order_data", "order_%i.txt" %diffraction_order), delimiter=",")
     
@@ -57,18 +95,24 @@ def get_reference_dict(diffraction_order):
     reference_dict["nu_hr"] = hr_spectra[:, 0]
     reference_dict["solar"] = hr_spectra[:, 1]
     reference_dict["molecular"] = hr_spectra[:, 2]
-    reference_dict["solar_or_molecular"] = BEST_ABSORPTION_DICT[diffraction_order][0]
-    reference_dict["molecule"] = BEST_ABSORPTION_DICT[diffraction_order][1]
     
-    detection_criteria = BEST_ABSORPTION_DICT[diffraction_order][2]
-    reference_dict["obs_mean_cutoff"] = detection_criteria[0]
-    reference_dict["min_signal"] = detection_criteria[1]
-    reference_dict["obs_abs_stds"] = detection_criteria[2]
-    reference_dict["ref_abs_stds"] = detection_criteria[3]
+    if "solar_molecular" in rad_fact_order_dict.keys():
+        solar_molecular = rad_fact_order_dict["solar_molecular"]
+        reference_dict["solar_molecular"] = solar_molecular
+    else:
+        solar_molecular = ""
+        reference_dict["solar_molecular"] = ""
+        
+#    reference_dict["molecule"] = BEST_ABSORPTION_DICT[diffraction_order][1]
+#    detection_criteria = BEST_ABSORPTION_DICT[diffraction_order][2]
+#    reference_dict["obs_mean_cutoff"] = detection_criteria[0]
+#    reference_dict["min_signal"] = detection_criteria[1]
+#    reference_dict["obs_abs_stds"] = detection_criteria[2]
+#    reference_dict["ref_abs_stds"] = detection_criteria[3]
     
-    if reference_dict["solar_or_molecular"] == "Molecular":
+    if solar_molecular == "molecular":
         reference_dict["reference_hr"] = reference_dict["molecular"]
-    elif reference_dict["solar_or_molecular"] == "Solar":
+    elif solar_molecular == "solar":
         reference_dict["reference_hr"] = reference_dict["solar"]
     else:
         reference_dict["reference_hr"] = np.array(0.0)

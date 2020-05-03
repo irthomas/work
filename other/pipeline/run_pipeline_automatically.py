@@ -45,15 +45,16 @@ import sqlite3
 import ftplib
 import platform
 
-SIMULATE = True
-#SIMULATE = False
-
-#WAIT_FOR_MIDNIGHT = True
+#SIMULATE = True
 WAIT_FOR_MIDNIGHT = False
+
+SIMULATE = False
+#WAIT_FOR_MIDNIGHT = True
+
 MAKE_REPORTS = True
 MAKE_EXPORTS = True
 MAKE_HDF5 = True
-FTP_UPLOAD = False
+FTP_UPLOAD = True
 
 
 if platform.system() == "Windows":
@@ -65,10 +66,10 @@ sys.path.append('.')
 
 if TESTING:
     SIMULATE = True
-    OBS_TYPE_DB = r"C:\Users\iant\Dropbox\NOMAD\Python\nomad_ops_local\obs_type.db"
-    PATH_EDDS_SPACEWIRE = r"C:\Users\iant\Dropbox\NOMAD\Python\nomad_ops_local"
-    HDF5_L10A_FILE_DESTINATION = r"C:\Users\iant\Dropbox\NOMAD\Python\nomad_ops_local\l1"
-    HDF5_RAW_FILE_DESTINATION = r"C:\Users\iant\Dropbox\NOMAD\Python\nomad_ops_local\l0"
+    OBS_TYPE_DB = r"C:\Users\iant\Documents\DATA\db\obs_type.db"
+    PATH_EDDS_SPACEWIRE = r"C:\Users\iant\Documents\DATA\db"
+    HDF5_L10A_FILE_DESTINATION = r"C:\Users\iant\Documents\DATA\db\l1"
+    HDF5_RAW_FILE_DESTINATION = r"C:\Users\iant\Documents\DATA\db\l0"
     PATH_EXPORT_HEATERS_TEMP = r"C:\Users\iant\Documents\DATA\db"
     logger_level = "INFO"
     from tools.file.passwords import passwords
@@ -141,17 +142,17 @@ def check_which_mtp(datetime_in):
     mtp0Start = datetime.datetime(2018, 3, 24)
     mtpTimeDelta = datetime.timedelta(days=28)
     
-    datetime_calc = datetime.datetime(2016, 3, 16)
+    datetime_calc = mtp0Start
     mtpNumber = -1
-    while datetime_in > datetime_calc:
+    while datetime_in >= datetime_calc:
         mtpNumber += 1
-        datetime_calc = mtp0Start + mtpTimeDelta * mtpNumber
+        datetime_calc = datetime_calc + mtpTimeDelta
+#        print(mtpNumber, datetime_calc)
         
     mtpStartDatetime = datetime_calc - mtpTimeDelta
     mtpEndDatetime = datetime_calc
     
     return mtpNumber, mtpStartDatetime, mtpEndDatetime
-
 
 
 
@@ -239,7 +240,7 @@ while True:
     #check ITL db for corresponding MTP
     end_datetime, end_datetime_string = get_end_datetime(10)
     end_mtp, mtp_start_datetime, mtp_end_datetime = check_which_mtp(end_datetime)
-    print("####### End datetime is in MTP%03i" %end_mtp)
+    print("####### End datetime %s is in MTP%03i" %(end_datetime_string, end_mtp))
     
     print("####### Checking ITL db for ITL file up to MTP%03i" %end_mtp)
     itl_present = check_for_itl(end_mtp)
@@ -336,9 +337,14 @@ while True:
 
         exp = ["scripts/manage_esa_data.py", "export"]
 
+        #subtract one day when making reports 
+        #so that when new MTP starts the full report is made for the previous MTP
+        end_datetime_minus_1day, _ = get_end_datetime(1)
+        end_mtp_minus_1day, mtp_start_datetime_minus_1day, mtp_end_datetime_minus_1day = check_which_mtp(end_datetime)
 
-        mtp_start_date = datetime.datetime.strftime(mtp_start_datetime, FORMAT_STR_DAYS)
-        mtp_end_date = datetime.datetime.strftime(mtp_end_datetime, FORMAT_STR_DAYS)
+
+        mtp_start_date = datetime.datetime.strftime(mtp_start_datetime_minus_1day, FORMAT_STR_DAYS)
+        mtp_end_date = datetime.datetime.strftime(mtp_end_datetime_minus_1day, FORMAT_STR_DAYS)
         
         command = exp + ["nomad_pwr", "--from", mtp_start_date, "--to", mtp_end_date]
         command_string = " ".join(command)
@@ -529,4 +535,7 @@ while True:
     script_elapsed_time = script_end_time - script_start_time
     print("Processing finished at %s (duration = %s)" %(datetime.datetime.now(), str(datetime.timedelta(seconds=script_elapsed_time)).split(".")[0]))
 
-    time.sleep(600) #wait 10 minutes until next check
+    if SIMULATE:
+        sys.exit()
+    else:
+        time.sleep(600) #wait 10 minutes until next check

@@ -10,9 +10,13 @@ TEST IF SPICE IS WORKING
 
 import spiceypy as sp
 import os
-KERNEL_DIRECTORY = r"W:\data\SATELLITE\TRACE-GAS-ORBITER\NOMAD\kernels\mk"
+from tools.file.paths import paths
+
 METAKERNEL_NAME = "em16_ops.tm"
 #load spiceypy kernels
-sp.furnsh(KERNEL_DIRECTORY+os.sep+METAKERNEL_NAME)
+os.chdir(paths["KERNEL_DIRECTORY"])
+sp.furnsh(paths["KERNEL_DIRECTORY"]+os.sep+METAKERNEL_NAME)
+os.chdir(paths["BASE_DIRECTORY"])
 print(sp.tkvrsn("toolkit"))
+
 

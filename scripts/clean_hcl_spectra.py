@@ -26,17 +26,18 @@ FIG_X = 18
 FIG_Y = 8
 
 #plot_type = [1,2,3,4,5,6,7,8]
-plot_type = [2]
+plot_type = [1,2,3,4,7,8]
+#plot_type = [2]
 
 #select obs for deriving correction
 #be careful of which detector rows are used. Nom pointing after 2018 Aug 11
 
 
 #regex = re.compile("20180(615|804|813|816|818|820|823|827)_.*_SO_A_I_129") #bad
-regex = re.compile("20180(813|816|818|820|823|827)_.*_SO_A_I_129") #row120 used 
+#regex = re.compile("20180(813|816|818|820|823|827)_.*_SO_A_I_129") #row120 used 
 
 #regex = re.compile("20.*_SO_A_[IE]_130")
-#regex = re.compile("20(180828|180830|180901|181125|181201|181207|190203|190311|190504|191211)_.*_SO_A_[IE]_130") #row120 used 
+regex = re.compile("20(180828|180830|180901|181125|181201|181207|190203|190311|190504|191211)_.*_SO_A_[IE]_130") #row120 used 
 
 
 file_level = "hdf5_level_1p0a"
@@ -115,6 +116,7 @@ for bin_index in bin_indices:
 
 
 if 0 in plot_type:
+    print(0)
     sys.exit()
 
 
@@ -129,6 +131,7 @@ if 5 in plot_type:
     plt.plot(np.arange(0.0, 1.0, 0.1), np.polyval(correction_dict[bin_index]["coefficients"][:, pixel], np.arange(0.0, 1.0, 0.1)), color=colours[pixel])
     plt.xlabel("Continuum transmittance of pixel")
     plt.ylabel("Deviation from continuum")
+    print(5)
     sys.exit()
 
 
@@ -142,6 +145,7 @@ if 6 in plot_type:
         plt.plot(pixels, spectrum_deviation, alpha=0.3, color=colours2[int(correction_dict[bin_index]["continuum"][spectrum_index, 200]*200)])
     plt.xlabel("Pixels")
     plt.ylabel("Deviation from continuum")
+    print(6)
     sys.exit()
 
     
@@ -150,13 +154,13 @@ if 6 in plot_type:
     
 ### get data from best occultation
 
-chosen_hdf5_filename = "20190102_190343_1p0a_SO_A_E_129" #for presentation
-instrument_temperature = -3.5
-toa_alt = 27.0
-plot_altitude = 9.9
-transmittance_range = [0.25, 0.388]
-apply_correction = True
-indices_no_strong_abs = list(range(100))+list(range(120, 320))
+#chosen_hdf5_filename = "20190102_190343_1p0a_SO_A_E_129" #for presentation
+#instrument_temperature = -3.5
+#toa_alt = 27.0
+#plot_altitude = 9.9
+#transmittance_range = [0.25, 0.388]
+#apply_correction = True
+#indices_no_strong_abs = list(range(100))+list(range(120, 320))
 ###resize_len = 374
 ####resize_index = 25
 
@@ -167,7 +171,7 @@ indices_no_strong_abs = list(range(100))+list(range(120, 320))
 #plot_altitude = 16.5
 #transmittance_range = [0.2, 0.6]
 #apply_correction = True
-indices_no_strong_abs = list(range(100))+list(range(120, 320))
+#indices_no_strong_abs = list(range(100))+list(range(120, 320))
 
 #chosen_hdf5_filename = "20191122_210929_1p0a_SO_A_E_126"
 #instrument_temperature = -3.5
@@ -177,6 +181,17 @@ indices_no_strong_abs = list(range(100))+list(range(120, 320))
 #apply_correction = True
 #indices_no_strong_abs = list(range(100))+list(range(120, 320))
 
+
+chosen_hdf5_filename = "20180522_054221_1p0a_SO_A_E_130" #detection at unusual time
+instrument_temperature = 3.5
+toa_alt = 65.0
+plot_altitude = 24.7
+transmittance_range = [0.2, 0.4]
+apply_correction = True
+indices_no_strong_abs = list(range(64))+list(range(74, 121))+list(range(131,164))+\
+    list(range(181,191))+list(range(200,215))+list(range(226, 320))
+
+
 #chosen_hdf5_filename = "20181108_154033_1p0a_SO_A_I_130"
 #instrument_temperature = -1.8
 #toa_alt = 50.0
@@ -184,7 +199,6 @@ indices_no_strong_abs = list(range(100))+list(range(120, 320))
 #transmittance_range = [0.2, 0.4]
 #apply_correction = True
 ##64-74, 121-131, 164-181, 190-202, etc.
-
 #indices_no_strong_abs = list(range(64))+list(range(74, 121))+list(range(131,164))+\
 #    list(range(181,191))+list(range(200,215))+list(range(226, 320))
 
@@ -235,8 +249,8 @@ if 1 in plot_type:
     colours = ["b", "g", "r", "m"]
     for px in [160, 200, 240]:
         for bin_index, obs_dict in enumerate(obs_dicts):
-            plt.scatter(obs_dict["alt"], obs_dict["y_mean"][:, px], color=colours[bin_index])
-    plt.title(hdf5_filename)
+            plt.scatter(obs_dict["alt"], obs_dict["y_mean"][:, px], color=colours[bin_index], label="bin %i px %i" %(bin_index, px))
+    plt.title(chosen_hdf5_filename)
 
 
 y_list = [obs_dict["y_mean"] for obs_dict in obs_dicts]
@@ -276,7 +290,7 @@ if 3 in plot_type:
         y_corrected = y / y_continuum
         
     #    plt.plot(pixels, y, label="%0.1fkm" %alt_list[3][spectrum_index])
-        plt.plot(pixels, y_corrected, label="%0.1fkm" %alt_list[i][spectrum_index])
+        plt.plot(x, y_corrected, label="%0.1fkm" %alt_list[i][spectrum_index])
     plt.legend()
     plt.title(chosen_hdf5_filename + ": unbinned before correction")
     plt.xlabel("Pixel number")
@@ -312,7 +326,7 @@ for spectrum_index in goodIndices[i]:
 
     if 4 in plot_type:
 #       plt.plot(pixels, y, label="%0.1fkm" %alt_list[3][spectrum_index])
-        plt.plot(pixels, y_corrected, label="%0.1fkm" %alt_list[i][spectrum_index])
+        plt.plot(x, y_corrected, label="%0.1fkm" %alt_list[i][spectrum_index])
 if 4 in plot_type:
     plt.legend()
     plt.title(chosen_hdf5_filename + ": unbinned after correction")
@@ -385,7 +399,7 @@ if 7 in plot_type:
             y_corrected = y / y_continuum
             
         #    plt.plot(pixels, y, label="%0.1fkm" %alt_list[3][spectrum_index])
-            plt.plot(pixels, y_corrected, label="%0.1fkm" %alt_list[bin_index][spectrum_index])
+            plt.plot(x, y_corrected, label="%0.1fkm" %alt_list[bin_index][spectrum_index])
         plt.legend()
         plt.title(chosen_hdf5_filename + ": bin %i unbinned before correction" %bin_index)
         plt.xlabel("Pixel number")
@@ -423,7 +437,7 @@ for bin_index in bin_indices:
     
         if 8 in plot_type:
     #       plt.plot(pixels, y, label="%0.1fkm" %alt_list[3][spectrum_index])
-            plt.plot(pixels, y_corrected, label="%0.1fkm" %alt_list[i][spectrum_index])
+            plt.plot(x, y_corrected, label="%0.1fkm" %alt_list[i][spectrum_index])
 
     if 8 in plot_type:
         plt.legend()
@@ -467,7 +481,7 @@ ax2.set_xlabel("Wavenumber from file (cm-1)")
 ax2.set_ylabel("Normalised transmittance")
 ax2.legend()
 
-from analysis.retrievals.so_simple_retrieval import simple_retrieval, forward_model
+from analysis.py_retrievals.so_simple_retrieval import simple_retrieval, forward_model
 
 alt = mean_alt
 resize_index = get_nearest_index(alt, alts_in)
@@ -481,8 +495,8 @@ sim_spectra = {"HCl":{"scaler":4.0, "label":"HCl 4ppbv", "colour":"r--"},
                "CO2":{"scaler":2.0, "label":"CO2", "colour":"c--"},
                }
 
-#for molecule in ["HCl", "H2O", "CO2"]:
-for molecule in ["HCl"]:
+for molecule in ["HCl", "H2O", "CO2"]:
+#for molecule in ["HCl"]:
     retDict = simple_retrieval(y_offset_corrected_mean_all_bins, alt, molecule, diffraction_order, instrument_temperature)
     retDict = forward_model(retDict, xa_fact=[sim_spectra[molecule]["scaler"]])
     sim_spectra[molecule]["spectrum"] = retDict["Y"][0, :]

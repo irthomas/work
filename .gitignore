@@ -1,5 +1,6 @@
 __pycache__/
-*.py[cod]
+*.pyc
+*_pycache_*
 analysis/asimut/
 analysis/retrievals/
 analysis/simulations/
