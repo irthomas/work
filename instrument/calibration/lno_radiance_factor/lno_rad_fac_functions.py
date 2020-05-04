@@ -112,10 +112,13 @@ def get_reference_dict(diffraction_order, rad_fact_order_dict):
     
     if solar_molecular == "molecular":
         reference_dict["reference_hr"] = reference_dict["molecular"]
+        reference_dict["molecule"] = rad_fact_order_dict["molecule"]
     elif solar_molecular == "solar":
         reference_dict["reference_hr"] = reference_dict["solar"]
+        reference_dict["molecule"] = ""
     else:
         reference_dict["reference_hr"] = np.array(0.0)
+        reference_dict["molecule"] = ""
 
     return reference_dict
 
@@ -337,18 +340,18 @@ def correct_nu_obs(obs_dict, nu_obs_minima, nu_ref_minima, chi_sq_all):
 
 
 
-def getCorrectedSolarSpectrum(diffractionOrder, observation_wavenumbers, observationTemperature):
+def make_synth_solar_spectrum(diffraction_order, observation_wavenumbers, observation_temperature):
 
     #read in data from radiance factor calibration table - do I/F calibration
 #    logger.info("Opening radiance factor calibration file %s.h5 for reading" %LNO_RADIANCE_FACTOR_CALIBRATION_TABLE_NAME)
     radiometric_calibration_table = os.path.join(RADIOMETRIC_CALIBRATION_AUXILIARY_FILES, LNO_RADIANCE_FACTOR_CALIBRATION_TABLE_NAME)
     with h5py.File("%s.h5" % radiometric_calibration_table, "r") as radianceFactorFile:
         
-        if "%i" %diffractionOrder in radianceFactorFile.keys():
+        if "%i" %diffraction_order in radianceFactorFile.keys():
         
             #read in coefficients and wavenumber grid
-            wavenumber_grid_in = radianceFactorFile["%i" %diffractionOrder+"/wavenumber_grid"][...]
-            coefficient_grid_in = radianceFactorFile["%i" %diffractionOrder+"/coefficients"][...].T
+            wavenumber_grid_in = radianceFactorFile["%i" %diffraction_order+"/wavenumber_grid"][...]
+            coefficient_grid_in = radianceFactorFile["%i" %diffraction_order+"/coefficients"][...].T
             
     #find coefficients at wavenumbers matching real observation
     corrected_solar_spectrum = []
@@ -356,7 +359,7 @@ def getCorrectedSolarSpectrum(diffractionOrder, observation_wavenumbers, observa
         index = np.abs(observation_wavenumber - wavenumber_grid_in).argmin()
         
         coefficients = coefficient_grid_in[index, :]
-        correct_solar_counts = np.polyval(coefficients, observationTemperature)
+        correct_solar_counts = np.polyval(coefficients, observation_temperature)
         corrected_solar_spectrum.append(correct_solar_counts)
     corrected_solar_spectrum = np.asfarray(corrected_solar_spectrum)
     

@@ -12,33 +12,42 @@ from tools.file.hdf5_functions import get_filepath
 
 
 
-def make_obs_dict(channel, query_output, add_data=True):
+def make_obs_dict(channel, query_output, filenames_only=True):
     """make observation dictionary from sql query, add x and y data from files"""
+    obs_dict = {}
     
     table_fields = sql_table_fields(channel)
-    obsDict = {}
     #make empty dicts
-    for fieldDict in table_fields:
-        obsDict[fieldDict["name"]] = []
+    for field_dict in table_fields:
+        obs_dict[field_dict["name"]] = []
         
+    #add sql db data to dictionary
     for output_row in query_output:
         for i in range(len(output_row)):
-            obsDict[table_fields[i]["name"]].append(output_row[i])
+            obs_dict[table_fields[i]["name"]].append(output_row[i])
+        
+    #convert to arrays
+    for field_dict in table_fields:
+        obs_dict[field_dict["name"]] = np.asarray(obs_dict[field_dict["name"]])
 
-    obsDict["x"] = []
-    obsDict["y"] = []
-    obsDict["filepath"] = []
+    #add data from hdf5 files to dictionary
+    obs_dict["x"] = []
+    obs_dict["y"] = []
+    obs_dict["filepath"] = []
+    obs_dict["file_index"] = []
     
-    hdf5_filenames = set(obsDict["filename"]) #unique matching filenames
-    
-    for hdf5_filename in hdf5_filenames:
+    hdf5_filenames = sorted(list(set(obs_dict["filename"]))) #unique matching filenames
+    if filenames_only:
+        return {"filename":hdf5_filenames}
+        
+    for file_index, hdf5_filename in enumerate(hdf5_filenames):
 #        with h5py.File(getFilePath(hdf5Filename)) as f:
         hdf5_filepath = get_filepath(hdf5_filename)
         with h5py.File(hdf5_filepath, "r") as f: #open file
-            for filename, frameIndex in zip(obsDict["filename"], obsDict["frame_id"]):
+            for filename, frame_index in zip(obs_dict["filename"], obs_dict["frame_id"]):
                 if filename == hdf5_filename:
-                    x = f["Science/X"][frameIndex, :]
-                    y = f["Science/Y"][frameIndex, :]
+                    x = f["Science/X"][frame_index, :]
+                    y = f["Science/Y"][frame_index, :]
                     
                     integrationTimeRaw = f["Channel/IntegrationTime"][0]
                     numberOfAccumulationsRaw = f["Channel/NumberOfAccumulations"][0]
@@ -48,9 +57,12 @@ def make_obs_dict(channel, query_output, add_data=True):
                     measurementSeconds = integrationTime * numberOfAccumulations
                     
                     y = y / measurementPixels / measurementSeconds
-                    obsDict["x"].append(x)
-                    obsDict["y"].append(y)
-                    obsDict["filepath"].append(hdf5_filepath)
+                    obs_dict["x"].append(x)
+                    obs_dict["y"].append(y)
+                    obs_dict["filepath"].append(hdf5_filepath)
+                    obs_dict["file_index"].append(file_index)
             print("measurementPixels=", measurementPixels, "; measurementSeconds=", measurementSeconds)
 
-    return obsDict
+    obs_dict["file_index"] = np.asarray(obs_dict["file_index"])
+
+    return obs_dict
