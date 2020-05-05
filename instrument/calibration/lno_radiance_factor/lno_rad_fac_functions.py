@@ -22,7 +22,7 @@ import datetime
 #from scipy import interpolate
 #import matplotlib.pyplot as plt
 import h5py
-import logging
+#import logging
 
 from tools.file.paths import paths, SYSTEM
 #from instrument.nomad_lno_instrument import nu_mp
@@ -49,8 +49,6 @@ RADIOMETRIC_CALIBRATION_ORDERS = os.path.join(RADIOMETRIC_CALIBRATION_AUXILIARY_
 #table to output
 #LNO_RADIOMETRIC_CALIBRATION_TABLE_NAME = "LNO_Radiometric_Calibration_Table_v03"
 LNO_RADIANCE_FACTOR_CALIBRATION_TABLE_NAME = "LNO_Radiance_Factor_Calibration_Table_v04"
-
-logger = logging.getLogger( __name__ )
 
 
 
@@ -109,27 +107,30 @@ def get_reference_dict(diffraction_order, rad_fact_order_dict):
 #    reference_dict["min_signal"] = detection_criteria[1]
 #    reference_dict["obs_abs_stds"] = detection_criteria[2]
 #    reference_dict["ref_abs_stds"] = detection_criteria[3]
+        
     
     if solar_molecular == "molecular":
-        reference_dict["reference_hr"] = reference_dict["molecular"]
+        reference_dict["reference_hr"] = [reference_dict["molecular"]]
         reference_dict["molecule"] = rad_fact_order_dict["molecule"]
         
-        #add other keys to dictionary
-        for key_name in ["mean_sig","min_sig","stds_sig","stds_ref"]:
-            reference_dict[key_name] = rad_fact_order_dict[key_name]
 
     elif solar_molecular == "solar":
-        reference_dict["reference_hr"] = reference_dict["solar"]
+        reference_dict["reference_hr"] = [reference_dict["solar"]]
         reference_dict["molecule"] = ""
  
+    elif solar_molecular == "both":
+        reference_dict["reference_hr"] = [reference_dict["solar"], reference_dict["molecular"]]
+        reference_dict["molecule"] = rad_fact_order_dict["molecule"]
+
+    else:
+        reference_dict["reference_hr"] = [np.array(0.0)]
+        reference_dict["molecule"] = ""
+
+    if solar_molecular != "":
         #add other keys to dictionary
         for key_name in ["mean_sig","min_sig","stds_sig","stds_ref"]:
             reference_dict[key_name] = rad_fact_order_dict[key_name]
-
     else:
-        reference_dict["reference_hr"] = np.array(0.0)
-        reference_dict["molecule"] = ""
-
         for key_name in ["mean_sig","min_sig","stds_sig","stds_ref"]:
             reference_dict[key_name] = 0.0
 
@@ -163,8 +164,8 @@ def plot_reference_sim(ax, diffraction_order, reference_dict):
     reference_abs_points = np.where(reference_dict["reference_hr"] < (1.0-std_reference_spectrum * n_stds_for_reference_absorption))[0]
 
     if len(reference_abs_points) == 0:
-        logger.error("Reference absorption not deep enough for detection. Change nadir dict")
-        return []
+        print("Reference absorption not deep enough for detection. Change nadir dict")
+        return [], [], []
 
     #find pixel indices containing absorptions in hitran/solar data
     #split indices for different absorptions into different lists
@@ -179,11 +180,6 @@ def plot_reference_sim(ax, diffraction_order, reference_dict):
     
     true_wavenumber_minima = []
     for reference_indices in reference_indices_all_extra:
-#        plot quadratic and find wavenumber at minimum
-#        coeffs = np.polyfit(nu_hr[reference_indices], normalised_reference_spectrum[reference_indices], 2)
-#        ax.plot(nu_hr[reference_indices], np.polyval(coeffs, nu_hr[reference_indices]), "b")
-#        reference_spectrum_minimum = -1 * coeffs[1] / (2.0 * coeffs[0])
-#        ax.axvline(x=reference_spectrum_minimum, c="b")
                     
 #        plot gaussian and find wavenumber at minimum
         x_absorption, y_absorption, reference_spectrum_minimum, chi_sq = fit_gaussian_absorption(nu_hr[reference_indices], reference_dict["reference_hr"][reference_indices], error=True)
@@ -204,120 +200,73 @@ def plot_reference_sim(ax, diffraction_order, reference_dict):
 
 
 def find_ref_spectra_minima(ax, reference_dict):
+    """return cm-1 of all solar/molecular reference lines matching detection criteria"""
+    
+    logger_msg = ""
 
     n_stds_for_reference_absorption = reference_dict["stds_ref"]
     ref_nu = reference_dict["nu_hr"]
-    ref_spectrum = reference_dict["reference_hr"]
-#    solar_molecular = reference_dict["solar_molecular"]
-
-    std_ref_spectrum = np.std(ref_spectrum)
-
-    ax.axhline(y=1.0-std_ref_spectrum*n_stds_for_reference_absorption, c="b")
-
-
-    reference_abs_points = np.where(ref_spectrum < (1.0-std_ref_spectrum * n_stds_for_reference_absorption))[0]
-
-    if len(reference_abs_points) == 0:
-        logger.error("Reference absorption not deep enough for detection. Change nadir dict")
-        return []
-
-    #find pixel indices containing absorptions in hitran/solar data
-    #split indices for different absorptions into different lists
-    reference_indices_all = get_consecutive_indices(reference_abs_points)
-
-    #add extra points to left and right of found indices
-    reference_indices_all_extra = []
-    for indices in reference_indices_all:
-        if len(indices)>0:
-            reference_indices_all_extra.append([indices[0]-2] + [indices[0]-1] + indices + [indices[-1]+1])
+    ref_spectra = reference_dict["reference_hr"]
     
-    
+    std_ref_spectrum = np.std(np.asfarray(ref_spectra))
+    ax.axhline(y=1.0-std_ref_spectrum*n_stds_for_reference_absorption, c="k", linestyle="--")
+
     true_wavenumber_minima = []
-    for reference_indices in reference_indices_all_extra:
-#        plot quadratic and find wavenumber at minimum
-#        coeffs = np.polyfit(nu_hr[reference_indices], normalised_reference_spectrum[reference_indices], 2)
-#        ax.plot(nu_hr[reference_indices], np.polyval(coeffs, nu_hr[reference_indices]), "b")
-#        reference_spectrum_minimum = -1 * coeffs[1] / (2.0 * coeffs[0])
-#        ax.axvline(x=reference_spectrum_minimum, c="b")
-                    
-#        plot gaussian and find wavenumber at minimum
-        x_absorption, y_absorption, reference_spectrum_minimum, chi_sq_fit = fit_gaussian_absorption(ref_nu[reference_indices], ref_spectrum[reference_indices], error=True)
-        ax.plot(x_absorption, y_absorption, "y")
-        ax.axvline(x=reference_spectrum_minimum, c="y")
 
-        true_wavenumber_minima.append(reference_spectrum_minimum)
+    for ref_spectrum in ref_spectra:
+    
+        reference_abs_points = np.where(ref_spectrum < (1.0-std_ref_spectrum * n_stds_for_reference_absorption))[0]
+    
+        if len(reference_abs_points) == 0:
+            logger_msg += "Reference absorption not deep enough for detection. y"
+            return [], logger_msg
+    
+        #find pixel indices containing absorptions in hitran/solar data
+        #split indices for different absorptions into different lists
+        reference_indices_all = get_consecutive_indices(reference_abs_points)
+    
+        #add extra points to left and right of found indices
+        reference_indices_all_extra = []
+        for indices in reference_indices_all:
+            if len(indices)>0:
+                reference_indices_all_extra.append([indices[0]-2] + [indices[0]-1] + indices + [indices[-1]+1])
+        
+        
+        for reference_indices in reference_indices_all_extra:
+    #        plot gaussian and find wavenumber at minimum
+            x_absorption, y_absorption, reference_spectrum_minimum, chi_sq_fit = fit_gaussian_absorption(ref_nu[reference_indices], ref_spectrum[reference_indices], error=True)
+            ax.plot(x_absorption, y_absorption, "k")
+            ax.axvline(x=reference_spectrum_minimum, c="k")
+    
+            true_wavenumber_minima.append(reference_spectrum_minimum)
 
     
-    return true_wavenumber_minima
+    return true_wavenumber_minima, ""
 
 
 
-#x_in, y_in, incidence_angle in dictionary
-def check_nadir_spectra(axa, axb, reference_dict, obs_dict):
+def find_nadir_spectra_minima(ax, reference_dict, x, obs_spectrum, obs_absorption):
 
+    logger_msg = ""
     
-    obs_mean_signal_cutoff = reference_dict["obs_mean_cutoff"]
-    minimum_signal_for_absorption = reference_dict["min_signal"]
-    n_stds_for_absorption = reference_dict["obs_abs_stds"]
-
-    x = obs_dict["x"]
-    y = obs_dict["y"]
-    min_incidence_angle = np.nanmin(obs_dict["incidence_angle"])
-
-    y[np.isnan(y)] = 0.0 #replace nans
-    y_mean = np.nanmean(y[:, 160:240], axis=1)
-    #find max value
-    y_mean_max = np.max(y_mean)
+    minimum_signal_for_absorption = reference_dict["min_sig"]
+    n_stds_for_absorption = reference_dict["stds_sig"]
 
 
-    if y_mean_max < obs_mean_signal_cutoff:
-        logger_msg = ""
-        logger_msg += "Minimum incidence angle is %0.1f. " %(min_incidence_angle)
-        logger_msg += "Signal too low to use (values from %0.1f to %0.1f). Radiance factor calibration not implemented" %(np.min(np.nanmean(y, axis=1)), np.max(np.nanmean(y, axis=1)))
-        logger.warning(logger_msg)
-        return [[0],[0],[0], min_incidence_angle]
+    #find pixel containing minimum value in subset of real data
+    obs_continuum = baseline_als(obs_spectrum)
+    obs_absorption = obs_spectrum / obs_continuum
+
+    std_corrected_spectrum = np.std(obs_absorption)
+    ax.axhline(y=1.0-std_corrected_spectrum*n_stds_for_absorption, c="k", linestyle="--")
 
 
 
-    #take spectra where mean value is greater than 3/4 of max mean value
-    validIndices = np.where(y_mean > (0.75 * y_mean_max))[0]
-
-    #plot spectra
-    for validIndex in validIndices:
-        axa.plot(x, y[validIndex, :], alpha=0.3)
-    #plot mean spectrum
-    mean_spectrum = np.mean(y[validIndices, :], axis=0)
-    axa.plot(x, mean_spectrum, "k")
-    axa.axhline(y=obs_mean_signal_cutoff, c="k", alpha=0.7)
-    axa.axhline(y=minimum_signal_for_absorption, c="k", alpha=0.7)
-    
-    #plot baseline corrected spectra
-    mean_spectrum_baseline = baseline_als(mean_spectrum) #find continuum of mean spectrum
-    axa.plot(x, mean_spectrum_baseline, "k--")
-    
-    mean_corrected_spectrum = mean_spectrum / mean_spectrum_baseline
-    axb.plot(x[30:320], mean_corrected_spectrum[30:320], "k")
-    #do quadratic fit to find true absorption minima
-    std_corrected_spectrum = np.std(mean_corrected_spectrum)
-    abs_points = np.where((mean_corrected_spectrum < (1.0 - std_corrected_spectrum * n_stds_for_absorption)) & (mean_spectrum > minimum_signal_for_absorption))[0]
-#    axb.scatter(xIn[abs_points], mean_corrected_spectrum[abs_points], c="r", s=10)
-
-    axb.axhline(y=1.0-std_corrected_spectrum*n_stds_for_absorption, c="k")
-
-#    if "IncidenceAngle" in hdf5FileIn["Geometry/Point0"].keys():
-#        min_incidence_angle = np.nanmin(hdf5FileIn["Geometry/Point0/IncidenceAngle"][...])
-#    else:
-#        min_incidence_angle = -999
-    
-
-
+    abs_points = np.where((obs_absorption < (1.0 - std_corrected_spectrum * n_stds_for_absorption)) & (obs_spectrum > minimum_signal_for_absorption))[0]
 
     if len(abs_points) == 0:
-        logger_msg = ""
-        logger_msg += "No absorptions found with sufficient depth. "
-        logger_msg += "Minimum incidence angle is %0.1f" %(min_incidence_angle)
-        logger.warning(logger_msg)
-        return [[0],[0],[0], min_incidence_angle]
+        logger_msg += "No nadir absorptions found with sufficient signal and depth. "
+        return [],[], logger_msg
 
         
     #find pixel indices containing absorptions in nadir data
@@ -332,13 +281,11 @@ def check_nadir_spectra(axa, axb, reference_dict, obs_dict):
                 indices_all_extra.append([indices[0]-2] + [indices[0]-1] + indices + [indices[-1]+1] + [indices[-1]+2])
     
     if len(indices_all_extra) == 0:
-        logger_msg = ""
         logger_msg += "No absorptions found with sufficient depth. "
-        logger_msg += "Minimum incidence angle is %0.1f" %(min_incidence_angle)
-        logger.warning(logger_msg)
-        return [[0],[0],[0], min_incidence_angle]
+#        logger_msg += "Minimum incidence angle is %0.1f" %(min_incidence_angle)
+        return [],[], logger_msg
     else:
-        logger.info("Using %i absorption bands for analysis" %(len(indices_all_extra)))
+        logger_msg += "Using %i absorption bands for analysis. " %(len(indices_all_extra))
 
 
 
@@ -346,58 +293,52 @@ def check_nadir_spectra(axa, axb, reference_dict, obs_dict):
     nu_obs_minima = []
     chi_sq_all = []
     for extra_indices in indices_all_extra:
-#        plot quadratic and find wavenumber at minimum
-#        coeffs = np.polyfit(xIn[extra_indices], mean_corrected_spectrum[extra_indices], 2)
-#        axb.plot(xIn[extra_indices], np.polyval(coeffs, xIn[extra_indices]), "g")
-#        spectrum_minimum = -1 * coeffs[1] / (2.0 * coeffs[0])
-#        axb.axvline(x=spectrum_minimum, c="g")
-    
-#        plot gaussian and find wavenumber at minimum
-        x_absorption, y_absorption, spectrum_minimum, chi_sq = fit_gaussian_absorption(x[extra_indices], mean_corrected_spectrum[extra_indices])
+
+        #plot gaussian and find wavenumber at minimum
+        x_absorption, y_absorption, spectrum_minimum, chi_sq = fit_gaussian_absorption(x[extra_indices], obs_absorption[extra_indices], error=True)
         if chi_sq == 0:
-            logger.warning("Curve fit failed")
+            logger_msg += "Curve fit failed. "
         else:
 
-            axb.scatter(x[extra_indices], mean_corrected_spectrum[extra_indices], c="k", s=10)
-            axb.plot(x_absorption, y_absorption, "r--")
-            axb.axvline(x=spectrum_minimum, c="r")
+            ax.scatter(x[extra_indices], obs_absorption[extra_indices], c="k", s=10)
+            ax.plot(x_absorption, y_absorption, "k--")
+            ax.axvline(x=spectrum_minimum, c="g")
             
             nu_obs_minima.append(spectrum_minimum)
             
             chi_sq_all.append(chi_sq)
 
         
-    return nu_obs_minima, validIndices, chi_sq_all
+    return nu_obs_minima, chi_sq_all, logger_msg
                    
 
 
 
-def correct_nu_obs(obs_dict, nu_obs_minima, nu_ref_minima, chi_sq_all):
+def find_nu_shift(nadir_lines_nu, ref_lines_nu, chi_sq_fits):
 
     #find mean wavenumber shift
-    logger_info = ""
+    logger_msg = ""
     nu_shifts = []
     chi_sq_matching = []
-    for nu_obs_minimum, chi_sq in zip(nu_obs_minima, chi_sq_all): #loop through found nadir absorption minima
+    for nu_obs_minimum, chi_sq in zip(nadir_lines_nu, chi_sq_fits): #loop through found nadir absorption minima
         found = False
-        for nu_ref_minimum in nu_ref_minima: #loop through found hitran absorption minima
+        for nu_ref_minimum in ref_lines_nu: #loop through found hitran absorption minima
             if nu_ref_minimum - 0.3 < nu_obs_minimum < nu_ref_minimum + 0.3: #if absorption is within 1.0cm-1 then consider it found
                 found = True
                 nu_shift = nu_obs_minimum - nu_ref_minimum
                 nu_shifts.append(nu_shift)
                 chi_sq_matching.append(chi_sq)
-                logger_info += "line found (shift=%0.3fcm-1); " %nu_shift
+                logger_msg += "line found (shift=%0.3fcm-1); " %nu_shift
         if not found:
-            logger_info += "Warning: matching line not found for line %0.3f; " %nu_obs_minimum
+            logger_msg += "Warning: matching line not found for line %0.3f; " %nu_obs_minimum
     
-    mean_shift = np.mean(nu_shifts) #get mean shift
-    obs_dict["x_corrected"] = obs_dict["x"] - mean_shift #realign observation wavenumbers to match hitran
+    mean_nu_shift = np.mean(nu_shifts) #get mean shift
 
-    logger_info += "mean shift = %0.3f" %mean_shift
-    logger.info(logger_info)
-    logger.info("%i/%i matching absorption bands found" %(len(nu_shifts), len(nu_obs_minima)))
+    logger_msg += "mean shift = %0.3f. " %mean_nu_shift
+#    logger.info(logger_info)
+    logger_msg += "%i/%i nadir lines matched to ref lines" %(len(nu_shifts), len(nadir_lines_nu))
 
-    return obs_dict, chi_sq_matching
+    return mean_nu_shift, chi_sq_matching, logger_msg
 
 
 

@@ -12,7 +12,7 @@ LNO RADIANCE FACTOR ORDERS
 #"search for solar or molecular lines or none"
 #"best molecule (if any)"]
 
-#[nadir mean signal cutoff, minimum signal for absorption, n stds for absorption, n stds for reference spectrum absorption]
+#[nadir mean signal cutoff px 160:240, minimum signal for absorption, n stds for absorption, n stds for reference spectrum absorption]
 #can't do 197+ due to no solar spectrum
 
 rad_fact_orders_dict = {
@@ -74,8 +74,8 @@ rad_fact_orders_dict = {
 165:{"solar_line":False, "solar_molecular":"molecular", "molecule":"CO2"},
 166:{"solar_line":True, "trans_solar":0.91, "nu_range":[3749., 3751.], "solar_molecular":"molecular", "molecule":"H2O", "mean_sig":4.0, "min_sig":2.0, "stds_sig":2.0, "stds_ref":2.0},
 167:{"solar_line":True, "trans_solar":0.89, "nu_range":[3766., 3768.], "solar_molecular":"molecular", "molecule":"H2O", "mean_sig":4.0, "min_sig":2.0, "stds_sig":2.0, "stds_ref":2.0},
-168:{"solar_line":True, "trans_solar":0.78, "nu_range":[3787., 3789.], "solar_molecular":"molecular", "molecule":"H2O", "mean_sig":4.0, "min_sig":2.0, "stds_sig":2.0, "stds_ref":2.0},
-169:{"solar_line":True, "trans_solar":0.9, "nu_range":[3812., 3814.], "solar_molecular":"molecular", "molecule":"H2O", "mean_sig":4.0, "min_sig":2.0, "stds_sig":2.0, "stds_ref":2.0},
+168:{"solar_line":True, "trans_solar":0.78, "nu_range":[3787., 3789.], "solar_molecular":"both", "molecule":"H2O", "mean_sig":4.0, "min_sig":2.0, "stds_sig":2.0, "stds_ref":2.0},
+169:{"solar_line":True, "trans_solar":0.9, "nu_range":[3812., 3814.], "solar_molecular":"both", "molecule":"H2O", "mean_sig":4.0, "min_sig":2.0, "stds_sig":2.0, "stds_ref":2.0},
 
 170:{"solar_line":True, "trans_solar":0.97, "nu_range":[3843., 3845.], "solar_molecular":"molecular", "molecule":"H2O", "mean_sig":4.0, "min_sig":2.0, "stds_sig":2.0, "stds_ref":2.0},
 171:{"solar_line":True, "trans_solar":0.85, "nu_range":[3866., 3867.], "solar_molecular":"molecular", "molecule":"H2O", "mean_sig":4.0, "min_sig":2.0, "stds_sig":2.0, "stds_ref":2.0},

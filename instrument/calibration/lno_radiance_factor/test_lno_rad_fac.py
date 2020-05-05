@@ -11,9 +11,9 @@ PLOT SPECTRAL CALIBRATION FITS TO LINES IN THE ORDER AND CHECK
 """
 
 import sys
-import os
+#import os
 import numpy as np
-import h5py
+#import h5py
 #import re
 import matplotlib.pyplot as plt
 #import datetime
@@ -24,14 +24,16 @@ from tools.sql.make_obs_dict import make_obs_dict
 from tools.plotting.colours import get_colours
 from tools.spectra.baseline_als import baseline_als
 from tools.spectra.get_y_normalised import get_y_normalised
-from tools.general.get_minima_maxima import get_local_minima
+#from tools.general.get_minima_maxima import get_local_minima
 from tools.file.hdf5_functions import open_hdf5_file
-from tools.file.paths import paths, FIG_X, FIG_Y
+from tools.file.paths import FIG_X, FIG_Y#, paths
 
 from instrument.calibration.lno_radiance_factor.lno_rad_fac_orders import rad_fact_orders_dict
-from instrument.calibration.lno_radiance_factor.lno_rad_fac_functions import get_reference_dict, make_synth_solar_spectrum, calculate_radiance_factor, find_ref_spectra_minima
+from instrument.calibration.lno_radiance_factor.lno_rad_fac_functions import \
+get_reference_dict, make_synth_solar_spectrum, calculate_radiance_factor, find_ref_spectra_minima, find_nadir_spectra_minima, find_nu_shift
 
 
+plot_track = False
 
 #from tools.spectra.fit_gaussian_absorption import fit_gaussian_absorption
 #from tools.file.hdf5_functions_v04 import makeFileList
@@ -70,6 +72,7 @@ def make_query_from_search_dict(search_dict, table_name, diffraction_order):
 
 """get nadir data from observations of a region"""
 for diffraction_order in [134]:
+#for diffraction_order in [168]:
 
     #search database for parameters
     search_query = make_query_from_search_dict(search_dict, file_level, diffraction_order)
@@ -86,21 +89,22 @@ for diffraction_order in [134]:
     
     colours = get_colours(len(hdf5_filenames))
     
-    fig0, ax0 = plt.subplots(figsize=(FIG_X, FIG_Y))
+    if plot_track:
+        fig0, ax0 = plt.subplots(figsize=(FIG_X, FIG_Y))
     
-    #draw rectangle on search area
-    rectangle = np.asarray([
-        [search_dict[diffraction_order]["longitude"][0], search_dict[diffraction_order]["latitude"][0]], \
-        [search_dict[diffraction_order]["longitude"][1], search_dict[diffraction_order]["latitude"][0]], \
-        [search_dict[diffraction_order]["longitude"][1], search_dict[diffraction_order]["latitude"][1]], \
-        [search_dict[diffraction_order]["longitude"][0], search_dict[diffraction_order]["latitude"][1]], \
-        [search_dict[diffraction_order]["longitude"][0], search_dict[diffraction_order]["latitude"][0]], \
-    ])
-    ax0.plot(rectangle[:, 0], rectangle[:, 1], "k")
+        #draw rectangle on search area
+        rectangle = np.asarray([
+            [search_dict[diffraction_order]["longitude"][0], search_dict[diffraction_order]["latitude"][0]], \
+            [search_dict[diffraction_order]["longitude"][1], search_dict[diffraction_order]["latitude"][0]], \
+            [search_dict[diffraction_order]["longitude"][1], search_dict[diffraction_order]["latitude"][1]], \
+            [search_dict[diffraction_order]["longitude"][0], search_dict[diffraction_order]["latitude"][1]], \
+            [search_dict[diffraction_order]["longitude"][0], search_dict[diffraction_order]["latitude"][0]], \
+        ])
+        ax0.plot(rectangle[:, 0], rectangle[:, 1], "k")
     
     
     
-    for hdf5_filename in hdf5_filenames[2:3]:
+    for hdf5_filename in hdf5_filenames:
         
         hdf5_file = open_hdf5_file(hdf5_filename)
         
@@ -111,6 +115,9 @@ for diffraction_order in [134]:
         lat = hdf5_file["Geometry/Point0/Lat"][:, 0]
         lon = hdf5_file["Geometry/Point0/Lon"][:, 1]
 
+        #get sun-mars distance
+        sun_mars_distance = hdf5_file["Geometry/DistToSun"][0,0] #in AU. Take first value in file only
+
         #get info from rad fac order dictionary
         rad_fact_order_dict = rad_fact_orders_dict[diffraction_order]
         mean_nadir_signal_cutoff = rad_fact_order_dict["mean_sig"]
@@ -118,10 +125,11 @@ for diffraction_order in [134]:
     
         
     
-        ax0.set_title(search_query)
-        ax0.scatter(lon, lat, label=hdf5_filename)
-        ax0.set_xlabel("Longitude")
-        ax0.set_ylabel("Latitude")
+        if plot_track:
+            ax0.set_title(search_query)
+            ax0.scatter(lon, lat, label=hdf5_filename)
+            ax0.set_xlabel("Longitude")
+            ax0.set_ylabel("Latitude")
 
 
     
@@ -158,7 +166,6 @@ for diffraction_order in [134]:
             sys.exit()
         else:
             print("%s: %i spectra above nadir mean signal" %(hdf5_filename, sum(validIndices)))
-        #ax0.legend()
         obs_spectrum = np.mean(y[validIndices, :], axis=0)
         ax2a.plot(x[0], obs_spectrum[0], "b", label="Solar") #dummy for legend only
         ax2a.plot(x, obs_spectrum, "k", label="Nadir")
@@ -180,52 +187,65 @@ for diffraction_order in [134]:
         molecular_spectrum_hr = reference_dict["molecular"]
         molecule = reference_dict["molecule"]
 
-        ax2b.plot(nu_solar_hr, solar_spectrum_hr, "b--", label="Solar")
-        ax2b.plot(nu_solar_hr, molecular_spectrum_hr, "r--", label="Molecular %s" %molecule)
+        ax2a.axhline(y=reference_dict["mean_sig"], c="k", linestyle="--", alpha=0.7)
+        ax2a.axhline(y=reference_dict["min_sig"], c="k", alpha=0.7)
+
+        ax2b.plot(nu_solar_hr, solar_spectrum_hr, "b", label="Solar")
+        ax2b.plot(nu_solar_hr, molecular_spectrum_hr, "r", label="Molecular %s" %molecule)
         ax2b.legend()
         
     
-        if solar_line: #find solar line to calibrate nadir obs
-    
-            solar_line_max_transmittance = rad_fact_order_dict["trans_solar"]
-            solar_line_nu_start = rad_fact_order_dict["nu_range"][0]
-            solar_line_nu_end = rad_fact_order_dict["nu_range"][1]
+        if solar_molecular != "": #fit to solar and/or molecular lines
             
-            
-            if solar_molecular != "":
-                
-                
-                ref_lines_nu = find_ref_spectra_minima(ax2b, reference_dict)
-                find_nadir_spectra_minima(ax2c, reference_dict, ref_lines_nu)
+            #get wavenumbers of minimua of solar/molecular line reference spectra
+            ref_lines_nu, logger_msg = find_ref_spectra_minima(ax2b, reference_dict)
+            print(logger_msg)
+            #find lines in mean nadir spectrum and check it satisfies the criteria
+            nadir_lines_nu, chi_sq_fits, logger_msg = find_nadir_spectra_minima(ax2c, reference_dict, x, obs_spectrum, obs_absorption)
+            print(logger_msg)
 
-
+            #if no lines found in nadir data
+            if len(nadir_lines_nu) == 0:
                 nadir_lines_fit = False
+                x_obs = x
                 
+            else:
+                #compare positions of nadir and reference lines and calculate mean spectral shift
+                mean_nu_shift, chi_sq_matching, logger_msg = find_nu_shift(nadir_lines_nu, ref_lines_nu, chi_sq_fits)
+                if len(chi_sq_matching) == 0:
+                    logger_msg += "No match between %i nadir lines and %i reference lines" %(len(nadir_lines_nu), len(ref_lines_nu))
+                    print(logger_msg)
+                    nadir_lines_fit = False
+                    x_obs = x
+                else:
+                    print(logger_msg)
+                    nadir_lines_fit = True
+                    x_obs = x - mean_nu_shift #realign observation wavenumbers to match reference lines
             
-            elif solar_molecular == "":
-                nadir_lines_fit = False
+        
+        else:
+            nadir_lines_fit = False
+            x_obs = x
 
-
+        #make solar reference spectrum from LNO fullscans
         synth_solar_spectrum = make_synth_solar_spectrum(diffraction_order, x, t)
         ax2a2.plot(x, synth_solar_spectrum, "b")
 
-        #get sun-mars distance
-        sun_mars_distance = hdf5_file["Geometry/DistToSun"][0,0] #in AU. Take first value in file only
         
         y_rad_fac = calculate_radiance_factor(y, synth_solar_spectrum, sun_mars_distance)
         
         for spectrum_index, valid_index in enumerate(validIndices):
             if valid_index:
-                ax2d.plot(x, y_rad_fac[spectrum_index, :], "grey", alpha=0.3)
+                ax2d.plot(x_obs, y_rad_fac[spectrum_index, :], "grey", alpha=0.3)
                 
         mean_rad_fac = np.mean(y_rad_fac[validIndices, :], axis=0)
-        ax2d.plot(x, mean_rad_fac, "k")
+        ax2d.plot(x_obs, mean_rad_fac, "k")
         
-        mean_rad_fac_continuum = baseline_als(mean_rad_fac)
+        mean_rad_fac_continuum = baseline_als(mean_rad_fac, lam=500.0)
         rad_fac_normalised = mean_rad_fac / mean_rad_fac_continuum
         
-        ax2d.plot(x, mean_rad_fac_continuum, "k--")
-        ax2e.plot(x, rad_fac_normalised, "k")
+        ax2d.plot(x_obs, mean_rad_fac_continuum, "k--")
+        ax2e.plot(x_obs, rad_fac_normalised, "k")
     
 
         ax2c.set_xlabel("Wavenumber cm-1")
@@ -269,76 +289,8 @@ for diffraction_order in [134]:
             ax2c.annotate("Warning: no nadir absorption line correction", xycoords='axes fraction', xy=(0.05, 0.05), fontsize=16)
 
 
-    ax0.legend()
-    ax0.grid()
+    if plot_track:
+        ax0.legend()
+        ax0.grid()
 
 
-
-#plt.figure()
-#observation_min_pixel = findAbsorptionMininumIndex(observation_absorption_spectrum, plot=True)
-observation_min_pixel = findAbsorptionMininumIndex(observation_absorption_spectrum)
-observation_min_pixel = observation_min_pixel + continuum_pixels[0]
-observation_min_wavenumber = nu_mp(diffractionOrder, observation_min_pixel, observationTemperature)
-
-#calculate wavenumber error            
-observation_delta_wavenumber = solar_line_wavenumber - observation_min_wavenumber
-print("observation_delta_wavenumber=", observation_delta_wavenumber)
-
-#shift wavenumber scale to match solar line
-observation_wavenumbers = nu_mp(diffractionOrder, pixels, observationTemperature) + observation_delta_wavenumber
-
-#plot shifted
-ax0.plot(observation_wavenumbers, observation_spectrum, "k--")
-ax0.axvline(x=solar_line_wavenumber)
-
-ax0.set_title("LNO averaged nadir observation (Gale Crater)")
-ax0.set_xlabel("Wavenumbers (cm-1)")
-ax0.set_ylabel("Counts")
-ax0.legend()
-
-
-
-
-"""make interpolated spectrum and calibrate observation as I/F"""
-
-#read in coefficients and wavenumber grid
-with h5py.File(os.path.join(BASE_DIRECTORY, outputTitle+".h5"), "r") as hdf5File:
-    wavenumber_grid_in = hdf5File["%i" %diffractionOrder+"/wavenumber_grid"][...]
-    coefficient_grid_in = hdf5File["%i" %diffractionOrder+"/coefficients"][...].T
-
-
-#find coefficients at wavenumbers matching real observation
-corrected_solar_spectrum = []
-for observation_wavenumber in observation_wavenumbers:
-    index = np.abs(observation_wavenumber - wavenumber_grid_in).argmin()
-    
-    coefficients = coefficient_grid_in[index, :]
-    correct_solar_counts = np.polyval(coefficients, observationTemperature)
-    corrected_solar_spectrum.append(correct_solar_counts)
-corrected_solar_spectrum = np.asfarray(corrected_solar_spectrum)
-
-ax1.plot(observation_wavenumbers, corrected_solar_spectrum)
-
-#add conversion factor to account for solar incidence angle
-rSun = 695510. #km
-dSun = 215.7e6 #for 20180611 obs 227.9e6 #km
-
-#find 1 arcmin on sun in km
-#d1arcmin = dSun * np.tan((1.0 / 60.0) * (np.pi/180.0))
-
-angleSolar = np.pi * (rSun / dSun) **2
-#ratio_fov_full_sun = (np.pi * rSun**2) / (d1arcmin * d1arcmin*4.0)
-#SOLSPEC file is Earth TOA irradiance (no /sr )
-RADIANCE_TO_IRRADIANCE = angleSolar #check factor 2.0 is good
-#RADIANCE_TO_IRRADIANCE = 1.0
-
-conversion_factor = 1.0 / RADIANCE_TO_IRRADIANCE
-
-#do I/F using shifted observation wavenumber scale
-observation_i_f = observation_spectrum / corrected_solar_spectrum * conversion_factor
-
-plt.figure(figsize=(FIG_X, FIG_Y))
-plt.plot(observation_wavenumbers, observation_i_f)
-plt.title("Nadir calibrated spectra order %i" %diffractionOrder)
-plt.xlabel("Wavenumbers (cm-1)")
-plt.ylabel("Radiance factor ratio")

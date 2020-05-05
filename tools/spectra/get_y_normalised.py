@@ -10,6 +10,8 @@ def get_y_normalised(hdf5_file):
     import numpy as np
     
     y = hdf5_file["Science/Y"][:, :]
+    y[np.isnan(y)] = 0.0 #replace nans
+
     integration_time_raw = hdf5_file["Channel/IntegrationTime"][0]
     number_of_accumulations_raw = hdf5_file["Channel/NumberOfAccumulations"][0]
     integration_time = np.float(integration_time_raw) / 1.0e3 #microseconds to seconds
