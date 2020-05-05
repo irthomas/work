@@ -48,7 +48,7 @@ RADIOMETRIC_CALIBRATION_ORDERS = os.path.join(RADIOMETRIC_CALIBRATION_AUXILIARY_
 
 #table to output
 #LNO_RADIOMETRIC_CALIBRATION_TABLE_NAME = "LNO_Radiometric_Calibration_Table_v03"
-LNO_RADIANCE_FACTOR_CALIBRATION_TABLE_NAME = "LNO_Radiance_Factor_Calibration_Table_v03"
+LNO_RADIANCE_FACTOR_CALIBRATION_TABLE_NAME = "LNO_Radiance_Factor_Calibration_Table_v04"
 
 logger = logging.getLogger( __name__ )
 
@@ -113,12 +113,25 @@ def get_reference_dict(diffraction_order, rad_fact_order_dict):
     if solar_molecular == "molecular":
         reference_dict["reference_hr"] = reference_dict["molecular"]
         reference_dict["molecule"] = rad_fact_order_dict["molecule"]
+        
+        #add other keys to dictionary
+        for key_name in ["mean_sig","min_sig","stds_sig","stds_ref"]:
+            reference_dict[key_name] = rad_fact_order_dict[key_name]
+
     elif solar_molecular == "solar":
         reference_dict["reference_hr"] = reference_dict["solar"]
         reference_dict["molecule"] = ""
+ 
+        #add other keys to dictionary
+        for key_name in ["mean_sig","min_sig","stds_sig","stds_ref"]:
+            reference_dict[key_name] = rad_fact_order_dict[key_name]
+
     else:
         reference_dict["reference_hr"] = np.array(0.0)
         reference_dict["molecule"] = ""
+
+        for key_name in ["mean_sig","min_sig","stds_sig","stds_ref"]:
+            reference_dict[key_name] = 0.0
 
     return reference_dict
 
@@ -187,6 +200,56 @@ def plot_reference_sim(ax, diffraction_order, reference_dict):
 #diffraction_order = 115
 #reference_dict = get_reference_dict(diffraction_order)
 #plot_reference_sim(ax, diffraction_order, reference_dict)
+
+
+
+def find_ref_spectra_minima(ax, reference_dict):
+
+    n_stds_for_reference_absorption = reference_dict["stds_ref"]
+    ref_nu = reference_dict["nu_hr"]
+    ref_spectrum = reference_dict["reference_hr"]
+#    solar_molecular = reference_dict["solar_molecular"]
+
+    std_ref_spectrum = np.std(ref_spectrum)
+
+    ax.axhline(y=1.0-std_ref_spectrum*n_stds_for_reference_absorption, c="b")
+
+
+    reference_abs_points = np.where(ref_spectrum < (1.0-std_ref_spectrum * n_stds_for_reference_absorption))[0]
+
+    if len(reference_abs_points) == 0:
+        logger.error("Reference absorption not deep enough for detection. Change nadir dict")
+        return []
+
+    #find pixel indices containing absorptions in hitran/solar data
+    #split indices for different absorptions into different lists
+    reference_indices_all = get_consecutive_indices(reference_abs_points)
+
+    #add extra points to left and right of found indices
+    reference_indices_all_extra = []
+    for indices in reference_indices_all:
+        if len(indices)>0:
+            reference_indices_all_extra.append([indices[0]-2] + [indices[0]-1] + indices + [indices[-1]+1])
+    
+    
+    true_wavenumber_minima = []
+    for reference_indices in reference_indices_all_extra:
+#        plot quadratic and find wavenumber at minimum
+#        coeffs = np.polyfit(nu_hr[reference_indices], normalised_reference_spectrum[reference_indices], 2)
+#        ax.plot(nu_hr[reference_indices], np.polyval(coeffs, nu_hr[reference_indices]), "b")
+#        reference_spectrum_minimum = -1 * coeffs[1] / (2.0 * coeffs[0])
+#        ax.axvline(x=reference_spectrum_minimum, c="b")
+                    
+#        plot gaussian and find wavenumber at minimum
+        x_absorption, y_absorption, reference_spectrum_minimum, chi_sq_fit = fit_gaussian_absorption(ref_nu[reference_indices], ref_spectrum[reference_indices], error=True)
+        ax.plot(x_absorption, y_absorption, "y")
+        ax.axvline(x=reference_spectrum_minimum, c="y")
+
+        true_wavenumber_minima.append(reference_spectrum_minimum)
+
+    
+    return true_wavenumber_minima
+
 
 
 #x_in, y_in, incidence_angle in dictionary
@@ -354,13 +417,30 @@ def make_synth_solar_spectrum(diffraction_order, observation_wavenumbers, observ
             coefficient_grid_in = radianceFactorFile["%i" %diffraction_order+"/coefficients"][...].T
             
     #find coefficients at wavenumbers matching real observation
-    corrected_solar_spectrum = []
-    for observation_wavenumber in observation_wavenumbers:
+    corrected_solar_spectrum = np.zeros_like(observation_wavenumbers)
+    for pixel_index, observation_wavenumber in enumerate(observation_wavenumbers):
         index = np.abs(observation_wavenumber - wavenumber_grid_in).argmin()
         
         coefficients = coefficient_grid_in[index, :]
         correct_solar_counts = np.polyval(coefficients, observation_temperature)
-        corrected_solar_spectrum.append(correct_solar_counts)
-    corrected_solar_spectrum = np.asfarray(corrected_solar_spectrum)
+        corrected_solar_spectrum[pixel_index] = correct_solar_counts
     
     return corrected_solar_spectrum
+
+
+
+
+def calculate_radiance_factor(y, synth_solar_spectrum, sun_mars_distance_au):
+    """calculate radiance factor from i and f, accounting for sun to mars distance"""
+    
+    n_spectra = len(y[:, 0])
+    
+    #TODO: add conversion factor to account for solar incidence angle
+    #TODO: this needs checking. No nadir or so FOV in calculation!
+    rSun = 695510.0 # radius of Sun in km
+    dSun = sun_mars_distance_au * 1.496e+8 #1AU to km
+    angle_solar = np.pi * (rSun / dSun) **2 / 2.0 #why /2.0?
+    #do I/F using shifted observation wavenumber scale
+    y_rad_fac = y / np.tile(synth_solar_spectrum, [n_spectra, 1]) / angle_solar
+        
+    return y_rad_fac

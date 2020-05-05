@@ -10,7 +10,7 @@ PLOT SPECTRAL CALIBRATION FITS TO LINES IN THE ORDER AND CHECK
 
 """
 
-#import sys
+import sys
 import os
 import numpy as np
 import h5py
@@ -29,7 +29,7 @@ from tools.file.hdf5_functions import open_hdf5_file
 from tools.file.paths import paths, FIG_X, FIG_Y
 
 from instrument.calibration.lno_radiance_factor.lno_rad_fac_orders import rad_fact_orders_dict
-from instrument.calibration.lno_radiance_factor.lno_rad_fac_functions import get_reference_dict, make_synth_solar_spectrum
+from instrument.calibration.lno_radiance_factor.lno_rad_fac_functions import get_reference_dict, make_synth_solar_spectrum, calculate_radiance_factor, find_ref_spectra_minima
 
 
 
@@ -100,14 +100,14 @@ for diffraction_order in [134]:
     
     
     
-    for hdf5_filename in hdf5_filenames:
+    for hdf5_filename in hdf5_filenames[2:3]:
         
         hdf5_file = open_hdf5_file(hdf5_filename)
         
         x = hdf5_file["Science/X"][0, :]
         y = get_y_normalised(hdf5_file)
         y_mean_nadir = np.mean(y, axis=1)
-        t = hdf5_file["Channel/MeasurementTemperature"]
+        t = hdf5_file["Channel/MeasurementTemperature"][0]
         lat = hdf5_file["Geometry/Point0/Lat"][:, 0]
         lon = hdf5_file["Geometry/Point0/Lon"][:, 1]
 
@@ -125,36 +125,51 @@ for diffraction_order in [134]:
 
 
     
-        fig2, (ax2a, ax2b, ax2c, ax2d) = plt.subplots(nrows=4, figsize=(FIG_X, FIG_Y), sharex=True)
+#        fig2, (ax2a, ax2b, ax2c, ax2d, ax2e) = plt.subplots(nrows=5, figsize=(FIG_X, FIG_Y+4.5), sharex=True)
+        fig2 = plt.figure(figsize=(FIG_X+7, FIG_Y+4))
+        fig2.suptitle(hdf5_filename)
+        gs = fig2.add_gridspec(3,2)
+        ax2a = fig2.add_subplot(gs[0, 0])
+        ax2b = fig2.add_subplot(gs[1, 0], sharex=ax2a)
+        ax2c = fig2.add_subplot(gs[2, 0], sharex=ax2a)
+        ax2d = fig2.add_subplot(gs[0:2, 1], sharex=ax2a)
+        ax2e = fig2.add_subplot(gs[2, 1], sharex=ax2a)
+        
+#        ax2a.set_title(hdf5_filename)
+        ax2a2 = ax2a.twinx()
+        #raw nadir / synth solar counts
+        #reference solar/molecular spectra
+        #nadir continuum removed
+        #rad_fac
+        #rad_fac_normalised
+
         
         validIndices = np.zeros(len(lat), dtype=bool)
 
         for frameIndex, (spectrum, mean_nadir) in enumerate(zip(y, y_mean_nadir)):
             if mean_nadir > mean_nadir_signal_cutoff:
-                ax2a.plot(x, spectrum, alpha=0.3, label="%i %0.1f" %(frameIndex, mean_nadir))
+                ax2a.plot(x, spectrum, "grey", alpha=0.3)#, label="%i %0.1f" %(frameIndex, mean_nadir))
                 validIndices[frameIndex] = True
             else:
                 validIndices[frameIndex] = False
                 
         if sum(validIndices) == 0:
             print("%s: nadir mean signal too small. Max = %0.2f" %(hdf5_filename, np.max(y_mean_nadir)))
+            sys.exit()
         else:
             print("%s: %i spectra above nadir mean signal" %(hdf5_filename, sum(validIndices)))
         #ax0.legend()
         obs_spectrum = np.mean(y[validIndices, :], axis=0)
-        ax2a.plot(x, obs_spectrum, "k")
-        ax2a.set_xlabel("Wavenumber cm-1 (approx)")
-        ax2a.set_ylabel("Counts per px per second")
-        ax2a.grid()
-        ax2b.grid()
+        ax2a.plot(x[0], obs_spectrum[0], "b", label="Solar") #dummy for legend only
+        ax2a.plot(x, obs_spectrum, "k", label="Nadir")
     
 
         #find pixel containing minimum value in subset of real data
         obs_continuum = baseline_als(obs_spectrum)
         obs_absorption = obs_spectrum / obs_continuum
-        
-        
-        ax2b.plot(x, obs_absorption)
+                
+        ax2a.plot(x, obs_continuum, "k--")
+        ax2c.plot(x, obs_absorption, "k")
         
         solar_line = rad_fact_order_dict["solar_line"]
         solar_molecular = rad_fact_order_dict["solar_molecular"]
@@ -164,6 +179,10 @@ for diffraction_order in [134]:
         solar_spectrum_hr = reference_dict["solar"]
         molecular_spectrum_hr = reference_dict["molecular"]
         molecule = reference_dict["molecule"]
+
+        ax2b.plot(nu_solar_hr, solar_spectrum_hr, "b--", label="Solar")
+        ax2b.plot(nu_solar_hr, molecular_spectrum_hr, "r--", label="Molecular %s" %molecule)
+        ax2b.legend()
         
     
         if solar_line: #find solar line to calibrate nadir obs
@@ -172,43 +191,84 @@ for diffraction_order in [134]:
             solar_line_nu_start = rad_fact_order_dict["nu_range"][0]
             solar_line_nu_end = rad_fact_order_dict["nu_range"][1]
             
-            ax2c.plot(nu_solar_hr, solar_spectrum_hr+0.1, "b--", label="Solar")
-            ax2c.plot(nu_solar_hr, molecular_spectrum_hr+0.1, "r--", label="Molecule %s" %molecule)
-            ax2c.legend()
             
-            if solar_molecular == "solar":
-
-                ax2c.axhline(y=solar_line_max_transmittance, c="k", linestyle="--")
-                ax2c.axvline(x=solar_line_nu_start, c="k", linestyle="--", alpha=0.5)
-                ax2c.axvline(x=solar_line_nu_end, c="k", linestyle="--", alpha=0.5)
-
-                solar_minimum_indices_all = get_local_minima(solar_spectrum_hr)
+            if solar_molecular != "":
                 
-                solar_minimum_indices = [solar_minimum_index for solar_minimum_index in solar_minimum_indices_all \
-                                       if solar_spectrum_hr[solar_minimum_index] < solar_line_max_transmittance \
-                                       and solar_line_nu_start < nu_solar_hr[solar_minimum_index] < solar_line_nu_end]
-                solar_minima_nu = [nu_solar_hr[solar_minimum_index] for solar_minimum_index in solar_minimum_indices]
-    
-                """find exact wavenumber of solar line minima in nu range (should only be 1)"""
-                for solar_minimum_index, solar_minimum_nu in zip(solar_minimum_indices, solar_minima_nu):
-                    #get n points on either side
-                    n_points = 300
-                    solar_line_indices = range(np.max((0, solar_minimum_index - n_points)), np.min((len(nu_solar_hr), solar_minimum_index + n_points)))
-                    ax2c.scatter(nu_solar_hr[solar_line_indices], solar_spectrum_hr[solar_line_indices], color="b")
+                
+                ref_lines_nu = find_ref_spectra_minima(ax2b, reference_dict)
+                find_nadir_spectra_minima(ax2c, reference_dict, ref_lines_nu)
+
+
+                nadir_lines_fit = False
+                
+            
+            elif solar_molecular == "":
+                nadir_lines_fit = False
 
 
         synth_solar_spectrum = make_synth_solar_spectrum(diffraction_order, x, t)
-        ax2b.plot(x, synth_solar_spectrum)
+        ax2a2.plot(x, synth_solar_spectrum, "b")
+
+        #get sun-mars distance
+        sun_mars_distance = hdf5_file["Geometry/DistToSun"][0,0] #in AU. Take first value in file only
         
-        #TODO: add conversion factor to account for solar incidence angle
-        #TODO: this needs checking. No nadir or so FOV in calculation!
-        rSun = 695510.0 # radius of Sun in km
-        dSun = sun_mars_distance * 1.496e+8 #1AU to km
-        angleSolar = np.pi * (rSun / dSun) **2 / 2.0 #why /2.0?
-        #do I/F using shifted observation wavenumber scale
-        YRadFac = y / np.tile(synth_solar_spectrum, [nSpectra, 1]) / angleSolar
+        y_rad_fac = calculate_radiance_factor(y, synth_solar_spectrum, sun_mars_distance)
         
+        for spectrum_index, valid_index in enumerate(validIndices):
+            if valid_index:
+                ax2d.plot(x, y_rad_fac[spectrum_index, :], "grey", alpha=0.3)
+                
+        mean_rad_fac = np.mean(y_rad_fac[validIndices, :], axis=0)
+        ax2d.plot(x, mean_rad_fac, "k")
+        
+        mean_rad_fac_continuum = baseline_als(mean_rad_fac)
+        rad_fac_normalised = mean_rad_fac / mean_rad_fac_continuum
+        
+        ax2d.plot(x, mean_rad_fac_continuum, "k--")
+        ax2e.plot(x, rad_fac_normalised, "k")
     
+
+        ax2c.set_xlabel("Wavenumber cm-1")
+        ax2e.set_xlabel("Wavenumber cm-1")
+
+        ax2a.set_ylabel("Counts\nper px per second")
+        ax2b.set_ylabel("Reference\nspectra")
+        ax2c.set_ylabel("Nadir\ncontinuum removed")
+        ax2d.set_ylabel("Radiance\nfactor")
+        ax2e.set_ylabel("Continuum removed\nradiance factor")
+        
+        ax2a.set_ylim(bottom=0)
+        ax2a2.set_ylim(bottom=0)
+        ax2d.set_ylim([min(mean_rad_fac[10:310])-0.05, max(mean_rad_fac[10:310])+0.05])
+        ax2e.set_ylim(bottom=0)
+
+        ax2c.set_xlim([np.floor(min(x)), np.ceil(max(x))])
+        ax2c.set_xlim([np.floor(min(x)), np.ceil(max(x))])
+        ticks = ax2c.get_xticks()
+        ax2a.set_xticks(np.arange(ticks[0], ticks[-1], 2.0))
+        ax2a2.set_xticks(np.arange(ticks[0], ticks[-1], 2.0))
+        ax2b.set_xticks(np.arange(ticks[0], ticks[-1], 2.0))
+        ax2c.set_xticks(np.arange(ticks[0], ticks[-1], 2.0))
+        ax2d.set_xticks(np.arange(ticks[0], ticks[-1], 2.0))
+        ax2e.set_xticks(np.arange(ticks[0], ticks[-1], 2.0))
+
+        ax2a.grid()
+        ax2b.grid()
+        ax2c.grid()
+        ax2d.grid()
+        ax2e.grid()
+
+        ax2a.legend()
+        
+        fig2.tight_layout(rect=[0, 0.03, 1, 0.95])
+        
+        #print warnings:
+        if not solar_line:
+            ax2a.annotate("Warning: no solar reference line correction", xycoords='axes fraction', xy=(0.05, 0.05), fontsize=16)
+        if not nadir_lines_fit:
+            ax2c.annotate("Warning: no nadir absorption line correction", xycoords='axes fraction', xy=(0.05, 0.05), fontsize=16)
+
+
     ax0.legend()
     ax0.grid()
 
