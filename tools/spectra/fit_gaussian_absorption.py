@@ -38,22 +38,3 @@ def fit_gaussian_absorption(x_in, y_in, error=False):
     else:
         return x_hr, y_hr, x_min_position
     
-
-#import matplotlib.pyplot as plt
-#x = np.array([4275.39904406, 4275.50680047, 4275.61457115, 4275.7223561 ,
-#       4275.83015532, 4275.93796881, 4276.04579656, 4276.15363859,
-#       4276.26149488, 4276.36936544, 4276.47725027, 4276.58514937,
-#       4276.69306274, 4276.80099038, 4276.90893228])
-#y = np.array([0.99533129, 1.00310824, 0.99887751, 1.00014976, 0.9798266 ,
-#       0.95434861, 0.92002429, 0.90238368, 0.90794792, 0.93271892,
-#       0.9749434 , 0.9971337 , 1.00236682, 1.00519508, 1.0017545 ])
-#    
-#x_hr, y_hr, x_min_position = fit_gaussian_absorption(x, y)
-#
-#plt.figure()
-#plt.plot(x, y, 'ko', label="Original Noisy Data")
-#plt.plot(x_hr, y_hr, 'r-', label="Fitted Curve")
-#plt.axvline(x=x_min_position)
-#plt.legend()
-#plt.show()
-
