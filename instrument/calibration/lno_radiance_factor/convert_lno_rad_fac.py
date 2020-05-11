@@ -17,6 +17,22 @@ PLOT SPECTRAL CALIBRATION FITS TO LINES IN THE ORDER AND CHECK
 # currently working for orders 160, 162, 163, 167, 168, 169, 189, 194, 196
 # work on order 134. 
 
+
+FILENAME CONVENTION:
+    
+OLD:
+    20200430_220801_1p0a_LNO_1_D_168
+
+NEW: 
+    _LNO_1_DP_168 (IF FILE PASSES)
+    _LNO_1_DF_168 (IF FILE FAILS)
+
+    Y = Radiance
+    YRadianceFactor = Radiance factor
+    YRadianceFactorError = error on radiance factor
+    YSimple = Radiance simple conversion
+    
+    
 """
 
 import sys
