@@ -19,6 +19,8 @@ def make_synth_solar_spectrum(diffraction_order, observation_wavenumbers, observ
             #read in coefficients and wavenumber grid
             wavenumber_grid_in = rad_fac_aux_file["%i" %diffraction_order+"/wavenumber_grid"][...]
             coefficient_grid_in = rad_fac_aux_file["%i" %diffraction_order+"/coefficients"][...].T
+        else:
+            print("Diffraction order %i not found in auxiliary file %s" %(diffraction_order, rad_fac_aux_filepath))
             
     #find coefficients at wavenumbers matching real observation
     corrected_solar_spectrum = np.zeros_like(observation_wavenumbers)

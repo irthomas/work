@@ -50,8 +50,8 @@ import matplotlib.pyplot as plt
 from tools.spectra.baseline_als import baseline_als
 from tools.spectra.get_y_normalised import get_y_normalised
 #from tools.general.get_minima_maxima import get_local_minima
-from tools.file.hdf5_functions import open_hdf5_file
-from tools.file.paths import FIG_X, FIG_Y, SYSTEM, paths
+#from tools.file.hdf5_functions import open_hdf5_file
+from tools.file.paths import FIG_X, FIG_Y
 
 from instrument.calibration.lno_radiance_factor.functions.lno_rad_fac_orders import rad_fact_orders_dict
 from instrument.calibration.lno_radiance_factor.functions.make_synth_solar_spectrum import make_synth_solar_spectrum
@@ -60,35 +60,16 @@ from instrument.calibration.lno_radiance_factor.functions.find_mean_nu_shift imp
 from instrument.calibration.lno_radiance_factor.functions.find_absorption_lines import find_ref_spectra_minima, find_nadir_spectra_minima
 from instrument.calibration.lno_radiance_factor.functions.make_reference_line_dict import make_reference_line_dict
 
-
-
-
-
-
-"""set paths to calibration files"""
-if SYSTEM == "Windows":
-    PFM_AUXILIARY_FILES = paths["PFM_AUXILIARY_FILES"]
-    
-    THUMBNAIL_DIRECTORY = os.path.join(paths["BASE_DIRECTORY"], "output")
-else:
-    from nomad_ops.config import PFM_AUXILIARY_FILES
-
-#input files
-RADIOMETRIC_CALIBRATION_AUXILIARY_FILES = os.path.join(PFM_AUXILIARY_FILES, "radiometric_calibration")
-RADIOMETRIC_CALIBRATION_ORDERS = os.path.join(RADIOMETRIC_CALIBRATION_AUXILIARY_FILES, "lno_radiance_factor_order_data")
-
-#coefficient table to make synthetic solar spectrum
-LNO_RADIANCE_FACTOR_CALIBRATION_TABLE_NAME = "LNO_Radiance_Factor_Calibration_Table_v04"
-
+from instrument.calibration.lno_radiance_factor.config import RADIOMETRIC_CALIBRATION_AUXILIARY_FILES, LNO_RADIANCE_FACTOR_CALIBRATION_TABLE_NAME, PFM_AUXILIARY_FILES, THUMBNAIL_DIRECTORY
 
 
 
     
-def convert_lno_rad_fac(hdf5_filename):
+def convert_lno_rad_fac(hdf5_filename, hdf5_file, errorType):
     
-    hdf5_file = open_hdf5_file(hdf5_filename)
+#    hdf5_file = open_hdf5_file(hdf5_filename)
     
-    diffraction_order = int(hdf5_filename.split("_")[-1])
+    diffraction_order = int(hdf5_filename.replace(".h5","").split("_")[-1])
     
     x = hdf5_file["Science/X"][0, :]
     y = get_y_normalised(hdf5_file)
@@ -167,6 +148,7 @@ def convert_lno_rad_fac(hdf5_filename):
     ax2b.plot(nu_solar_hr, molecular_spectrum_hr, "r", label="Molecular %s" %molecule)
     ax2b.legend()
     
+    chi_sq_matching = []
 
     if solar_molecular != "": #fit to solar and/or molecular lines
         
@@ -264,5 +246,34 @@ def convert_lno_rad_fac(hdf5_filename):
         ax2c.annotate("Warning: no nadir absorption line correction", xycoords='axes fraction', xy=(0.05, 0.05), fontsize=16)
 
     fig2.savefig(os.path.join(THUMBNAIL_DIRECTORY, "%s_rad_fac.png" %hdf5_filename))
+
+
+    rad_fac_cal_dict = {}
+    rad_fac_cal_dict["Science/X"] = {"data":x_obs, "dtype":np.float32, "compression":True}
+    rad_fac_cal_dict["Science/YRadFac"] = {"data":y_rad_fac, "dtype":np.float32, "compression":True}
+    rad_fac_cal_dict["Criteria/LineFit/NumberOfLinesFit"] = {"data":len(chi_sq_matching), "dtype":np.int16, "compression":False}
+    rad_fac_cal_dict["Criteria/LineFit/ChiSqError"] = {"data":chi_sq_matching, "dtype":np.float32, "compression":True}
+
+
+    #write calibration and error references    
+    if solar_line and nadir_lines_fit:
+        calib_ref = "Radiance factor calibration fit to solar reference and nadir absorption lines"
+        error_ref = ""
+        error = False
+    elif nadir_lines_fit:
+        calib_ref = "Radiance factor calibration fit to nadir absorption lines only (no solar lines)"
+        error_ref = ""
+        error = True
+    elif solar_line:
+        calib_ref = "Radiance factor calibration fit to solar reference only (no nadir absorption lines)"
+        error_ref = ""
+        error = True
+    else:
+        calib_ref = "Radiance factor calibration did not fit solar reference or nadir absorption lines"
+        error_ref = ""
+        error = True
+        
+    rad_fac_refs = {"calib_ref":calib_ref, "error_ref":error_ref, "error":error}
     
-    
+    return rad_fac_cal_dict, rad_fac_refs
+        
