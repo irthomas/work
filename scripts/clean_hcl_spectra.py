@@ -181,15 +181,14 @@ if 6 in plot_type:
 #apply_correction = True
 #indices_no_strong_abs = list(range(100))+list(range(120, 320))
 
-
-chosen_hdf5_filename = "20180522_054221_1p0a_SO_A_E_130" #detection at unusual time
-instrument_temperature = 3.5
-toa_alt = 65.0
-plot_altitude = 24.7
-transmittance_range = [0.2, 0.4]
-apply_correction = True
-indices_no_strong_abs = list(range(64))+list(range(74, 121))+list(range(131,164))+\
-    list(range(181,191))+list(range(200,215))+list(range(226, 320))
+#chosen_hdf5_filename = "20180522_054221_1p0a_SO_A_E_130" #detection at unusual time
+#instrument_temperature = 3.5
+#toa_alt = 65.0
+#plot_altitude = 24.7
+#transmittance_range = [0.2, 0.4]
+#apply_correction = True
+#indices_no_strong_abs = list(range(64))+list(range(74, 121))+list(range(131,164))+\
+#    list(range(181,191))+list(range(200,215))+list(range(226, 320))
 
 
 #chosen_hdf5_filename = "20181108_154033_1p0a_SO_A_I_130"
@@ -201,6 +200,28 @@ indices_no_strong_abs = list(range(64))+list(range(74, 121))+list(range(131,164)
 ##64-74, 121-131, 164-181, 190-202, etc.
 #indices_no_strong_abs = list(range(64))+list(range(74, 121))+list(range(131,164))+\
 #    list(range(181,191))+list(range(200,215))+list(range(226, 320))
+
+
+#chosen_hdf5_filename = "20180719_184005_1p0a_SO_A_I_130" #noisy difficult to evaluate
+#instrument_temperature = 3.5
+#toa_alt = 33.0
+#plot_altitude = 16.5
+#transmittance_range = [0.1, 0.3]
+#apply_correction = True
+#indices_no_strong_abs = list(range(64))+list(range(74, 121))+list(range(131,164))+\
+#    list(range(181,191))+list(range(200,215))+list(range(226, 320))
+
+
+chosen_hdf5_filename = "20180724_143318_1p0a_SO_A_I_130" #noisy difficult to evaluate
+instrument_temperature = 3.5
+toa_alt = 63.0
+plot_altitude = 18.0
+transmittance_range = [0.1, 0.3]
+apply_correction = True
+indices_no_strong_abs = list(range(64))+list(range(74, 121))+list(range(131,164))+\
+    list(range(181,191))+list(range(200,215))+list(range(226, 320))
+
+
 
 
 

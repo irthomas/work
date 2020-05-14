@@ -20,7 +20,7 @@ rad_fact_orders_dict = {
 116:{"solar_line":False, "solar_molecular":""},
 117:{"solar_line":False, "solar_molecular":""},
 118:{"solar_line":True, "trans_solar":0.95, "nu_range":[2669., 2671.], "solar_molecular":"solar", "mean_sig":4.0, "min_sig":2.0, "stds_sig":2.0, "stds_ref":2.0},
-119:{"solar_line":False, "solar_molecular":""},
+119:{"solar_line":True, "trans_solar":0.96, "nu_range":[2690., 2692.], "solar_molecular":"solar", "solar_molecular":"solar", "mean_sig":4.0, "min_sig":2.0, "stds_sig":2.0, "stds_ref":2.0},
 
 120:{"solar_line":True, "trans_solar":0.88, "nu_range":[2714., 2716.], "solar_molecular":"solar", "mean_sig":4.0, "min_sig":2.0, "stds_sig":2.0, "stds_ref":2.0},
 121:{"solar_line":True, "trans_solar":0.95, "nu_range":[2732., 2734.], "solar_molecular":"solar", "mean_sig":4.0, "min_sig":2.0, "stds_sig":2.0, "stds_ref":2.0},
@@ -102,7 +102,7 @@ rad_fact_orders_dict = {
 190:{"solar_line":True, "trans_solar":0.9, "nu_range":[4281., 4283.], "solar_molecular":"molecular", "molecule":"CO", "mean_sig":4.0, "min_sig":2.0, "stds_sig":2.0, "stds_ref":2.0},
 191:{"solar_line":True, "trans_solar":0.96, "nu_range":[4319., 4321.], "solar_molecular":"molecular", "molecule":"CO", "mean_sig":4.0, "min_sig":2.0, "stds_sig":2.0, "stds_ref":2.0},
 192:{"solar_line":False, "solar_molecular":"molecular", "molecule":"CO"},
-193:{"solar_line":True, "trans_solar":0.94, "nu_range":[4364., 4365.], "solar_molecular":"solar", "mean_sig":4.0, "min_sig":2.0, "stds_sig":2.0, "stds_ref":2.0},
+193:{"solar_line":True, "trans_solar":0.94, "nu_range":[4364., 4365.], "solar_molecular":"solar", "mean_sig":4.0, "min_sig":2.0, "stds_sig":2.0, "stds_ref":6.0},
 194:{"solar_line":True, "trans_solar":0.79, "nu_range":[4382., 4384.], "solar_molecular":"solar", "mean_sig":4.0, "min_sig":2.0, "stds_sig":0.45, "stds_ref":4.0},
 195:{"solar_line":True, "trans_solar":0.932, "nu_range":[4413., 4414.], "solar_molecular":"solar", "mean_sig":4.0, "min_sig":2.0, "stds_sig":2.0, "stds_ref":2.0},
 196:{"solar_line":True, "trans_solar":0.9, "nu_range":[4421., 4423.], "solar_molecular":"solar", "mean_sig":4.0, "min_sig":2.0, "stds_sig":0.45, "stds_ref":4.0},

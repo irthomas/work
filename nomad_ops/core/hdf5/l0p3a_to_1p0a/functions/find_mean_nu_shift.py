@@ -5,6 +5,9 @@ Created on Tue May  5 21:30:30 2020
 @author: iant
 """
 
+from nomad_ops.core.hdf5.l0p3a_to_1p0a.config import CHI_SQ_MULTIPLICATION_FACTOR
+
+
 def find_mean_nu_shift(nadir_lines_nu, ref_lines_nu, chi_sq_fits):
     """compare wavenumbers of nadir and reference absorption lines
     and calculate mean spectral shift"""
@@ -23,7 +26,7 @@ def find_mean_nu_shift(nadir_lines_nu, ref_lines_nu, chi_sq_fits):
                 found = True
                 nu_shift = nu_obs_minimum - nu_ref_minimum
                 nu_shifts.append(nu_shift)
-                chi_sq_matching.append(chi_sq)
+                chi_sq_matching.append(chi_sq * CHI_SQ_MULTIPLICATION_FACTOR)
                 logger_msg += "line found (shift=%0.3fcm-1); " %nu_shift
         if not found:
             logger_msg += "Warning: matching line not found for line %0.3f; " %nu_obs_minimum

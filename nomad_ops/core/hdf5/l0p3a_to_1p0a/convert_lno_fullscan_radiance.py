@@ -15,13 +15,13 @@ import spiceypy as sp
 #import re
 #import matplotlib.pyplot as plt
 
-from instrument.calibration.lno_radiance_factor.config import \
+from nomad_ops.core.hdf5.l0p3a_to_1p0a.config import \
     NOMAD_TMP_DIR, LNO_FLAGS_DICT, RADIOMETRIC_CALIBRATION_AUXILIARY_FILES, \
     LNO_RADIOMETRIC_CALIBRATION_TABLE_NAME, LNO_RADIANCE_FACTOR_CALIBRATION_TABLE_NAME, \
     PFM_AUXILIARY_FILES, THUMBNAIL_DIRECTORY, SAVE_FILES, NA_VALUE, DATASETS_TO_BE_REMOVED, \
     ATTRIBUTES_TO_BE_REMOVED, trans, generics
 
-from instrument.calibration.lno_radiance_factor.functions.check_flags import check_flags
+from nomad_ops.core.hdf5.l0p3a_to_1p0a.functions.check_flags import check_flags
 
 
 logger = logging.getLogger( __name__ )

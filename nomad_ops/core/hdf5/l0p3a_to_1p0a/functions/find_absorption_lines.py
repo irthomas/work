@@ -6,9 +6,9 @@ Created on Tue May  5 21:02:09 2020
 """
 import numpy as np
 
-from tools.general.get_consecutive_indices import get_consecutive_indices
-from tools.spectra.baseline_als import baseline_als
-from tools.spectra.fit_gaussian_absorption import fit_gaussian_absorption
+from nomad_ops.core.hdf5.l0p3a_to_1p0a.functions.get_consecutive_indices import get_consecutive_indices
+from nomad_ops.core.hdf5.l0p3a_to_1p0a.functions.baseline_als import baseline_als
+from nomad_ops.core.hdf5.l0p3a_to_1p0a.functions.fit_gaussian_absorption import fit_gaussian_absorption
 
 
 
@@ -19,10 +19,16 @@ def find_ref_spectra_minima(ax, reference_dict):
     logger_msg = ""
 
     n_stds_for_reference_absorption = reference_dict["stds_ref"]
+    
     ref_nu = reference_dict["nu_hr"]
     ref_spectra = reference_dict["reference_hr"]
     
     std_ref_spectrum = np.std(np.asfarray(ref_spectra))
+    #plot different stds on the plot
+    for std_scalar in np.arange(1.0, n_stds_for_reference_absorption+2.0, 1.0):
+        ax.axhline(y=1.0-std_ref_spectrum*std_scalar, c="k", linestyle=":", alpha=0.2)
+        
+    
     ax.axhline(y=1.0-std_ref_spectrum*n_stds_for_reference_absorption, c="k", linestyle="--")
 
     true_wavenumber_minima = []

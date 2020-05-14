@@ -11,23 +11,9 @@ import matplotlib.pyplot as plt
 from tools.sql.obs_database import obs_database 
 from tools.sql.make_obs_dict import make_obs_dict
 from tools.file.hdf5_functions import open_hdf5_file
-from tools.file.paths import FIG_X, FIG_Y, paths
+from tools.file.paths import paths
 
-
-
-
-#file_level = "hdf5_level_0p3a"
-
-#search_dict ={
-#        134:{"n_orders":[0,4], "incidence_angle":[0,10], "temperature":[-30,15], "latitude":[-15,5], "longitude":[127,147]},
-#
-#        168:{"n_orders":[0,4], "incidence_angle":[0,10], "temperature":[-5,-2], "latitude":[-15,5], "longitude":[127,147]},
-#            
-#        188:{"n_orders":[0,4]},
-#        189:{"n_orders":[0,4], "incidence_angle":[0,10], "temperature":[1,2], "latitude":[-10,10], "longitude":[-10,10]},
-#        
-#        193:{"n_orders":[0,4], "incidence_angle":[0,10], "temperature":[-5,5]},#, "latitude":[-90,90], "longitude":[-180,180]},
-#}
+from nomad_ops.core.hdf5.l0p3a_to_1p0a.config import FIG_X, FIG_Y
 
 
 
@@ -62,17 +48,18 @@ def plot_lno_groundtracks(search_dict, file_level, diffraction_order):
     #get filenames matching search parameters
     hdf5_filenames = obs_data_dict["filename"]
     
-    fig0, ax0 = plt.subplots(figsize=(FIG_X+4, FIG_Y+3))
+    fig0, ax0 = plt.subplots(figsize=(FIG_X-4, FIG_Y-3))
 
     #draw rectangle on search area
-    rectangle = np.asarray([
-        [search_dict[diffraction_order]["longitude"][0], search_dict[diffraction_order]["latitude"][0]], \
-        [search_dict[diffraction_order]["longitude"][1], search_dict[diffraction_order]["latitude"][0]], \
-        [search_dict[diffraction_order]["longitude"][1], search_dict[diffraction_order]["latitude"][1]], \
-        [search_dict[diffraction_order]["longitude"][0], search_dict[diffraction_order]["latitude"][1]], \
-        [search_dict[diffraction_order]["longitude"][0], search_dict[diffraction_order]["latitude"][0]], \
-    ])
-    ax0.plot(rectangle[:, 0], rectangle[:, 1], "k")
+    if "longitude" in search_dict[diffraction_order].keys() and "latitude" in search_dict[diffraction_order].keys():
+        rectangle = np.asarray([
+            [search_dict[diffraction_order]["longitude"][0], search_dict[diffraction_order]["latitude"][0]], \
+            [search_dict[diffraction_order]["longitude"][1], search_dict[diffraction_order]["latitude"][0]], \
+            [search_dict[diffraction_order]["longitude"][1], search_dict[diffraction_order]["latitude"][1]], \
+            [search_dict[diffraction_order]["longitude"][0], search_dict[diffraction_order]["latitude"][1]], \
+            [search_dict[diffraction_order]["longitude"][0], search_dict[diffraction_order]["latitude"][0]], \
+        ])
+        ax0.plot(rectangle[:, 0], rectangle[:, 1], "k")
     
     
     

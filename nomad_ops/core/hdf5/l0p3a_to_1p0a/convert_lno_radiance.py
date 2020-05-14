@@ -10,19 +10,20 @@ import os.path
 
 import h5py
 import numpy as np
-#import spiceypy as sp
 from datetime import datetime
-#from scipy import interpolate
-#import re
-#import matplotlib.pyplot as plt
 
-from instrument.calibration.lno_radiance_factor.config import \
-    NOMAD_TMP_DIR, LNO_FLAGS_DICT, RADIOMETRIC_CALIBRATION_AUXILIARY_FILES, \
-    LNO_RADIOMETRIC_CALIBRATION_TABLE_NAME, LNO_RADIANCE_FACTOR_CALIBRATION_TABLE_NAME, \
-    PFM_AUXILIARY_FILES, THUMBNAIL_DIRECTORY, SAVE_FILES, NA_VALUE, \
-    RUNNING_MEAN, REMOVE_NEGATIVES, HDF5_TIME_FORMAT, trans, generics
 
-from instrument.calibration.lno_radiance_factor.functions.running_mean import running_mean
+from nomad_ops.core.hdf5.l0p3a_to_1p0a.functions.running_mean import running_mean
+
+from nomad_ops.core.hdf5.l0p3a_to_1p0a.config import RADIOMETRIC_CALIBRATION_AUXILIARY_FILES, \
+    LNO_RADIOMETRIC_CALIBRATION_TABLE_NAME, \
+    NA_VALUE, RUNNING_MEAN, REMOVE_NEGATIVES, HDF5_TIME_FORMAT
+
+
+
+__project__   = "NOMAD"
+__author__    = "Ian Thomas"
+__contact__   = "ian . thomas @ aeronomie .be"
 
 
 logger = logging.getLogger( __name__ )
@@ -108,8 +109,7 @@ def convert_lno_radiance(hdf5_basename, hdf5FileIn, errorType):
             
             calibrationTimestamps = [datetime.strptime(calibrationTime, HDF5_TIME_FORMAT) for calibrationTime in calibrationTimes]
             measurementTimestamp = datetime.strptime(observationStartTime.decode(), HDF5_TIME_FORMAT)
-            print("calibrationTimestamps=", calibrationTimestamps)
-            print("measurementTimestamp=", measurementTimestamp)
+ 
             #find which observation corresponds to calibration measurement time
             timeIndex = max([i for i, v in enumerate(calibrationTimestamps) if v < measurementTimestamp])
             calibration_time = calibrationTimes[timeIndex]

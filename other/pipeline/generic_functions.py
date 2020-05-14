@@ -88,9 +88,9 @@ def getObsDatetime(filename):
     mobj = __RE_OBS_BASE_NAME.match(filename)
     return datetime.strptime(mobj.group(1), __DT_FORMAT)
 
-#def getObservationType(hdf5_file):
-#    if isinstance(hdf5_file, h5py._hl.files.File):
-#        return hdf5_file.attrs["ObservationType"]
+def getObservationType(hdf5_file):
+    if isinstance(hdf5_file, h5py._hl.files.File):
+        return hdf5_file.attrs["ObservationType"]
 #
 #    # For compatibility with levels > 0.2a, should be removed in the future
 #    else:
