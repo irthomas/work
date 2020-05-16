@@ -13,7 +13,7 @@ from nomad_ops.core.hdf5.l0p3a_to_1p0a.convert_lno_rad_fac import convert_lno_ra
 from nomad_ops.core.hdf5.l0p3a_to_1p0a.functions.output_filename import output_filename
 from nomad_ops.core.hdf5.l0p3a_to_1p0a.functions.check_flags import check_flags
 
-from nomad_ops.core.hdf5.l0p3a_to_1p0a.config import NOMAD_TMP_DIR, LNO_FLAGS_DICT, trans, generics
+from nomad_ops.core.hdf5.l0p3a_to_1p0a.config import NOMAD_TMP_DIR, LNO_FLAGS_DICT, SAVE_FILE, trans, generics
 
 __project__   = "NOMAD"
 __author__    = "Ian Thomas"
@@ -21,7 +21,6 @@ __contact__   = "ian . thomas @ aeronomie .be"
 
 logger = logging.getLogger( __name__ )
 
-SAVE_FILE = False
 
 #============================================================================================
 # 5. CONVERT HDF5 LEVEL 0.3A TO LEVEL 1.0A
@@ -160,7 +159,7 @@ def convert(hdf5file_path):
                 YUnitFlag = np.zeros_like(YTypeFlagOld) + LNO_FLAGS_DICT["Y_UNIT_FLAG"]
                 YErrorFlag = np.zeros_like(YTypeFlagOld) + LNO_FLAGS_DICT["Y_ERROR_FLAG"]
                         
-                logger.info("Writing new datasets to output file")
+                logger.info("Writing new datasets to output file %s", hdf5_basename_new)
                 with h5py.File(hdf5FilepathOut, "w") as hdf5FileOut:
                 
                     generics.copyAttributesExcept(hdf5FileIn, hdf5FileOut, OUTPUT_VERSION, ATTRIBUTES_TO_BE_REMOVED)
@@ -194,9 +193,11 @@ def convert(hdf5file_path):
 
         else:
             logger.error("%s: %s calibration cannot be performed on %s data", hdf5_basename, calibrationType, channel)
-        
-    return [hdf5FilepathOut]
-
+    
+    if SAVE_FILE:
+        return [hdf5FilepathOut]
+    else:
+        return []
 
 
 

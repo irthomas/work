@@ -29,8 +29,8 @@ LNO_FLAGS_DICT = {
     }
 
 
-SAVE_FILES = True
-#SAVE_FILES = False
+SAVE_FILE = True
+#SAVE_FILE = False
 
 #RUNNING_MEAN = True
 RUNNING_MEAN = False
