@@ -60,9 +60,10 @@ from nomad_ops.core.hdf5.l0p3a_to_1p0a.functions.get_min_mean_max_of_field impor
 from nomad_ops.core.hdf5.l0p3a_to_1p0a.functions.prepare_nadir_fig_tree import prepare_nadir_fig_tree
 
 from nomad_ops.core.hdf5.l0p3a_to_1p0a.config import RADIOMETRIC_CALIBRATION_AUXILIARY_FILES, \
-    LNO_RADIANCE_FACTOR_CALIBRATION_TABLE_NAME, PFM_AUXILIARY_FILES, FIG_X, FIG_Y, SYSTEM
+    LNO_RADIANCE_FACTOR_CALIBRATION_TABLE_NAME, PFM_AUXILIARY_FILES, FIG_X, FIG_Y, SYSTEM, GOOD_PIXELS
 
-#logging.basicConfig(level=logging.INFO)
+#if SYSTEM == "Windows":
+#    logging.basicConfig(level=logging.INFO)
 
 __project__   = "NOMAD"
 __author__    = "Ian Thomas"
@@ -84,7 +85,13 @@ def convert_lno_rad_fac(hdf5_filename, hdf5_file, errorType):
     t = hdf5_file["Channel/MeasurementTemperature"][0]
 
     #get sun-mars distance
-    sun_mars_distance = hdf5_file["Geometry/DistToSun"][0,0] #in AU. Take first value in file only
+    sun_mars_distance_au = hdf5_file["Geometry/DistToSun"][0,0] #in AU. Take first value in file only
+
+    #get solar incidence angles from all points in FOV, find mean for each spectrum
+    incidence_angles = np.zeros((len(y_mean_nadir), 5))
+    for point in range(5):
+        incidence_angles[:, point] = np.mean(hdf5_file["Geometry/Point%i/IncidenceAngle" %point][...], axis=1)
+    mean_incidence_angles_deg = np.mean(incidence_angles, axis=1)
 
     #get info from rad fac order dictionary
     rad_fact_order_dict = rad_fact_orders_dict[diffraction_order]
@@ -108,33 +115,43 @@ def convert_lno_rad_fac(hdf5_filename, hdf5_file, errorType):
     
     ax2a2 = ax2a.twinx()
 
-    #if no solar or nadir lines
+    #if no solar or nadir lines - set cutoff to be 75% of max value
     if rad_fact_order_dict["solar_molecular"] == "":
-        mean_nadir_signal_cutoff = 0.0
+        mean_nadir_signal_cutoff = np.max(y_mean_nadir) * 0.75
     else:
         mean_nadir_signal_cutoff = rad_fact_order_dict["mean_sig"]
 
+    #first, check how many spectra pass the cutoff test
+    validIndices = np.where(y_mean_nadir > mean_nadir_signal_cutoff)[0]
     
-    validIndices = np.zeros(len(y_mean_nadir), dtype=bool)
-    for frameIndex, (spectrum, mean_nadir) in enumerate(zip(y, y_mean_nadir)):
-        if mean_nadir > mean_nadir_signal_cutoff:
-            ax2a.plot(x, spectrum, "grey", alpha=0.3)#, label="%i %0.1f" %(frameIndex, mean_nadir))
-            validIndices[frameIndex] = True
-        else:
-            validIndices[frameIndex] = False
+#    validIndices = np.zeros(len(y_mean_nadir), dtype=bool)
+#    for frameIndex, mean_nadir in enumerate(y_mean_nadir):
+#        if mean_nadir > mean_nadir_signal_cutoff:
+#            validIndices[frameIndex] = True
+
             
     if sum(validIndices) == 0:
         logger.info("%s: nadir mean signal too small. Max = %0.2f", hdf5_filename, np.max(y_mean_nadir))
+        if SYSTEM == "Windows":
+            "%s: nadir mean signal too small. Max = %0.2f" %(hdf5_filename, np.max(y_mean_nadir))
         error = True
         ax2a.annotate("Warning: nadir signal too small for fit", xycoords='axes fraction', xy=(0.05, 0.05), fontsize=16)
+
+        #reduce cutoff to 75% of max value and try again
+        validIndices = np.where(y_mean_nadir > np.max(y_mean_nadir) * 0.75)[0]
+
         #continue with all spectra, but flag error
-        validIndices = np.ones(len(y_mean_nadir), dtype=bool)
+#        validIndices = np.ones(len(y_mean_nadir), dtype=bool)
     else:
         logger.info("%s: %i spectra above nadir mean signal", hdf5_filename, sum(validIndices))
 
+    #plot
+    for validIndex in validIndices:
+        ax2a.plot(x, y[validIndex, :], "grey", alpha=0.3)#, label="%i %0.1f" %(frameIndex, mean_nadir))
+
     obs_spectrum = np.mean(y[validIndices, :], axis=0)
     ax2a.plot(x[0], obs_spectrum[0], "b", label="Solar") #dummy for legend only
-    ax2a.plot(x, obs_spectrum, "k", label="Nadir")
+    ax2a.plot(x, obs_spectrum, "k", label="Nadir") #plot good signal averaged spectrum
 
 
     #find pixel containing minimum value in subset of real data
@@ -170,7 +187,7 @@ def convert_lno_rad_fac(hdf5_filename, hdf5_file, errorType):
         ref_lines_nu, logger_msg = find_ref_spectra_minima(ax2b, reference_dict)
         logger.info(logger_msg)
         #find lines in mean nadir spectrum and check it satisfies the criteria
-        nadir_lines_nu, chi_sq_fits, logger_msg = find_nadir_spectra_minima(ax2c, reference_dict, x, obs_spectrum, obs_absorption)
+        nadir_lines_nu, chi_sq_fits, logger_msg = find_nadir_spectra_minima(ax2c, reference_dict, x[GOOD_PIXELS], obs_spectrum[GOOD_PIXELS])
         logger.info(logger_msg)
 
         #if no lines found in nadir data
@@ -202,11 +219,10 @@ def convert_lno_rad_fac(hdf5_filename, hdf5_file, errorType):
     ax2a2.plot(x, synth_solar_spectrum, "b")
 
     #calculate radiance factor for all nadir spectra
-    y_rad_fac = calculate_radiance_factor(y, synth_solar_spectrum, sun_mars_distance)
+    y_rad_fac = calculate_radiance_factor(y, synth_solar_spectrum, sun_mars_distance_au, mean_incidence_angles_deg)
     
-    for spectrum_index, valid_index in enumerate(validIndices):
-        if valid_index:
-            ax2d.plot(x_obs, y_rad_fac[spectrum_index, :], "grey", alpha=0.3)
+    for valid_index in validIndices:
+        ax2d.plot(x_obs, y_rad_fac[valid_index, :], "grey", alpha=0.3)
             
     mean_rad_fac = np.mean(y_rad_fac[validIndices, :], axis=0)
     
@@ -230,6 +246,7 @@ def convert_lno_rad_fac(hdf5_filename, hdf5_file, errorType):
     
     ax2a.set_ylim(bottom=0)
     ax2a2.set_ylim(bottom=0)
+    ax2c.set_ylim((min(obs_absorption[GOOD_PIXELS])-0.1, max(obs_absorption[GOOD_PIXELS])+0.1))
     ax2d.set_ylim([min(mean_rad_fac[10:310])-0.05, max(mean_rad_fac[10:310])+0.05])
 #    ax2e.set_ylim(bottom=0)
 
@@ -268,7 +285,7 @@ def convert_lno_rad_fac(hdf5_filename, hdf5_file, errorType):
     rad_fac_cal_dict["Science/YRadianceFactor"] = {"data":y_rad_fac, "dtype":np.float32, "compression":True}
     rad_fac_cal_dict["Criteria/LineFit/NumberOfLinesFit"] = {"data":len(chi_sq_matching), "dtype":np.int16, "compression":False}
     rad_fac_cal_dict["Criteria/LineFit/ChiSqError"] = {"data":chi_sq_matching, "dtype":np.float32, "compression":True}
-
+    rad_fac_cal_dict["Geometry/MeanIncidenceAngle"] = {"data":mean_incidence_angles_deg, "dtype":np.float32, "compression":True}
 
     #write calibration and error references    
     if solar_line and nadir_lines_fit:
@@ -305,18 +322,20 @@ def convert_lno_rad_fac(hdf5_filename, hdf5_file, errorType):
     incid = get_min_mean_max_of_field(hdf5_file, "Geometry/Point0/IncidenceAngle")
     
     if len(chi_sq_matching) == 0: #change from emtpy list to zero for adding to figure title
-        chi_sq_matching = 0.0
+        chi_sq_string = "N/A"
+    else:
+        chi_sq_string = "%0.2f (%i lines fit)" %(np.mean(chi_sq_matching), len(chi_sq_matching))
     
-    title = "%s: absorption line fit quality: %0.2f\nL$_s$: %0.3f$^\circ$; mean longitude: %0.2f$^\circ$E; latitude range: %0.1f to %0.1f$^\circ$; solar incidence angle: min=%0.1f$^\circ$; max=%0.1f$^\circ$" \
-        %(hdf5_filename_new, np.mean(chi_sq_matching), ls[1], lons[1], lats[0], lats[2], incid[0], incid[2])
+    title = "%s: absorption line fit quality: %s\nL$_s$: %0.3f$^\circ$; mean longitude: %0.2f$^\circ$E; latitude range: %0.1f to %0.1f$^\circ$; solar incidence angle: min=%0.1f$^\circ$; max=%0.1f$^\circ$" \
+        %(hdf5_filename_new, chi_sq_string, ls[1], lons[1], lats[0], lats[2], incid[0], incid[2])
     
     fig2.suptitle(title)
     
     thumbnail_path = prepare_nadir_fig_tree("%s_rad_fac.png" %hdf5_filename_new)
     fig2.savefig(thumbnail_path)
     
-    if SYSTEM != "Windows":
-        plt.close(fig2)
+#    if SYSTEM != "Windows":
+    plt.close(fig2)
     
         
     rad_fac_refs = {"calib_ref":calib_ref, "error_ref":error_ref, "error":error}

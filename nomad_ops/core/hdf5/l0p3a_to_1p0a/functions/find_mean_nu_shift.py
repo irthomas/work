@@ -26,7 +26,7 @@ def find_mean_nu_shift(nadir_lines_nu, ref_lines_nu, chi_sq_fits):
                 found = True
                 nu_shift = nu_obs_minimum - nu_ref_minimum
                 nu_shifts.append(nu_shift)
-                chi_sq_matching.append(chi_sq * CHI_SQ_MULTIPLICATION_FACTOR)
+                chi_sq_matching.append(1.0 / (chi_sq * CHI_SQ_MULTIPLICATION_FACTOR))
                 logger_msg += "line found (shift=%0.3fcm-1); " %nu_shift
         if not found:
             logger_msg += "Warning: matching line not found for line %0.3f; " %nu_obs_minimum

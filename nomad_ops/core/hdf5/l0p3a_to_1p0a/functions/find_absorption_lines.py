@@ -65,7 +65,10 @@ def find_ref_spectra_minima(ax, reference_dict):
 
 
 
-def find_nadir_spectra_minima(ax, reference_dict, x, obs_spectrum, obs_absorption):
+
+
+
+def find_nadir_spectra_minima(ax, reference_dict, x, obs_spectrum):
     """return cm-1 of all mean nadir spectrum absorption lines matching detection criteria"""
     
 
@@ -80,11 +83,16 @@ def find_nadir_spectra_minima(ax, reference_dict, x, obs_spectrum, obs_absorptio
     obs_absorption = obs_spectrum / obs_continuum
 
     std_corrected_spectrum = np.std(obs_absorption)
-    ax.axhline(y=1.0-std_corrected_spectrum*n_stds_for_absorption, c="k", linestyle="--")
+    mean_corrected_spectrum = np.mean(obs_absorption)
+
+    #plot different stds on the plot
+    for std_scalar in np.arange(0.0, n_stds_for_absorption+2.0, 1.0):
+        ax.axhline(y=mean_corrected_spectrum - std_corrected_spectrum * std_scalar, c="k", linestyle=":", alpha=0.2)
+    ax.axhline(y=mean_corrected_spectrum - std_corrected_spectrum * n_stds_for_absorption, c="k", linestyle="--")
 
 
 
-    abs_points = np.where((obs_absorption < (1.0 - std_corrected_spectrum * n_stds_for_absorption)) & (obs_spectrum > minimum_signal_for_absorption))[0]
+    abs_points = np.where((obs_absorption < (mean_corrected_spectrum - std_corrected_spectrum * n_stds_for_absorption)) & (obs_spectrum > minimum_signal_for_absorption))[0]
 
     if len(abs_points) == 0:
         logger_msg += "No nadir absorptions found with sufficient signal and depth. "
@@ -98,8 +106,8 @@ def find_nadir_spectra_minima(ax, reference_dict, x, obs_spectrum, obs_absorptio
     indices_all_extra = []
     #add extra points to left and right of found indices
     for indices in indices_all:
-        if len(indices)>0:
-            if (indices[0]-2)>0 and (indices[-1]+2)<319:
+        if len(indices) > 0:
+            if (indices[0] - 2) > 0 and (indices[-1] + 2) < (len(obs_spectrum) - 1):
                 indices_all_extra.append([indices[0]-2] + [indices[0]-1] + indices + [indices[-1]+1] + [indices[-1]+2])
     
     if len(indices_all_extra) == 0:

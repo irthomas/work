@@ -21,7 +21,7 @@ __contact__   = "ian . thomas @ aeronomie .be"
 
 logger = logging.getLogger( __name__ )
 
-
+SAVE_FILE = False
 
 #============================================================================================
 # 5. CONVERT HDF5 LEVEL 0.3A TO LEVEL 1.0A
@@ -132,63 +132,63 @@ def convert(hdf5file_path):
 
 
 
+            if SAVE_FILE:
 
-
-            #specify datasets/attributes are to be modified/removed
-            DATASETS_TO_BE_REMOVED = [
-            #    "Science/X",
-                "Science/Y",
-                "Science/YTypeFlag",
-                "Science/YUnitFlag",
-                "Science/YError",
-                "Science/YErrorFlag",
-                "Science/YUnmodified",
-                ]
-            
-            #if x values have been recalibrated from nadir solar/molecular lines
-            if "Science/X" in rad_fac_cal_dict.keys():
-                DATASETS_TO_BE_REMOVED.append("Science/X")
-            
-            ATTRIBUTES_TO_BE_REMOVED = ["YCalibRef", "YErrorRef"]
-
-
-
-            
-            #make file from dictionaries
-            YTypeFlagOld = hdf5FileIn["Science/YTypeFlag"]
-            YTypeFlag = np.zeros_like(YTypeFlagOld) + LNO_FLAGS_DICT["Y_TYPE_FLAG"]
-            YUnitFlag = np.zeros_like(YTypeFlagOld) + LNO_FLAGS_DICT["Y_UNIT_FLAG"]
-            YErrorFlag = np.zeros_like(YTypeFlagOld) + LNO_FLAGS_DICT["Y_ERROR_FLAG"]
-                    
-            logger.info("Writing new datasets to output file")
-            with h5py.File(hdf5FilepathOut, "w") as hdf5FileOut:
-            
-                generics.copyAttributesExcept(hdf5FileIn, hdf5FileOut, OUTPUT_VERSION, ATTRIBUTES_TO_BE_REMOVED)
-                for dset_path, dset in generics.iter_datasets(hdf5FileIn):
-                    if dset_path in DATASETS_TO_BE_REMOVED:
-                        continue
-                    dest = generics.createIntermediateGroups(hdf5FileOut, dset_path.split("/")[:-1])
-                    hdf5FileIn.copy(dset_path, dest)
-            
-                hdf5FileOut.attrs["YCalibRef"] = y_calib_ref
-                hdf5FileOut.attrs["YErrorRef"] = y_error_ref
-    
-                hdf5FileOut.create_dataset("Science/YTypeFlag", dtype=np.int16, data=YTypeFlag, compression="gzip", shuffle=True)
-                hdf5FileOut.create_dataset("Science/YUnitFlag", dtype=np.int16, data=YUnitFlag, compression="gzip", shuffle=True)
-                hdf5FileOut.create_dataset("Science/YErrorFlag", dtype=np.int16, data=YErrorFlag, compression="gzip", shuffle=True)
+                #specify datasets/attributes are to be modified/removed
+                DATASETS_TO_BE_REMOVED = [
+                #    "Science/X",
+                    "Science/Y",
+                    "Science/YTypeFlag",
+                    "Science/YUnitFlag",
+                    "Science/YError",
+                    "Science/YErrorFlag",
+                    "Science/YUnmodified",
+                    ]
                 
-                for hdf5_dataset_path, dataset_dict in radiance_cal_dict.items():
-                    if dataset_dict["compression"]:
-                        hdf5FileOut.create_dataset(hdf5_dataset_path, dtype=dataset_dict["dtype"], data=dataset_dict["data"], compression="gzip", shuffle=True)
-                    else:
-                        hdf5FileOut.create_dataset(hdf5_dataset_path, dtype=dataset_dict["dtype"], data=dataset_dict["data"])
-                for hdf5_dataset_path, dataset_dict in rad_fac_cal_dict.items():
-                    if dataset_dict["compression"]:
-                        hdf5FileOut.create_dataset(hdf5_dataset_path, dtype=dataset_dict["dtype"], data=dataset_dict["data"], compression="gzip", shuffle=True)
-                    else:
-                        hdf5FileOut.create_dataset(hdf5_dataset_path, dtype=dataset_dict["dtype"], data=dataset_dict["data"])
+                #if x values have been recalibrated from nadir solar/molecular lines
+                if "Science/X" in rad_fac_cal_dict.keys():
+                    DATASETS_TO_BE_REMOVED.append("Science/X")
+                
+                ATTRIBUTES_TO_BE_REMOVED = ["YCalibRef", "YErrorRef"]
     
     
+    
+                
+                #make file from dictionaries
+                YTypeFlagOld = hdf5FileIn["Science/YTypeFlag"]
+                YTypeFlag = np.zeros_like(YTypeFlagOld) + LNO_FLAGS_DICT["Y_TYPE_FLAG"]
+                YUnitFlag = np.zeros_like(YTypeFlagOld) + LNO_FLAGS_DICT["Y_UNIT_FLAG"]
+                YErrorFlag = np.zeros_like(YTypeFlagOld) + LNO_FLAGS_DICT["Y_ERROR_FLAG"]
+                        
+                logger.info("Writing new datasets to output file")
+                with h5py.File(hdf5FilepathOut, "w") as hdf5FileOut:
+                
+                    generics.copyAttributesExcept(hdf5FileIn, hdf5FileOut, OUTPUT_VERSION, ATTRIBUTES_TO_BE_REMOVED)
+                    for dset_path, dset in generics.iter_datasets(hdf5FileIn):
+                        if dset_path in DATASETS_TO_BE_REMOVED:
+                            continue
+                        dest = generics.createIntermediateGroups(hdf5FileOut, dset_path.split("/")[:-1])
+                        hdf5FileIn.copy(dset_path, dest)
+                
+                    hdf5FileOut.attrs["YCalibRef"] = y_calib_ref
+                    hdf5FileOut.attrs["YErrorRef"] = y_error_ref
+        
+                    hdf5FileOut.create_dataset("Science/YTypeFlag", dtype=np.int16, data=YTypeFlag, compression="gzip", shuffle=True)
+                    hdf5FileOut.create_dataset("Science/YUnitFlag", dtype=np.int16, data=YUnitFlag, compression="gzip", shuffle=True)
+                    hdf5FileOut.create_dataset("Science/YErrorFlag", dtype=np.int16, data=YErrorFlag, compression="gzip", shuffle=True)
+                    
+                    for hdf5_dataset_path, dataset_dict in radiance_cal_dict.items():
+                        if dataset_dict["compression"]:
+                            hdf5FileOut.create_dataset(hdf5_dataset_path, dtype=dataset_dict["dtype"], data=dataset_dict["data"], compression="gzip", shuffle=True)
+                        else:
+                            hdf5FileOut.create_dataset(hdf5_dataset_path, dtype=dataset_dict["dtype"], data=dataset_dict["data"])
+                    for hdf5_dataset_path, dataset_dict in rad_fac_cal_dict.items():
+                        if dataset_dict["compression"]:
+                            hdf5FileOut.create_dataset(hdf5_dataset_path, dtype=dataset_dict["dtype"], data=dataset_dict["data"], compression="gzip", shuffle=True)
+                        else:
+                            hdf5FileOut.create_dataset(hdf5_dataset_path, dtype=dataset_dict["dtype"], data=dataset_dict["data"])
+        
+        
 
 
 

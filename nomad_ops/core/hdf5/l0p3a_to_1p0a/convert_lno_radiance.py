@@ -71,8 +71,11 @@ def convert_lno_radiance(hdf5_basename, hdf5FileIn, errorType):
     if not error:
         yBinnedNorm = yIn / measurementSeconds / measurementPixels #scale to counts per second per pixel
         #calculate standard deviation - remove continuum shape to leave random error on first 50 pixels only
-        yFitted = np.polyval(np.polyfit(range(50),yBinnedNorm[0,0:50],2),range(50))
-        yStd = np.std(yBinnedNorm[0,0:50] - yFitted)
+        #find first spectrum which is non nan
+        not_nan_index = min([i for i, value in enumerate(yBinnedNorm[:, 0]) if not np.isnan(value)])
+
+        yFitted = np.polyval(np.polyfit(range(50), yBinnedNorm[not_nan_index, 0:50], 2), range(50))
+        yStd = np.std(yBinnedNorm[not_nan_index, 0:50] - yFitted)
         
         if RUNNING_MEAN:
             """apply running mean with n=10"""
@@ -90,7 +93,7 @@ def convert_lno_radiance(hdf5_basename, hdf5FileIn, errorType):
                 if np.min(spectrum) < 0.0:
                     negativesFound = True
                     negativeIndices = np.where(spectrum < 0.0)[0]
-                    Y[spectrumIndex,negativeIndices] = 0.0
+                    Y[spectrumIndex, negativeIndices] = 0.0
             if negativesFound:
                 logger.info("Warning: negative Y values found in file. Replaced by zeroes")
         

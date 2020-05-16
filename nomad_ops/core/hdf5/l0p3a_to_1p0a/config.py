@@ -7,6 +7,7 @@ Created on Wed May 13 10:11:43 2020
 
 import os
 import platform
+import numpy as np
 
 if platform.system() == "Windows":
     SYSTEM = "Windows"
@@ -28,8 +29,8 @@ LNO_FLAGS_DICT = {
     }
 
 
-#SAVE_FILES = True
-SAVE_FILES = False
+SAVE_FILES = True
+#SAVE_FILES = False
 
 #RUNNING_MEAN = True
 RUNNING_MEAN = False
@@ -88,7 +89,10 @@ FIG_X = 17
 FIG_Y = 9
 
 #multiply chi sq fit by this value to make it human readable
-CHI_SQ_MULTIPLICATION_FACTOR = 10000.0
+CHI_SQ_MULTIPLICATION_FACTOR = 1.0
+
+#pixels to consider when fitting nadir and determining std
+GOOD_PIXELS = np.arange(50,320)
 
 HDF5_TIME_FORMAT = "%Y %b %d %H:%M:%S.%f"
 

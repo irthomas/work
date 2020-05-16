@@ -61,7 +61,8 @@ class obs_database(object):
         
         if SERVER_DB:
             """replace with ini script reader"""
-            print("Connecting to central database %s" %SERVER)
+            if not self.silent:
+                print("Connecting to central database %s" %SERVER)
             host = SERVER
             user = "nomad_user"
             passwd = passwords["nomad_user"]
@@ -69,18 +70,21 @@ class obs_database(object):
             self.db = MySQLdb.connect(host=host, user=user, passwd=passwd, db=db)
             self.cursor = self.db.cursor()
         else:
-            print("Connecting to database file %s" %server_name)
+            if not self.silent:
+                print("Connecting to database file %s" %server_name)
             server_path = os.path.join(paths["DB_DIRECTORY"], server_name+".db")
             if not os.path.exists(server_path):
                 open(server_path, 'w').close()
             self.db = sqlite3.connect(server_path, detect_types=sqlite3.PARSE_DECLTYPES)
             
         
-    def __init__(self, server_name):
+    def __init__(self, server_name, silent=False):
+        self.silent = silent
         self.connect(server_name)
 
     def close(self):
-        print("Disconnecting from mysql database")
+        if not self.silent:
+            print("Disconnecting from mysql database")
         if SERVER_DB:
             self.cursor.close()
         self.db.close()
