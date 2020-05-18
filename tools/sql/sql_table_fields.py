@@ -8,9 +8,9 @@ Created on Fri Apr 24 22:35:53 2020
 
 
 
-def sql_table_fields(server_db=False):
+def sql_table_fields(bira_server=False):
 
-    if server_db:
+    if bira_server:
         table_fields = [
                 {"name":"row_id", "type":"int NOT NULL AUTO_INCREMENT", "primary":True}, \
                 {"name":"orbit", "type":"int NOT NULL"}, \

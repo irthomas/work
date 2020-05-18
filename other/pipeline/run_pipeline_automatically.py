@@ -33,7 +33,6 @@ TESTING=False
 
 import os
 import sys
-import logging
 import smtplib
 import textwrap
 import datetime
@@ -51,18 +50,19 @@ WAIT_FOR_MIDNIGHT = False
 SIMULATE = False
 #WAIT_FOR_MIDNIGHT = True
 
+
 MAKE_REPORTS = True
 MAKE_EXPORTS = True
 MAKE_HDF5 = True
 FTP_UPLOAD = True
 
+LOGGER_LEVEL = "info"
+
+SQL_UPDATE = True
 
 if platform.system() == "Windows":
     TESTING = True #always
 
-os.environ["FS_MODEL"] = "False"
-os.environ["NMD_OPS_PROFILE"] = "default"
-sys.path.append('.')
 
 if TESTING:
     SIMULATE = True
@@ -71,33 +71,22 @@ if TESTING:
     HDF5_L10A_FILE_DESTINATION = r"C:\Users\iant\Documents\DATA\db\l1"
     HDF5_RAW_FILE_DESTINATION = r"C:\Users\iant\Documents\DATA\db\l0"
     PATH_EXPORT_HEATERS_TEMP = r"C:\Users\iant\Documents\DATA\db"
-    logger_level = "INFO"
     from tools.file.passwords import passwords
     
 else:
 #    SIMULATE = False
+    os.environ["FS_MODEL"] = "False"
+    os.environ["NMD_OPS_PROFILE"] = "default"
+    sys.path.append('.')
+
     from nomad_ops.config import RUN_PIPELINE_LOG_DIR, OBS_TYPE_DB, \
         PATH_EDDS_SPACEWIRE, HDF5_L10A_FILE_DESTINATION, \
         HDF5_RAW_FILE_DESTINATION, PATH_EXPORT_HEATERS_TEMP
 
     with open("passwords.txt", "r") as f:  passwords = eval("".join(f.readlines()))
     
-    import argparse
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--log', type=str, help='Enter logger level')
-    args = parser.parse_args()
-    if args.log:
-        if args.log in ["DEBUG", "INFO", "WARNING", "ERROR"]:
-            logger_level = args.log
-        else:
-            print("Error: logger level %s not understood" %args.log)
-    else:
-        logger_level = "INFO"
-#LOGGER_LEVEL = "WARNING"
 
-logger = logging.getLogger( __name__ )
-
-print("Current directory = ", os.getcwd())
+#print("Current directory = ", os.getcwd())
 
 SENDER = "nomadr@aeronomie.be"
 RECIPIENTS = ["ian.thomas@aeronomie.be"]
@@ -190,16 +179,17 @@ def notify_mailer(errors):
         mesg['From'] = SENDER
         mesg['To'] = ', '.join(RECIPIENTS)
         smtp_obj.send_message(mesg)
-        logger.info("Notified recipients of pipeline errors.")
+        print("Notified recipients of pipeline errors.")
     except smtplib.SMTPException:
-        logger.error("Error while sending mail.")
+        print("Error while sending mail.")
 
 def check_log():
     return os.stat(os.path.join(RUN_PIPELINE_LOG_DIR, "run_pipeline.log")).st_mtime
 
 
+repeat = True
 
-while True:
+while repeat:
     #wait for start time
     #check_if_after_ref_time(10, hour=15, minute=59, second=50)
     
@@ -208,7 +198,7 @@ while True:
     print("####### Starting script at %s" %datetime.datetime.strftime(datetime.datetime.now(), FORMAT_STR_SECONDS))
     script_start_time = time.time()
     errs = []
-    rp = ["scripts/run_pipeline.py", "--log", logger_level]
+    rp = ["scripts/run_pipeline.py", "--log", LOGGER_LEVEL]
     rp_info = ["scripts/run_pipeline.py", "--log", "INFO"]
     
     command = ["scripts/sync_bira_esa.py","--transfer","esa_to_bira"]
@@ -429,7 +419,7 @@ while True:
             try:
                 ftp_conn.login(user=username, passwd=password)
             except ftplib.all_errors as e:
-                logger.error("FTP error ({0})".format(e.message))
+                print("FTP error ({0})".format(e.message))
             return ftp_conn
         
         
@@ -440,7 +430,7 @@ while True:
             try:
                 dir_cont = ftp_conn.mlsd(path)
             except ftplib.all_errors as e:
-                logger.error("FTP error ({0})".format(e.message))
+                print("FTP error ({0})".format(e.message))
             for i in dir_cont:
                 if i[1]['type'] == "dir":
                     dirs.append(i[0])
@@ -536,6 +526,6 @@ while True:
     print("Processing finished at %s (duration = %s)" %(datetime.datetime.now(), str(datetime.timedelta(seconds=script_elapsed_time)).split(".")[0]))
 
     if SIMULATE:
-        sys.exit()
+        repeat = False
     else:
         time.sleep(600) #wait 10 minutes until next check
