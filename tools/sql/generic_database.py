@@ -19,7 +19,12 @@ import platform
 if platform.system() == "Windows":
     from tools.file.paths import paths
     from tools.file.passwords import passwords
-else:
+
+elif os.path.isdir("tools"):
+    from tools.file.paths import paths
+    from tools.file.passwords import passwords
+    
+else: #if running in pipeline
     paths = {}
     with open("passwords.txt", "r") as f:  passwords = eval("".join(f.readlines()))
 
@@ -101,11 +106,13 @@ class database(object):
         return new_table
 
 
-    def new_table(self, table_name, table_fields):
+    def new_table(self, table_name, table_fields): #name must not contain spaces!
         if self.bira_server:
             table_not_key = []
             for field in table_fields:
-                if "primary" in field["type"]:
+                if "primary" in field["type"] or "primary" in field.keys():
+                    if not self.silent:
+                        print("%s is the primary key" %field["name"])
                     table_key = field["name"]
                 else:
                     table_not_key.append(field["name"])
@@ -123,6 +130,8 @@ class database(object):
             query_string = query_string[:-2]
             query_string += ")"
         print("Creating table %s" %table_name)
+        if not self.silent:
+            print(query_string)
         self.query(query_string)
     
 

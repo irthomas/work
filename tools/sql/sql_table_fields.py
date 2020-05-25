@@ -57,8 +57,8 @@ def submission_form(bira_server=True):
     if bira_server:
         table_fields = [
                 {"name":"row_id", "type":"int NOT NULL AUTO_INCREMENT", "primary":True}, \
-                {"name":"name", "type":"varchar(100) NULL DEFAULT NULL"}, \
-                {"name":"title", "type":"varchar(1000) NULL DEFAULT NULL"}, \
+                {"name":"presenter_name", "type":"varchar(100) NULL DEFAULT NULL"}, \
+                {"name":"presentation_title", "type":"varchar(1000) NULL DEFAULT NULL"}, \
                 {"name":"comments", "type":"varchar(1000) NULL DEFAULT NULL"}, \
                 ]
         
