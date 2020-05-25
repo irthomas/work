@@ -45,10 +45,14 @@ import ftplib
 import platform
 
 #SIMULATE = True
+SIMULATE = False
+
+#WAIT_FOR_MIDNIGHT = True
 WAIT_FOR_MIDNIGHT = False
 
-SIMULATE = False
-#WAIT_FOR_MIDNIGHT = True
+
+SQL_UPDATE = True
+#SQL_UPDATE = False
 
 
 MAKE_REPORTS = True
@@ -56,9 +60,8 @@ MAKE_EXPORTS = True
 MAKE_HDF5 = True
 FTP_UPLOAD = True
 
-LOGGER_LEVEL = "info"
+LOGGER_LEVEL = "INFO"
 
-SQL_UPDATE = True
 
 if platform.system() == "Windows":
     TESTING = True #always
@@ -71,14 +74,21 @@ if TESTING:
     HDF5_L10A_FILE_DESTINATION = r"C:\Users\iant\Documents\DATA\db\l1"
     HDF5_RAW_FILE_DESTINATION = r"C:\Users\iant\Documents\DATA\db\l0"
     PATH_EXPORT_HEATERS_TEMP = r"C:\Users\iant\Documents\DATA\db"
+    
+    BIRA_SQL_SERVER = False
     from tools.file.passwords import passwords
+    from tools.sql.generic_database import database
     
 else:
 #    SIMULATE = False
     os.environ["FS_MODEL"] = "False"
     os.environ["NMD_OPS_PROFILE"] = "default"
     sys.path.append('.')
-
+    
+    BIRA_SQL_SERVER = True
+    if SQL_UPDATE:
+        from generic_database import database
+    
     from nomad_ops.config import RUN_PIPELINE_LOG_DIR, OBS_TYPE_DB, \
         PATH_EDDS_SPACEWIRE, HDF5_L10A_FILE_DESTINATION, \
         HDF5_RAW_FILE_DESTINATION, PATH_EXPORT_HEATERS_TEMP
@@ -187,6 +197,32 @@ def check_log():
     return os.stat(os.path.join(RUN_PIPELINE_LOG_DIR, "run_pipeline.log")).st_mtime
 
 
+def initialise_db(db):
+    table_fields = [
+        {"name":"row_id", "type":"integer primary key"}, \
+        {"name":"log_time", "type":"timestamp"}, \
+        {"name":"log_entry", "type":"text"}, \
+        ]
+    db.new_table("pipeline_log", table_fields)
+    
+
+
+def sql(log_entry):
+    
+    if SQL_UPDATE:
+        db = database("pipeline_log", bira_server=BIRA_SQL_SERVER, silent=True)
+        if not db.check_if_table_exists("pipeline_log"):
+            initialise_db(db)
+            
+        now = str(datetime.datetime.now())[:-7]
+        db.query("INSERT INTO pipeline_log (log_time, log_entry) VALUES (\"%s\", \"%s\")" %(now, log_entry))
+        db.close()
+        
+
+
+
+
+
 repeat = True
 
 while repeat:
@@ -195,14 +231,18 @@ while repeat:
     
     if WAIT_FOR_MIDNIGHT:
         check_if_after_ref_time(60 * 60) #wait for midnight, checking every 60 minutes
-    print("####### Starting script at %s" %datetime.datetime.strftime(datetime.datetime.now(), FORMAT_STR_SECONDS))
+    
+    string = "Starting daily processing at %s" %datetime.datetime.strftime(datetime.datetime.now(), FORMAT_STR_SECONDS)
+    sql("Starting daily processing")
+    print("#######", string)
     script_start_time = time.time()
     errs = []
-    rp = ["scripts/run_pipeline.py", "--log", LOGGER_LEVEL]
-    rp_info = ["scripts/run_pipeline.py", "--log", "INFO"]
+    rp = ["./scripts/run_as_nomadr", "./scripts/run_pipeline.py", "--log", LOGGER_LEVEL]
+    rp_info = ["./scripts/run_as_nomadr", "./scripts/run_pipeline.py", "--log", "INFO"]
     
     command = ["scripts/sync_bira_esa.py","--transfer","esa_to_bira"]
     command_string = " ".join(command)
+    sql("Transferring data from ESA to BIRA")
     print("#######", command_string)
     if not SIMULATE:
         subprocess.run(command)
@@ -211,6 +251,7 @@ while repeat:
     
     command = rp_info + ["config", "sync"]
     command_string = " ".join(command)
+    sql("Updating SPICE kernels")
     print("#######", command_string)
     if not SIMULATE:
         subprocess.run(command)
@@ -220,6 +261,7 @@ while repeat:
     
     command = rp_info + ["config", "itl"]
     command_string = " ".join(command)
+    sql("Configuring ITL database")
     print("#######", command_string)
     if not SIMULATE:
         subprocess.run(command)
@@ -245,6 +287,7 @@ while repeat:
     
     command = rp + ["make", "--to", "inserted"]
     command_string = " ".join(command)
+    sql("Inserting received files into directory structure")
     print("#######", command_string)
     if not SIMULATE:
         subprocess.run(command)
@@ -274,6 +317,7 @@ while repeat:
             
     command = rp + ["insert_psa"]
     command_string = " ".join(command)
+    sql("Inserting received PSA xmls into directory structure")
     print("#######", command_string)
     if not SIMULATE:
         subprocess.run(command)
@@ -294,6 +338,7 @@ while repeat:
     
     command = rp + ["make", "--from", "inserted", "--to", "hdf5_l01a", "--beg", "%s" %l01a_correct_datetime_string, "--end", "%s" %correct_end_datetime_string, "--all", "--n_proc=8"]
     command_string = " ".join(command)
+    sql("Making HDF5 level 0.1A files from %s to %s" %(l01a_correct_datetime_string, correct_end_datetime_string))
     print("#######", command_string)
     if not SIMULATE:
         subprocess.run(command)
@@ -304,6 +349,7 @@ while repeat:
     if MAKE_REPORTS:
         command = rp + ["make", "--from", "raw", "--to", "raw_reports"]
         command_string = " ".join(command)
+        sql("Making raw data reports")
         print("#######", command_string)
         if not SIMULATE:
             subprocess.run(command)
@@ -313,6 +359,7 @@ while repeat:
             
         command = rp + ["make", "--from", "raw", "--to", "raw_anomalies"]
         command_string = " ".join(command)
+        sql("Making raw anomaly reports")
         print("#######", command_string)
         if not SIMULATE:
             subprocess.run(command)
@@ -338,6 +385,7 @@ while repeat:
         
         command = exp + ["nomad_pwr", "--from", mtp_start_date, "--to", mtp_end_date]
         command_string = " ".join(command)
+        sql("Making power report file")
         print("#######", command_string)
         if not SIMULATE:
             subprocess.run(command)
@@ -347,6 +395,7 @@ while repeat:
             
         command = exp + ["sc_deck_temp", "--from", mtp_start_date, "--to", mtp_end_date]
         command_string = " ".join(command)
+        sql("Making TGO deck temperature file")
         print("#######", command_string)
         if not SIMULATE:
             subprocess.run(command)
@@ -356,6 +405,7 @@ while repeat:
 
         command = exp + ["heaters_temp", "--from", mtp_start_date, "--to", mtp_end_date]
         command_string = " ".join(command)
+        sql("Making TGO temperature readout file")
         print("#######", command_string)
         if not SIMULATE:
             subprocess.run(command)
@@ -377,6 +427,7 @@ while repeat:
     #run_pipeline.py extras --update_heaters_db --beg 2020-02-16 --end 2020-04-03
     command = rp + ["extras", "--update_heaters_db", "--beg", "%s" %heaters_temp_correct_datetime_string, "--end", "%s" %heaters_temp_today_string]
     command_string = " ".join(command)
+    sql("Adding latest data to TGO temperature readout database")
     print("#######", command_string)
     if not SIMULATE:
         subprocess.run(command)
@@ -398,6 +449,7 @@ while repeat:
         
         command = rp + ["make", "--from", "hdf5_l01a", "--to", "hdf5_l10a", "--beg", "%s" %l10a_correct_datetime_string, "--end", "%s" %correct_end_datetime_string, "--all", "--n_proc=8"]
         command_string = " ".join(command)
+        sql("Converting HDF5 0.1A data to 1.0A data from %s to %s" %(l10a_correct_datetime_string, correct_end_datetime_string))
         print("#######", command_string)
         if not SIMULATE:
             subprocess.run(command)
@@ -497,6 +549,7 @@ while repeat:
         #transfer all files between two dates (overwrite last day to be sure)
         command = rp + ["transfer", "ftp", "--from", "hdf5_l10a", "--to", "hdf5_l10a", "--beg", "%s" %ftp_end_datetime_string]
         command_string = " ".join(command)
+        sql("Uploading HDF5 level 1.0A files to ftp server up to %s" %(ftp_end_datetime_string))
         print("#######", command_string)
         if not SIMULATE:
             subprocess.run(command)
@@ -523,9 +576,13 @@ while repeat:
     
     script_end_time = time.time()
     script_elapsed_time = script_end_time - script_start_time
-    print("Processing finished at %s (duration = %s)" %(datetime.datetime.now(), str(datetime.timedelta(seconds=script_elapsed_time)).split(".")[0]))
+    string = "Processing finished at %s (duration = %s)" %(datetime.datetime.now(), str(datetime.timedelta(seconds=script_elapsed_time)).split(".")[0])
+    sql("Daily processing finished (duration = %s)" %(str(datetime.timedelta(seconds=script_elapsed_time)).split(".")[0]))
+    print(string)
 
     if SIMULATE:
+        repeat = False
+    elif not WAIT_FOR_MIDNIGHT:
         repeat = False
     else:
         time.sleep(600) #wait 10 minutes until next check
