@@ -7,7 +7,7 @@ Created on Fri Apr 24 09:42:03 2020
 
 
 
-def get_solar_hr(nu_hr, solspec_filepath):
+def get_solar_hr(nu_hr, solspec_filepath, nu_limit=2.0):
     """get high res solar spectrum interpolated to input nu_hr wavenumber grid"""
     import numpy as np
     from scipy import interpolate
@@ -20,9 +20,9 @@ def get_solar_hr(nu_hr, solspec_filepath):
         I0_solar = []
         for line in f:
             nu, I0 = [float(val) for val in line.split()]
-            if nu < nu_hr_min - 2.:
+            if nu < nu_hr_min - nu_limit:
                 continue
-            if nu > nu_hr_max + 2.:
+            if nu > nu_hr_max + nu_limit:
                 break
             nu_solar.append(nu)
             I0_solar.append(I0)

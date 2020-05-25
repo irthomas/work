@@ -192,7 +192,16 @@ def get_file(obspath, file_level, count, model="INFLIGHT", silent=False, open_fi
     return filename, hdf5_file
 
 
+def open_hdf5_file(hdf5_filename):
 
+    year = hdf5_filename[0:4] #get the date from the filename to find the file
+    month = hdf5_filename[4:6]
+    day = hdf5_filename[6:8]
+    file_level = "hdf5_level_%s" %hdf5_filename[16:20]
+    hdf5_filepath = os.path.join(paths["DATA_DIRECTORY"], file_level, year, month, day, hdf5_filename+".h5")
+    hdf5_file = h5py.File(hdf5_filepath, "r")
+    
+    return hdf5_file
 
 
 def make_filelist(obs_paths, file_level, model="INFLIGHT", silent=False, open_files=True):

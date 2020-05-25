@@ -8,9 +8,9 @@ Created on Fri Apr 24 22:35:53 2020
 
 
 
-def sql_table_fields(server_db=False):
+def sql_table_fields(bira_server=False):
 
-    if server_db:
+    if bira_server:
         table_fields = [
                 {"name":"row_id", "type":"int NOT NULL AUTO_INCREMENT", "primary":True}, \
                 {"name":"orbit", "type":"int NOT NULL"}, \
@@ -53,5 +53,13 @@ def sql_table_fields(server_db=False):
 
     return table_fields
     
-
-
+def submission_form(bira_server=True):
+    if bira_server:
+        table_fields = [
+                {"name":"row_id", "type":"int NOT NULL AUTO_INCREMENT", "primary":True}, \
+                {"name":"name", "type":"varchar(100) NULL DEFAULT NULL"}, \
+                {"name":"title", "type":"varchar(1000) NULL DEFAULT NULL"}, \
+                {"name":"comments", "type":"varchar(1000) NULL DEFAULT NULL"}, \
+                ]
+        
+    return table_fields

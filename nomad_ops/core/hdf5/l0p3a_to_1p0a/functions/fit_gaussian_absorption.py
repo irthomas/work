@@ -10,8 +10,8 @@ EXPONENTIAL FIT TO ABSORPTION BAND
 
 
 def fit_gaussian_absorption(x_in, y_in, error=False):
-    """fit inverted gaussian to absorption band.
-    Normalise continuum to 1 first"""
+    """fit inverted gaussian to absorption band. Normalise continuum to 1 first"""
+    """optional argument to calculate chi sq error"""
     import numpy as np
     from scipy.optimize import curve_fit
 
@@ -20,7 +20,13 @@ def fit_gaussian_absorption(x_in, y_in, error=False):
     
     x_mean = np.mean(x_in)
     x_centred = x_in - x_mean
-    popt, pcov = curve_fit(func, x_centred, y_in, p0=[0.1, 0.02, 0.25, 0.0])
+    try:
+        popt, pcov = curve_fit(func, x_centred, y_in, p0=[0.1, 0.02, 0.25, 0.0])
+    except RuntimeError: #curve fit failed to find solution
+        if error:
+            return 0.0, 0.0, 0.0, 0.0
+        else:
+            return 0.0, 0.0, 0.0
     
     if error:
         y_fit = func(x_centred, *popt)

@@ -4,14 +4,13 @@ Created on Wed Jun 26 21:35:00 2019
 
 @author: iant
 
-MAKE SO/LNO AND TGO TEMPERATURE DATABASES
+DATABASE READER AND WRITER. CAN BE USED TO MAKE THE OBSERVATION DATABASES
 """
 
 
 import numpy as np
 import os
 import datetime
-#import matplotlib.pyplot as plt
 import decimal
 import re
 import h5py
@@ -23,18 +22,9 @@ from tools.sql.sql_table_fields import sql_table_fields
 from tools.file.hdf5_functions import make_filelist, get_filepath
 
 
-
-#SERVER_DB = True
-SERVER_DB = False
-
-
-if SERVER_DB:
-    import MySQLdb
-    from MySQLdb import OperationalError
-    SERVER = "sqldatadev2-ae"
-else:
-    import sqlite3
-    SERVER = paths["DB_DIRECTORY"]
+import MySQLdb
+from MySQLdb import OperationalError
+import sqlite3
 
 
 SPICE_DATETIME_FORMAT = "%Y %b %d %H:%M:%S.%f"
@@ -59,36 +49,45 @@ def get_obs_duration(hdf5_file):
 class obs_database(object):
     def connect(self, server_name):
         
-        if SERVER_DB:
-            """replace with ini script reader"""
-            print("Connecting to central database %s" %SERVER)
-            host = SERVER
+        if self.bira_server:
+
+            host = "sqldatadev2-ae"
             user = "nomad_user"
             passwd = passwords["nomad_user"]
             db = "data_nomad"
+
+            if not self.silent:
+                print("Connecting to central database %s" %host)
+ 
             self.db = MySQLdb.connect(host=host, user=user, passwd=passwd, db=db)
             self.cursor = self.db.cursor()
         else:
-            print("Connecting to database file %s" %server_name)
+            
+
+            if not self.silent:
+                print("Connecting to database file %s" %server_name)
             server_path = os.path.join(paths["DB_DIRECTORY"], server_name+".db")
             if not os.path.exists(server_path):
                 open(server_path, 'w').close()
             self.db = sqlite3.connect(server_path, detect_types=sqlite3.PARSE_DECLTYPES)
             
         
-    def __init__(self, server_name):
+    def __init__(self, server_name, bira_server=False, silent=False):
+        self.silent = silent
+        self.bira_server = bira_server
         self.connect(server_name)
 
     def close(self):
-        print("Disconnecting from mysql database")
-        if SERVER_DB:
+        if not self.silent:
+            print("Disconnecting from mysql database")
+        if self.bira_server:
             self.cursor.close()
         self.db.close()
         
 
     def query(self, input_query):
 #        print(input_query)
-        if SERVER_DB:
+        if self.bira_server:
             try:
                 self.cursor.execute((input_query))
             except OperationalError:
@@ -139,7 +138,7 @@ class obs_database(object):
 
     
     def insert_rows(self, table_name, table_fields, table_rows, check_duplicates=False, duplicate_columns=[]):
-        if SERVER_DB:
+        if self.bira_server:
             table_fields_not_key = [field["name"] for field in table_fields if "primary" not in field["type"]]
             if len(table_fields_not_key) != len(table_rows[0]):
                 print("Error: Field names and data are not the same length")
@@ -201,7 +200,7 @@ class obs_database(object):
             
             
     def new_table(self, table_name, table_fields):
-        if SERVER_DB:
+        if self.bira_server:
             table_not_key = []
             for field in table_fields:
                 if "primary" in field["type"]:
@@ -238,7 +237,7 @@ class obs_database(object):
         
         
     def check_if_table_exists(self, table_name):
-        if SERVER_DB:
+        if self.bira_server:
             output = self.query("SHOW TABLES") #returns nested tuple
             output_flat = [each_output[0] for each_output in output] #flatten
             if len(output_flat) > 0:
@@ -264,9 +263,9 @@ class obs_database(object):
 
 
     def process_channel_data(self, args, silent=True):
-        
+        """make database containing info about all spectra in a channel for a particular observation type"""
 
-        table_fields = sql_table_fields(server_db=SERVER_DB)
+        table_fields = sql_table_fields(server_db=self.bira_server)
         table_name = args.level
         if args.regenerate:
             print("Deleting and regenerating table")

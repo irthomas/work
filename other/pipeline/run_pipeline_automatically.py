@@ -33,7 +33,6 @@ TESTING=False
 
 import os
 import sys
-import logging
 import smtplib
 import textwrap
 import datetime
@@ -45,58 +44,59 @@ import sqlite3
 import ftplib
 import platform
 
-SIMULATE = True
-#SIMULATE = False
+#SIMULATE = True
+SIMULATE = False
 
 #WAIT_FOR_MIDNIGHT = True
 WAIT_FOR_MIDNIGHT = False
+
+
+SQL_UPDATE = True
+#SQL_UPDATE = False
+
+
 MAKE_REPORTS = True
 MAKE_EXPORTS = True
 MAKE_HDF5 = True
-FTP_UPLOAD = False
+FTP_UPLOAD = True
+
+LOGGER_LEVEL = "INFO"
 
 
 if platform.system() == "Windows":
     TESTING = True #always
 
-os.environ["FS_MODEL"] = "False"
-os.environ["NMD_OPS_PROFILE"] = "default"
-sys.path.append('.')
 
 if TESTING:
     SIMULATE = True
-    OBS_TYPE_DB = r"C:\Users\iant\Dropbox\NOMAD\Python\nomad_ops_local\obs_type.db"
-    PATH_EDDS_SPACEWIRE = r"C:\Users\iant\Dropbox\NOMAD\Python\nomad_ops_local"
-    HDF5_L10A_FILE_DESTINATION = r"C:\Users\iant\Dropbox\NOMAD\Python\nomad_ops_local\l1"
-    HDF5_RAW_FILE_DESTINATION = r"C:\Users\iant\Dropbox\NOMAD\Python\nomad_ops_local\l0"
+    OBS_TYPE_DB = r"C:\Users\iant\Documents\DATA\db\obs_type.db"
+    PATH_EDDS_SPACEWIRE = r"C:\Users\iant\Documents\DATA\db"
+    HDF5_L10A_FILE_DESTINATION = r"C:\Users\iant\Documents\DATA\db\l1"
+    HDF5_RAW_FILE_DESTINATION = r"C:\Users\iant\Documents\DATA\db\l0"
     PATH_EXPORT_HEATERS_TEMP = r"C:\Users\iant\Documents\DATA\db"
-    logger_level = "INFO"
+    
+    BIRA_SQL_SERVER = False
     from tools.file.passwords import passwords
+    from tools.sql.generic_database import database
     
 else:
 #    SIMULATE = False
+    os.environ["FS_MODEL"] = "False"
+    os.environ["NMD_OPS_PROFILE"] = "default"
+    sys.path.append('.')
+    
+    BIRA_SQL_SERVER = True
+    if SQL_UPDATE:
+        from generic_database import database
+    
     from nomad_ops.config import RUN_PIPELINE_LOG_DIR, OBS_TYPE_DB, \
         PATH_EDDS_SPACEWIRE, HDF5_L10A_FILE_DESTINATION, \
         HDF5_RAW_FILE_DESTINATION, PATH_EXPORT_HEATERS_TEMP
 
     with open("passwords.txt", "r") as f:  passwords = eval("".join(f.readlines()))
     
-    import argparse
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--log', type=str, help='Enter logger level')
-    args = parser.parse_args()
-    if args.log:
-        if args.log in ["DEBUG", "INFO", "WARNING", "ERROR"]:
-            logger_level = args.log
-        else:
-            print("Error: logger level %s not understood" %args.log)
-    else:
-        logger_level = "INFO"
-#LOGGER_LEVEL = "WARNING"
 
-logger = logging.getLogger( __name__ )
-
-print("Current directory = ", os.getcwd())
+#print("Current directory = ", os.getcwd())
 
 SENDER = "nomadr@aeronomie.be"
 RECIPIENTS = ["ian.thomas@aeronomie.be"]
@@ -141,17 +141,17 @@ def check_which_mtp(datetime_in):
     mtp0Start = datetime.datetime(2018, 3, 24)
     mtpTimeDelta = datetime.timedelta(days=28)
     
-    datetime_calc = datetime.datetime(2016, 3, 16)
+    datetime_calc = mtp0Start
     mtpNumber = -1
-    while datetime_in > datetime_calc:
+    while datetime_in >= datetime_calc:
         mtpNumber += 1
-        datetime_calc = mtp0Start + mtpTimeDelta * mtpNumber
+        datetime_calc = datetime_calc + mtpTimeDelta
+#        print(mtpNumber, datetime_calc)
         
     mtpStartDatetime = datetime_calc - mtpTimeDelta
     mtpEndDatetime = datetime_calc
     
     return mtpNumber, mtpStartDatetime, mtpEndDatetime
-
 
 
 
@@ -189,29 +189,60 @@ def notify_mailer(errors):
         mesg['From'] = SENDER
         mesg['To'] = ', '.join(RECIPIENTS)
         smtp_obj.send_message(mesg)
-        logger.info("Notified recipients of pipeline errors.")
+        print("Notified recipients of pipeline errors.")
     except smtplib.SMTPException:
-        logger.error("Error while sending mail.")
+        print("Error while sending mail.")
 
 def check_log():
     return os.stat(os.path.join(RUN_PIPELINE_LOG_DIR, "run_pipeline.log")).st_mtime
 
 
+def initialise_db(db):
+    table_fields = [
+        {"name":"row_id", "type":"integer primary key"}, \
+        {"name":"log_time", "type":"timestamp"}, \
+        {"name":"log_entry", "type":"text"}, \
+        ]
+    db.new_table("pipeline_log", table_fields)
+    
 
-while True:
+
+def sql(log_entry):
+    
+    if SQL_UPDATE:
+        db = database("pipeline_log", bira_server=BIRA_SQL_SERVER, silent=True)
+        if not db.check_if_table_exists("pipeline_log"):
+            initialise_db(db)
+            
+        now = str(datetime.datetime.now())[:-7]
+        db.query("INSERT INTO pipeline_log (log_time, log_entry) VALUES (\"%s\", \"%s\")" %(now, log_entry))
+        db.close()
+        
+
+
+
+
+
+repeat = True
+
+while repeat:
     #wait for start time
     #check_if_after_ref_time(10, hour=15, minute=59, second=50)
     
     if WAIT_FOR_MIDNIGHT:
         check_if_after_ref_time(60 * 60) #wait for midnight, checking every 60 minutes
-    print("####### Starting script at %s" %datetime.datetime.strftime(datetime.datetime.now(), FORMAT_STR_SECONDS))
+    
+    string = "Starting daily processing at %s" %datetime.datetime.strftime(datetime.datetime.now(), FORMAT_STR_SECONDS)
+    sql("Starting daily processing")
+    print("#######", string)
     script_start_time = time.time()
     errs = []
-    rp = ["scripts/run_pipeline.py", "--log", logger_level]
-    rp_info = ["scripts/run_pipeline.py", "--log", "INFO"]
+    rp = ["./scripts/run_as_nomadr", "./scripts/run_pipeline.py", "--log", LOGGER_LEVEL]
+    rp_info = ["./scripts/run_as_nomadr", "./scripts/run_pipeline.py", "--log", "INFO"]
     
     command = ["scripts/sync_bira_esa.py","--transfer","esa_to_bira"]
     command_string = " ".join(command)
+    sql("Transferring data from ESA to BIRA")
     print("#######", command_string)
     if not SIMULATE:
         subprocess.run(command)
@@ -220,6 +251,7 @@ while True:
     
     command = rp_info + ["config", "sync"]
     command_string = " ".join(command)
+    sql("Updating SPICE kernels")
     print("#######", command_string)
     if not SIMULATE:
         subprocess.run(command)
@@ -229,6 +261,7 @@ while True:
     
     command = rp_info + ["config", "itl"]
     command_string = " ".join(command)
+    sql("Configuring ITL database")
     print("#######", command_string)
     if not SIMULATE:
         subprocess.run(command)
@@ -239,7 +272,7 @@ while True:
     #check ITL db for corresponding MTP
     end_datetime, end_datetime_string = get_end_datetime(10)
     end_mtp, mtp_start_datetime, mtp_end_datetime = check_which_mtp(end_datetime)
-    print("####### End datetime is in MTP%03i" %end_mtp)
+    print("####### End datetime %s is in MTP%03i" %(end_datetime_string, end_mtp))
     
     print("####### Checking ITL db for ITL file up to MTP%03i" %end_mtp)
     itl_present = check_for_itl(end_mtp)
@@ -254,6 +287,7 @@ while True:
     
     command = rp + ["make", "--to", "inserted"]
     command_string = " ".join(command)
+    sql("Inserting received files into directory structure")
     print("#######", command_string)
     if not SIMULATE:
         subprocess.run(command)
@@ -283,6 +317,7 @@ while True:
             
     command = rp + ["insert_psa"]
     command_string = " ".join(command)
+    sql("Inserting received PSA xmls into directory structure")
     print("#######", command_string)
     if not SIMULATE:
         subprocess.run(command)
@@ -303,6 +338,7 @@ while True:
     
     command = rp + ["make", "--from", "inserted", "--to", "hdf5_l01a", "--beg", "%s" %l01a_correct_datetime_string, "--end", "%s" %correct_end_datetime_string, "--all", "--n_proc=8"]
     command_string = " ".join(command)
+    sql("Making HDF5 level 0.1A files from %s to %s" %(l01a_correct_datetime_string, correct_end_datetime_string))
     print("#######", command_string)
     if not SIMULATE:
         subprocess.run(command)
@@ -313,6 +349,7 @@ while True:
     if MAKE_REPORTS:
         command = rp + ["make", "--from", "raw", "--to", "raw_reports"]
         command_string = " ".join(command)
+        sql("Making raw data reports")
         print("#######", command_string)
         if not SIMULATE:
             subprocess.run(command)
@@ -322,6 +359,7 @@ while True:
             
         command = rp + ["make", "--from", "raw", "--to", "raw_anomalies"]
         command_string = " ".join(command)
+        sql("Making raw anomaly reports")
         print("#######", command_string)
         if not SIMULATE:
             subprocess.run(command)
@@ -336,12 +374,18 @@ while True:
 
         exp = ["scripts/manage_esa_data.py", "export"]
 
+        #subtract one day when making reports 
+        #so that when new MTP starts the full report is made for the previous MTP
+        end_datetime_minus_1day, _ = get_end_datetime(1)
+        end_mtp_minus_1day, mtp_start_datetime_minus_1day, mtp_end_datetime_minus_1day = check_which_mtp(end_datetime)
 
-        mtp_start_date = datetime.datetime.strftime(mtp_start_datetime, FORMAT_STR_DAYS)
-        mtp_end_date = datetime.datetime.strftime(mtp_end_datetime, FORMAT_STR_DAYS)
+
+        mtp_start_date = datetime.datetime.strftime(mtp_start_datetime_minus_1day, FORMAT_STR_DAYS)
+        mtp_end_date = datetime.datetime.strftime(mtp_end_datetime_minus_1day, FORMAT_STR_DAYS)
         
         command = exp + ["nomad_pwr", "--from", mtp_start_date, "--to", mtp_end_date]
         command_string = " ".join(command)
+        sql("Making power report file")
         print("#######", command_string)
         if not SIMULATE:
             subprocess.run(command)
@@ -351,6 +395,7 @@ while True:
             
         command = exp + ["sc_deck_temp", "--from", mtp_start_date, "--to", mtp_end_date]
         command_string = " ".join(command)
+        sql("Making TGO deck temperature file")
         print("#######", command_string)
         if not SIMULATE:
             subprocess.run(command)
@@ -360,6 +405,7 @@ while True:
 
         command = exp + ["heaters_temp", "--from", mtp_start_date, "--to", mtp_end_date]
         command_string = " ".join(command)
+        sql("Making TGO temperature readout file")
         print("#######", command_string)
         if not SIMULATE:
             subprocess.run(command)
@@ -381,6 +427,7 @@ while True:
     #run_pipeline.py extras --update_heaters_db --beg 2020-02-16 --end 2020-04-03
     command = rp + ["extras", "--update_heaters_db", "--beg", "%s" %heaters_temp_correct_datetime_string, "--end", "%s" %heaters_temp_today_string]
     command_string = " ".join(command)
+    sql("Adding latest data to TGO temperature readout database")
     print("#######", command_string)
     if not SIMULATE:
         subprocess.run(command)
@@ -402,6 +449,7 @@ while True:
         
         command = rp + ["make", "--from", "hdf5_l01a", "--to", "hdf5_l10a", "--beg", "%s" %l10a_correct_datetime_string, "--end", "%s" %correct_end_datetime_string, "--all", "--n_proc=8"]
         command_string = " ".join(command)
+        sql("Converting HDF5 0.1A data to 1.0A data from %s to %s" %(l10a_correct_datetime_string, correct_end_datetime_string))
         print("#######", command_string)
         if not SIMULATE:
             subprocess.run(command)
@@ -423,7 +471,7 @@ while True:
             try:
                 ftp_conn.login(user=username, passwd=password)
             except ftplib.all_errors as e:
-                logger.error("FTP error ({0})".format(e.message))
+                print("FTP error ({0})".format(e.message))
             return ftp_conn
         
         
@@ -434,7 +482,7 @@ while True:
             try:
                 dir_cont = ftp_conn.mlsd(path)
             except ftplib.all_errors as e:
-                logger.error("FTP error ({0})".format(e.message))
+                print("FTP error ({0})".format(e.message))
             for i in dir_cont:
                 if i[1]['type'] == "dir":
                     dirs.append(i[0])
@@ -501,6 +549,7 @@ while True:
         #transfer all files between two dates (overwrite last day to be sure)
         command = rp + ["transfer", "ftp", "--from", "hdf5_l10a", "--to", "hdf5_l10a", "--beg", "%s" %ftp_end_datetime_string]
         command_string = " ".join(command)
+        sql("Uploading HDF5 level 1.0A files to ftp server up to %s" %(ftp_end_datetime_string))
         print("#######", command_string)
         if not SIMULATE:
             subprocess.run(command)
@@ -527,6 +576,13 @@ while True:
     
     script_end_time = time.time()
     script_elapsed_time = script_end_time - script_start_time
-    print("Processing finished at %s (duration = %s)" %(datetime.datetime.now(), str(datetime.timedelta(seconds=script_elapsed_time)).split(".")[0]))
+    string = "Processing finished at %s (duration = %s)" %(datetime.datetime.now(), str(datetime.timedelta(seconds=script_elapsed_time)).split(".")[0])
+    sql("Daily processing finished (duration = %s)" %(str(datetime.timedelta(seconds=script_elapsed_time)).split(".")[0]))
+    print(string)
 
-    time.sleep(600) #wait 10 minutes until next check
+    if SIMULATE:
+        repeat = False
+    elif not WAIT_FOR_MIDNIGHT:
+        repeat = False
+    else:
+        time.sleep(600) #wait 10 minutes until next check
