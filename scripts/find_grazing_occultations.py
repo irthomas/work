@@ -16,7 +16,8 @@ import re
 from tools.file.hdf5_functions import make_filelist
 
 
-regex = re.compile(".*_SO_._G_.*")
+#regex = re.compile(".*_SO_._G_.*")
+regex = re.compile(".*_UVIS_G")
 
 file_level = "hdf5_level_0p3k"
 

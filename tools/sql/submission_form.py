@@ -11,6 +11,7 @@ from tools.sql.generic_database import database
 
 from tools.sql.sql_table_fields import submission_form
 
-db = database(bira_server=True)
+db = database("", bira_server=True)
 
-db.new_table("Submission Form", submission_form)
+table_fields = submission_form()
+db.new_table("Submission_form", table_fields)
