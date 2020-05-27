@@ -8,7 +8,7 @@ Created on Fri Apr 24 22:35:53 2020
 
 
 
-def sql_table_fields(bira_server=False):
+def obs_database_fields(file_level, bira_server=False):
 
     if bira_server:
         table_fields = [
@@ -30,6 +30,8 @@ def sql_table_fields(bira_server=False):
                 {"name":"incidence_angle", "type":"decimal NOT NULL"}, \
                 {"name":"local_time", "type":"decimal NOT NULL"}, \
                 ]
+        if "1p0a" in file_level:
+            table_fields.append({"name":"y_continuum", "type":"decimal NOT NULL"})
     else:
         table_fields = [
                 {"name":"row_id", "type":"integer primary key"}, \
@@ -50,8 +52,12 @@ def sql_table_fields(bira_server=False):
                 {"name":"incidence_angle", "type":"real"}, \
                 {"name":"local_time", "type":"real"}, \
                 ]
+        if "1p0a" in file_level:
+            table_fields.append({"name":"y_continuum", "type":"real"})
 
     return table_fields
+
+
     
 def submission_form(bira_server=True):
     if bira_server:

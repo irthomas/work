@@ -19,7 +19,12 @@ import platform
 if platform.system() == "Windows":
     from tools.file.paths import paths
     from tools.file.passwords import passwords
-else:
+
+elif os.path.isdir("tools"):
+    from tools.file.paths import paths
+    from tools.file.passwords import passwords
+    
+else: #if running in pipeline
     paths = {}
     with open("passwords.txt", "r") as f:  passwords = eval("".join(f.readlines()))
 

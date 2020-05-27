@@ -17,10 +17,11 @@ import h5py
 
 from tools.file.paths import paths
 from tools.file.passwords import passwords
-from tools.sql.sql_table_fields import sql_table_fields
+from tools.sql.sql_table_fields import obs_database_fields
 
 from tools.file.hdf5_functions import make_filelist, get_filepath
 
+from tools.spectra.baseline_als import baseline_als
 
 import MySQLdb
 from MySQLdb import OperationalError
@@ -262,11 +263,18 @@ class obs_database(object):
 
 
 
-    def process_channel_data(self, args, silent=True):
+    def process_channel_data(self, args):
         """make database containing info about all spectra in a channel for a particular observation type"""
 
-        table_fields = sql_table_fields(server_db=self.bira_server)
-        table_name = args.level
+        self.level = args.level
+        self.command = args.command
+        if args.silent:
+            silent = True
+        else:
+            silent = False
+            
+        table_fields = obs_database_fields(self.level, bira_server=self.bira_server)
+        table_name = self.level
         if args.regenerate:
             print("Deleting and regenerating table")
             self.check_if_table_exists(table_name)
@@ -274,19 +282,22 @@ class obs_database(object):
             self.new_table(table_name, table_fields)
             
         print("Getting file list")
-        if args.command == "lno_nadir":
-            regex = re.compile("20.*_LNO.*_D.*")
-        elif args.command == "so_occultation":
+        if self.command == "lno_nadir":
+            if self.level == "hdf5_level_1p0a":
+                regex = re.compile("20.*_LNO.*_D(P|F).*")
+            else:
+                regex = re.compile("20.*_LNO.*_D.*")
+        elif self.command == "so_occultation":
             regex = re.compile("20.*_SO.*_[IE].*")
-        elif args.command == "uvis_nadir":
+        elif self.command == "uvis_nadir":
             regex = re.compile("20.*_UVIS.*_D")
-        elif args.command == "uvis_occultation":
+        elif self.command == "uvis_occultation":
             regex = re.compile("20.*_UVIS.*_[IE]")
             
         beg_datetime = datetime.datetime.strptime(args.beg, ARG_FORMAT)
         end_datetime = datetime.datetime.strptime(args.end, ARG_FORMAT)
 
-        _, hdf5Filenames, _ = make_filelist(regex, args.level, silent=silent, open_files=False)
+        _, hdf5Filenames, _ = make_filelist(regex, self.level, silent=silent, open_files=False)
         
         print("%i files found in directory" %len(hdf5Filenames))
         #make datetime from hdf5 filenames, find those that match the beg/end times
@@ -300,7 +311,7 @@ class obs_database(object):
             
             hdf5Filepath = get_filepath(hdf5Filename)
             if not silent:
-                print("Collecting data: file %i/%i: %s" %(fileIndex, len(hdf5Filenames), hdf5Filename))
+                print("Collecting data: file %i/%i: %s" %(fileIndex, len(matching_hdf5_filenames), hdf5Filename))
 
 
             with h5py.File(hdf5Filepath, "r") as hdf5File:
@@ -315,91 +326,45 @@ class obs_database(object):
                 n_orders = hdf5File.attrs["NSubdomains"]
                 longitudes = hdf5File["Geometry/Point0/Lon"][:, 0]
                 latitudes = hdf5File["Geometry/Point0/Lat"][:, 0]
-                if args.command == "lno_nadir":        
-                    mean_temperature_tgo = 1.0 + np.mean(hdf5File["Temperature/NominalLNO"][...])
+                if self.command == "lno_nadir":        
+                    mean_temperature_tgo = np.mean(hdf5File["Temperature/NominalLNO"][...])
                     bin_index = np.ones(n_spectra)
                     incidence_angles = hdf5File["Geometry/Point0/IncidenceAngle"][:, 0]
                     altitudes = np.zeros(n_spectra) - 999.0
-                elif args.command == "so_occultation":
-                    mean_temperature_tgo = 1.0 + np.mean(hdf5File["Temperature/NominalSO"][...])
+                elif self.command == "so_occultation":
+                    mean_temperature_tgo = np.mean(hdf5File["Temperature/NominalSO"][...])
                     bin_index = hdf5File["Channel/IndBin"][...]
                     incidence_angles = np.zeros(n_spectra) - 999.0
                     altitudes = hdf5File["Geometry/Point0/TangentAltAreoid"][:, 0]
                 local_times = hdf5File["Geometry/Point0/LST"][:, 0]
-
                 
                 sql_table_rows = []
-                for i in range(n_spectra):
-                    sql_table_rows.append([None, orbit, filename, i, mean_temperature_tgo, \
-                       int(diffraction_order), int(sbsf), int(bin_index[i]), utc_start_times[i].decode(), \
-                       duration, int(n_spectra), int(n_orders), longitudes[i], latitudes[i], \
-                       altitudes[i], incidence_angles[i], local_times[i]])
+
+                #get mean of y radiance factor continuum
+                if self.level == "hdf5_level_1p0a":
+                    y = hdf5File["Science/YRadianceFactor"][:, :]
+                    y_mean = np.zeros_like(y[:,0])
+                    for spectrum_index, spectrum in enumerate(y):
+                        continuum = baseline_als(spectrum)
+                        y_mean[spectrum_index] = np.mean(continuum[160:240])
+                        
+
+                    for i in range(n_spectra):
+                        if incidence_angles[i] < 80.0:
+                            sql_table_rows.append([None, orbit, filename, i, mean_temperature_tgo, \
+                               int(diffraction_order), int(sbsf), int(bin_index[i]), utc_start_times[i].decode(), \
+                               duration, int(n_spectra), int(n_orders), longitudes[i], latitudes[i], \
+                               altitudes[i], incidence_angles[i], local_times[i], float(y_mean[i])])
+                else:
+                
+                    for i in range(n_spectra):
+                        sql_table_rows.append([None, orbit, filename, i, mean_temperature_tgo, \
+                           int(diffraction_order), int(sbsf), int(bin_index[i]), utc_start_times[i].decode(), \
+                           duration, int(n_spectra), int(n_orders), longitudes[i], latitudes[i], \
+                           altitudes[i], incidence_angles[i], local_times[i]])
                 sql_table_rows_datetime = self.convert_table_datetimes(table_fields, sql_table_rows)
 #                self.insert_rows(table_name, table_fields, sql_table_rows_datetime, check_duplicates=False)
                 self.insert_rows(table_name, table_fields, sql_table_rows_datetime, check_duplicates=True)
-
-
-
-#    def processTemperatureData(self, overwrite=False):
-#        
-#        
-#        def prepExternalTemperatureReadingsWebsite():
-#            """read in LNO channel temperatures from file. Only use in every 20 values to avoid saturating website plot"""
-#            utc_datetimes = []
-#            temperatures = []
-#            
-#            filenames = HEATER_EXPORTS
-#            for filename in filenames:
-#                with open(os.path.join(LOCAL_DIRECTORY, "reference_files", filename)) as f:
-#                    lines = f.readlines()
-#                    
-#                if SERVER_DB:
-#                    line_step = 20
-#                else:
-#                    line_step = 1
-#                        
-#                for line in lines[1:len(lines):line_step]:
-#                    split_line = line.split(",")
-#                    utc_datetimes.append(datetime.datetime.strptime(split_line[0].split(".")[0], "%Y-%m-%dT%H:%M:%S"))
-#                    temperatures.append(split_line[column_number])
-#            
-#            return np.asarray(utc_datetimes), np.asfarray(temperatures)
-#
-#
-#        if SERVER_DB:
-#            table_fields = [
-#                {"name":"row_id", "type":"integer primary key"}, \
-#                {"name":"utc_start_time", "type":"datetime"}, \
-#                {"name":"temperature_so", "type":"real"}, \
-#                {"name":"temperature_lno", "type":"real"}, \
-#            ]
-#        else:
-#            table_fields = [
-#                {"name":"row_id", "type":"integer primary key"}, \
-#                {"name":"utc_start_time", "type":"timestamp"}, \
-#                {"name":"temperature_so", "type":"real"}, \
-#                {"name":"temperature_lno", "type":"real"}, \
-#            ]
-#        table_name = "temperatures"
-#        if overwrite:
-#            self.checkIfTableExists(table_name)
-#            self.drop_table(table_name)
-#            self.new_table(table_name, table_fields)
-#            
-#        print("Getting temperature data")
-#        utc_datetimes, so_temperatures = prepExternalTemperatureReadingsWebsite(1) #SO baseplate nominal
-#        utc_datetimes, lno_temperatures = prepExternalTemperatureReadingsWebsite(2) #LNO baseplate nominal
-#                
-#        sql_table_rows = []
-#        for i in range(len(utc_datetimes)):
-#            if np.mod(i, 100000) == 0:
-#                print("Collecting data: line %i/%i" %(i, len(utc_datetimes)))
-#            
-#            if SERVER_DB:
-#                sql_table_rows.append([utc_datetimes[i], so_temperatures[i].astype(np.float64), lno_temperatures[i].astype(np.float64)])
-#            else:
-#                sql_table_rows.append([None, utc_datetimes[i], so_temperatures[i].astype(np.float64), lno_temperatures[i].astype(np.float64)])
-#        self.insert_rows(table_name, table_fields, sql_table_rows, check_duplicates=False)
 
 
 
