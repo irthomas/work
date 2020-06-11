@@ -107,8 +107,10 @@ def get_filepath(hdf5_filename):
 
 
 
-def get_files_from_datastore(hdf5_filenames, file_level):
+def get_files_from_datastore(hdf5_filenames):
+
     for hdf5_filename in hdf5_filenames:
+        file_level = "hdf5_level_%s" %hdf5_filename[16:20]
         year_in = hdf5_filename[0:4]
         month_in = hdf5_filename[4:6]
         day_in = hdf5_filename[6:8]

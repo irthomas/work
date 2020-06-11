@@ -10,7 +10,8 @@ TGO TEMPERATURES ARE NOW IN HDF5 FILES. GET FROM FILE INSTEAD OF MAKING DB
 python3 tools/sql/obs_db_functions.py lno_nadir hdf5_level_0p3a 2018-03-01 2030-01-01 --regenerate=True
 python3 tools/sql/obs_db_functions.py lno_nadir hdf5_level_1p0a 2018-03-01 2018-04-01 --regenerate=True
 
-runfile('C:/Users/iant/Dropbox/NOMAD/Python/tools/sql/make_obs_db.py', args='lno_nadir hdf5_level_1p0a 2018-03-01 2019-01-01 -regenerate')
+runfile('C:/Users/iant/Dropbox/NOMAD/Python/tools/sql/make_obs_db.py', args='lno_nadir hdf5_level_1p0a 2018-03-01 2018-07-01 -regenerate --regex=".*LNO.*_134"')
+python3 tools/sql/make_obs_db.py lno_nadir hdf5_level_1p0a 2018-03-01 2021-01-01 -regenerate
 
 python3 tools/sql/obs_db_functions.py so_occultation hdf5_level_1p0a 2018-03-01 2030-01-01 --regenerate=True
 
@@ -32,6 +33,7 @@ if __name__ == "__main__":
     parser.add_argument('end', type=str, help='Enter end date YYYY-MM-DD')
     parser.add_argument('-regenerate', action='store_true', help='Delete table and regenerate. Always use --regenerate=True on first run')
     parser.add_argument('-silent', action='store_true', help='Output messages')
+    parser.add_argument('--regex', type=str, default="", help='Output messages')
     args = parser.parse_args()
     command = args.command
 else:

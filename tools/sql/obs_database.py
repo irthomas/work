@@ -282,17 +282,20 @@ class obs_database(object):
             self.new_table(table_name, table_fields)
             
         print("Getting file list")
-        if self.command == "lno_nadir":
-            if self.level == "hdf5_level_1p0a":
-                regex = re.compile("20.*_LNO.*_D(P|F).*")
-            else:
-                regex = re.compile("20.*_LNO.*_D.*")
-        elif self.command == "so_occultation":
-            regex = re.compile("20.*_SO.*_[IE].*")
-        elif self.command == "uvis_nadir":
-            regex = re.compile("20.*_UVIS.*_D")
-        elif self.command == "uvis_occultation":
-            regex = re.compile("20.*_UVIS.*_[IE]")
+        if args.regex:
+            regex = re.compile(args.regex)
+        else:
+            if self.command == "lno_nadir":
+                if self.level == "hdf5_level_1p0a":
+                    regex = re.compile("20.*_LNO.*_D(P|F).*")
+                else:
+                    regex = re.compile("20.*_LNO.*_D.*")
+            elif self.command == "so_occultation":
+                regex = re.compile("20.*_SO.*_[IE].*")
+            elif self.command == "uvis_nadir":
+                regex = re.compile("20.*_UVIS.*_D")
+            elif self.command == "uvis_occultation":
+                regex = re.compile("20.*_UVIS.*_[IE]")
             
         beg_datetime = datetime.datetime.strptime(args.beg, ARG_FORMAT)
         end_datetime = datetime.datetime.strptime(args.end, ARG_FORMAT)
@@ -343,18 +346,15 @@ class obs_database(object):
                 #get mean of y radiance factor continuum
                 if self.level == "hdf5_level_1p0a":
                     y = hdf5File["Science/YRadianceFactor"][:, :]
-                    y_mean = np.zeros_like(y[:,0])
-                    for spectrum_index, spectrum in enumerate(y):
-                        continuum = baseline_als(spectrum)
-                        y_mean[spectrum_index] = np.mean(continuum[160:240])
-                        
-
                     for i in range(n_spectra):
                         if incidence_angles[i] < 80.0:
+                            continuum = baseline_als(y[i, :])
+                            y_mean = np.mean(continuum[160:240])
+    
                             sql_table_rows.append([None, orbit, filename, i, mean_temperature_tgo, \
                                int(diffraction_order), int(sbsf), int(bin_index[i]), utc_start_times[i].decode(), \
                                duration, int(n_spectra), int(n_orders), longitudes[i], latitudes[i], \
-                               altitudes[i], incidence_angles[i], local_times[i], float(y_mean[i])])
+                               altitudes[i], incidence_angles[i], local_times[i], float(y_mean)])
                 else:
                 
                     for i in range(n_spectra):

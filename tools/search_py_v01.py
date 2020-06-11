@@ -11,7 +11,7 @@ import os
 import glob
 import posixpath
 
-SEARCH_STRING = "hera.oma"
+SEARCH_STRING = " PIL"
 
 
 from tools.file.paths import paths
