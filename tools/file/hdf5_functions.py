@@ -224,7 +224,7 @@ def make_filelist(obs_paths, file_level, model="INFLIGHT", silent=False, open_fi
 
     
     """new regex type check"""
-    if isinstance(obs_paths, re._pattern_type):
+    if isinstance(obs_paths, RE_PATTERN_TYPE):
         obspathsList = get_hdf5_filename_list(os.path.join(DATA_DIRECTORY_IN, file_level))
         hdf5Filenames = list(filter(obs_paths.search, obspathsList))
         print("%i matching files found for regex %s" %(len(hdf5Filenames), obs_paths.pattern))
