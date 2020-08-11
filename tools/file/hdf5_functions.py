@@ -17,6 +17,7 @@ import os
 import collections
 import h5py
 import re
+import sys
 
 from tools.file.paths import paths, SYSTEM
 
@@ -29,6 +30,11 @@ if SYSTEM == "Windows":
 #    import spiceypy as sp
 
 PASSWORD = "" #make global variable so it doesn't ask for pword for every file
+
+if sys.version_info[0] == 3 and sys.version_info[1] > 6:
+    RE_PATTERN_TYPE = re.Pattern
+else:
+    RE_PATTERN_TYPE = re._pattern_type
 
 
 
