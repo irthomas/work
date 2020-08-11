@@ -7,7 +7,7 @@ Created on Sat Apr 25 16:50:48 2020
 import numpy as np
 import h5py
 
-from tools.sql.sql_table_fields import sql_table_fields
+from tools.sql.sql_table_fields import obs_database_fields
 from tools.file.hdf5_functions import get_filepath
 
 
@@ -16,7 +16,7 @@ def make_obs_dict(channel, query_output, filenames_only=True):
     """make observation dictionary from sql query, add x and y data from files"""
     obs_dict = {}
     
-    table_fields = sql_table_fields(channel)
+    table_fields = obs_database_fields(channel)
     #make empty dicts
     for field_dict in table_fields:
         obs_dict[field_dict["name"]] = []

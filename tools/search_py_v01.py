@@ -11,7 +11,7 @@ import os
 import glob
 import posixpath
 
-SEARCH_STRING = " PIL"
+SEARCH_STRING = "ground cal c2h2"
 
 
 from tools.file.paths import paths

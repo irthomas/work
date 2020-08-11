@@ -45,10 +45,10 @@ elif os.path.exists(os.path.normcase(r"C:\Users\iant\Dropbox\NOMAD\Python")): #o
 
     paths["BASE_DIRECTORY"] = os.path.normcase(r"C:\Users\iant\Dropbox\NOMAD\Python")
 
-    paths["DATA_DIRECTORY"] = os.path.normcase(r"C:\Users\iant\Documents\DATA\hdf5_copy")
+#    paths["DATA_DIRECTORY"] = os.path.normcase(r"C:\Users\iant\Documents\DATA\hdf5_copy")
+    paths["DATA_DIRECTORY"] = os.path.normcase(r"D:\DATA\hdf5_ftp")
 #    paths["DATA_DIRECTORY"] = os.path.normcase(r"W:\data\SATELLITE\TRACE-GAS-ORBITER\NOMAD\hdf5")
 #    paths["DATA_DIRECTORY"] = os.path.normcase(r"W:\data\SATELLITE\TRACE-GAS-ORBITER\NOMAD\test\iant\hdf5")
-#    paths["DATA_DIRECTORY"] = os.path.normcase(r"D:\DATA\hdf5_ftp")
 
     paths["LOCAL_DIRECTORY"] = os.path.normcase(r"C:\Users\iant\Documents\DATA")
     paths["DATASTORE_ROOT_DIRECTORY"] = os.path.normcase(r"C:\Users\iant\Documents\DATA")

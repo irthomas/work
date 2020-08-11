@@ -7,12 +7,12 @@ Created on Wed Apr 13 07:30:32 2016
 """
 
 import os
-import h5py
+#import h5py
 import numpy as np
 #import numpy.linalg as la
-if not os.path.exists("/bira-iasb/data/SATELLITE/TRACE-GAS-ORBITER/NOMAD"):
-    import getpass
-    import pysftp
+#if not os.path.exists("/bira-iasb/data/SATELLITE/TRACE-GAS-ORBITER/NOMAD"):
+#    import getpass
+#    import pysftp
 
 
 from matplotlib import rcParams
@@ -21,11 +21,12 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 #from mpl_toolkits.mplot3d import Axes3D
 
-from hdf5_functions_v03 import get_dataset_contents, get_hdf5_filename_list, get_hdf5_attribute
-from hdf5_functions_v03 import BASE_DIRECTORY, FIG_X, FIG_Y, stop, getFile, makeFileList, printFileNames
-from hdf5_functions_v03 import getFilesFromDatastore
+#from hdf5_functions_v03 import get_dataset_contents, get_hdf5_filename_list, get_hdf5_attribute
+from tools.file.hdf5_functions import make_filelist
+#from hdf5_functions_v03 import BASE_DIRECTORY, FIG_X, FIG_Y, stop, getFile, makeFileList, printFileNames
+#from hdf5_functions_v03 import getFilesFromDatastore
 #from analysis_functions_v01b import spectralCalibration,write_log,get_filename_list,stop
-from filename_lists_v01 import getFilenameList
+#from filename_lists_v01 import getFilenameList
 
 
 if not os.path.exists("/bira-iasb/data/SATELLITE/TRACE-GAS-ORBITER/NOMAD"):# and not os.path.exists(os.path.normcase(r"X:\linux\Data")):
@@ -460,9 +461,9 @@ def analyseLineScan2(hdf5Files,hdf5Filenames):
     for fileIndex, hdf5File in enumerate(hdf5Files):
         print("Reading in file %i: %s" %(fileIndex + 1, obspaths[fileIndex]))
         
-        detectorDataAll = get_dataset_contents(hdf5File, "Y")[0]
+        detectorDataAll = hdf5File["Science/Y"][:,:]
 #        binsAll = get_dataset_contents(hdf5File, "Bins")[0]
-        observationTimeStringsAll = get_dataset_contents(hdf5File, "ObservationDateTime")[0]
+        observationTimeStringsAll = hdf5File["Geometry/ObservationDateTime"][:,:]
         
         centrePixelIndex = 200
         detectorDataBin1 = detectorDataAll[:, 1, centrePixelIndex].flatten()
@@ -532,7 +533,7 @@ def showFullFrame03A(hdf5Files, obspaths, titles, frame_numbers, uvis=False):
 
 
 """plot linescans"""
-hdf5Files, hdf5Filenames, titles = makeFileList(obspaths, fileLevel)
+hdf5Files, hdf5Filenames, titles = make_filelist(obspaths, fileLevel)
 analyseLineScan2(hdf5Files, hdf5Filenames)
 #ani = animateFrames(hdf5Files, hdf5Filenames, titles); plt.show(plt.show())
 

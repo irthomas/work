@@ -29,18 +29,20 @@ import matplotlib.ticker as mtick
 #from mpl_toolkits.mplot3d import Axes3D
 #import struct
 
-from hdf5_functions_v04 import BASE_DIRECTORY, FIG_X, FIG_Y, getFile, makeFileList
+#from hdf5_functions_v04 import BASE_DIRECTORY, FIG_X, FIG_Y, getFile, makeFileList
+from tools.file.hdf5_functions import make_filelist, get_file
+from tools.file.paths import FIG_X, FIG_Y, paths
 #from analysis_functions_v01b import spectralCalibration,write_log,get_filename_list,stop
 #from filename_lists_v01 import getFilenameList
 
-if not os.path.exists("/bira-iasb/data/SATELLITE/TRACE-GAS-ORBITER/NOMAD"):# and not os.path.exists(os.path.normcase(r"X:\linux\Data")):
-    print("Running on windows")
-    import spiceypy as sp
-    from hdf5_functions_v04 import KERNEL_DIRECTORY
-    METAKERNEL_NAME = "em16_ops_win.tm"
-    #load spiceypy kernels
-    sp.furnsh(KERNEL_DIRECTORY+os.sep+METAKERNEL_NAME)
-    print(sp.tkvrsn("toolkit"))
+#if not os.path.exists("/bira-iasb/data/SATELLITE/TRACE-GAS-ORBITER/NOMAD"):# and not os.path.exists(os.path.normcase(r"X:\linux\Data")):
+#    print("Running on windows")
+#    import spiceypy as sp
+#    from hdf5_functions_v04 import KERNEL_DIRECTORY
+#    METAKERNEL_NAME = "em16_ops_win.tm"
+#    #load spiceypy kernels
+#    sp.furnsh(KERNEL_DIRECTORY+os.sep+METAKERNEL_NAME)
+#    print(sp.tkvrsn("toolkit"))
 
 
 #SAVE_FIGS = False
@@ -102,9 +104,12 @@ SAVE_FILES = False
 fileLevel = "hdf5_level_1p0a"
 #regex = re.compile("201[89][01][0-9][0-9][0-9]_.*_SO_.*")
 #regex = re.compile("(20191[1-2]|202001)[0-9][0-9]_.*_SO_.*")
+#regex = re.compile("(20191[1-2]|202001)[0-9][0-9]_.*_SO_.*")
+#regex = re.compile("20200[5-6][0-9][0-9]_.*_SO_.*")
 #title = "so order statistics"
-regex = re.compile("201[89][01][0-9][0-9][0-9]_.*_LNO_.*")
+#regex = re.compile("201[89][01][0-9][0-9][0-9]_.*_LNO_.*")
 #regex = re.compile("(20191[1-2]|202001)[0-9][0-9]_.*_LNO_.*")
+regex = re.compile("20200[5-6][0-9][0-9]_.*_LNO_.*")
 title = "lno order statistics"
 #regex = re.compile("201[89][01][0-9][0-9][0-9]_.*_UVIS_.*")
 #title = "uvis obs type statistics"
@@ -530,7 +535,7 @@ def plotDarkCurrentResidual(regex, fileLevel, diffractionOrder):
 
 """plot statistics for each diffraction order"""
 def plotDiffractionOrderBarChart(regex, fileLevel, channel):
-    hdf5Files, hdf5Filenames, titles = makeFileList(regex, fileLevel, open_files=False, silent=True)
+    hdf5Files, hdf5Filenames, titles = make_filelist(regex, fileLevel, open_files=False, silent=True)
     
     if channel in ["so", "lno"]:
         orders = range(200)
@@ -556,7 +561,7 @@ def plotDiffractionOrderBarChart(regex, fileLevel, channel):
         plt.ylabel("Number of observations")
         plt.xlabel("Diffraction Order")
         if SAVE_FIGS:
-            plt.savefig(os.path.join(BASE_DIRECTORY, "%s_diffraction_order_statistics.png" %channel.lower()))
+            plt.savefig(os.path.join(paths["BASE_DIRECTORY"], "%s_diffraction_order_statistics.png" %channel.lower()))
     
     elif channel in ["uvis"]:
 
@@ -581,7 +586,7 @@ def plotDiffractionOrderBarChart(regex, fileLevel, channel):
                 observationType = hdf5_filename.split("_")[4]
                 
                 if observationType in ["I", "E"]:
-                    name, hdf5_file = getFile(hdf5_filename, fileLevel, 0, silent=True)
+                    name, hdf5_file = get_file(hdf5_filename, fileLevel, 0, silent=True)
                     h_end = hdf5_file["Channel/HEnd"][0]
                     if h_end == 1047:
                         binning = hdf5_file["Channel/HorizontalAndCombinedBinningSize"][0]
