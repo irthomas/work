@@ -345,7 +345,7 @@ class obs_database(object):
 
                 #get mean of y radiance factor continuum
                 if self.level == "hdf5_level_1p0a":
-                    y = hdf5File["Science/YRadianceFactor"][:, :]
+                    y = hdf5File["Science/YReflectanceFactor"][:, :]
                     for i in range(n_spectra):
                         if incidence_angles[i] < 80.0:
                             continuum = baseline_als(y[i, :])
