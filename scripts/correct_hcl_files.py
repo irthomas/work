@@ -70,6 +70,7 @@ for file_index, (hdf5_file, hdf5_filename) in enumerate(zip(hdf5_files_all, hdf5
 
 
 
+"""compare before and after for one file"""
 
 hdf5_filename = hdf5_filenames_all[file_index]
 hdf5_file = hdf5_files_all[file_index]

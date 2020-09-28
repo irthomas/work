@@ -13,14 +13,21 @@ import matplotlib.pyplot as plt
 import numpy as np
 import re
 import sys
+import h5py
 
-from tools.file.hdf5_functions_v04 import getFile, makeFileList
+from tools.file.hdf5_functions import get_file, make_filelist
+from tools.file.save_dict_to_hdf5 import save_dict_to_hdf5
+
+# from tools.file.hdf5_functions_v04 import getFile, makeFileList
 from tools.file.get_hdf5_data_v01 import getLevel1Data
 from tools.spectra.baseline_als import baseline_als
 from tools.spectra.fit_polynomial import fit_polynomial
 from tools.general.get_nearest_index import get_nearest_index
 from tools.plotting.colours import get_colours
 from instrument.nomad_so_instrument import nu_mp
+
+
+
 #for plotting
 FIG_X = 18
 FIG_Y = 8
@@ -41,7 +48,7 @@ regex = re.compile("20(180828|180830|180901|181125|181201|181207|190203|190311|1
 
 
 file_level = "hdf5_level_1p0a"
-hdf5_files, hdf5_filenames, _ = makeFileList(regex, file_level, silent=True)
+hdf5_files, hdf5_filenames, _ = make_filelist(regex, file_level, silent=True)
 
 
 
@@ -113,6 +120,12 @@ for bin_index in bin_indices:
 
     fit_coefficients = np.asfarray(fit_coefficients).T
     correction_dict[bin_index]["coefficients"] = fit_coefficients
+    
+    
+save_dict_to_hdf5(correction_dict, "test2")
+
+
+
 
 
 if 0 in plot_type:
@@ -227,7 +240,7 @@ indices_no_strong_abs = list(range(64))+list(range(74, 121))+list(range(131,164)
 
 diffraction_order = int(chosen_hdf5_filename.split("_")[-1])
 
-_, chosen_hdf5_file = getFile(chosen_hdf5_filename, file_level, 0, silent=True)
+_, chosen_hdf5_file = get_file(chosen_hdf5_filename, file_level, 0, silent=True)
 
 
 alts_in = np.mean(chosen_hdf5_file["Geometry/Point0/TangentAltAreoid"][...], axis=1)

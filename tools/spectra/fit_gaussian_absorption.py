@@ -20,7 +20,10 @@ def fit_gaussian_absorption(x_in, y_in, error=False):
     
     x_mean = np.mean(x_in)
     x_centred = x_in - x_mean
-    popt, pcov = curve_fit(func, x_centred, y_in, p0=[0.1, 0.02, 0.25, 0.0])
+    try:
+        popt, pcov = curve_fit(func, x_centred, y_in, p0=[0.1, 0.02, 0.25, 0.0])
+    except RuntimeError:
+        return [], [], []
     
     if error:
         y_fit = func(x_centred, *popt)

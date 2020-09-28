@@ -35,6 +35,9 @@ if SYSTEM == "Linux": #linux system
     FIG_X = 8
     FIG_Y = 6
 
+    FIG_X_PDF = 9
+    FIG_Y_PDF = 9
+
     paths["DATASTORE"] = {}
     paths["DATASTORE"]["DIRECTORY_STRUCTURE"] = True
     paths["DATASTORE"]["SEARCH_DATASTORE"] = False
@@ -46,14 +49,20 @@ elif os.path.exists(os.path.normcase(r"C:\Users\iant\Dropbox\NOMAD\Python")): #o
     paths["BASE_DIRECTORY"] = os.path.normcase(r"C:\Users\iant\Dropbox\NOMAD\Python")
 
 #    paths["DATA_DIRECTORY"] = os.path.normcase(r"C:\Users\iant\Documents\DATA\hdf5_copy")
-    paths["DATA_DIRECTORY"] = os.path.normcase(r"D:\DATA\hdf5_ftp")
-#    paths["DATA_DIRECTORY"] = os.path.normcase(r"W:\data\SATELLITE\TRACE-GAS-ORBITER\NOMAD\hdf5")
+    # paths["DATA_DIRECTORY"] = os.path.normcase(r"D:\DATA\hdf5_ftp")
+    paths["DATA_DIRECTORY"] = os.path.normcase(r"D:\DATA\hdf5")
+    # paths["DATA_DIRECTORY"] = os.path.normcase(r"W:\data\SATELLITE\TRACE-GAS-ORBITER\NOMAD\hdf5")
 #    paths["DATA_DIRECTORY"] = os.path.normcase(r"W:\data\SATELLITE\TRACE-GAS-ORBITER\NOMAD\test\iant\hdf5")
 
     paths["LOCAL_DIRECTORY"] = os.path.normcase(r"C:\Users\iant\Documents\DATA")
-    paths["DATASTORE_ROOT_DIRECTORY"] = os.path.normcase(r"C:\Users\iant\Documents\DATA")
+    
+    paths["DATASTORE_ROOT_DIRECTORY"] = os.path.normcase(r"W:\data\SATELLITE\TRACE-GAS-ORBITER\NOMAD")
+    # paths["DATASTORE_ROOT_DIRECTORY"] = os.path.normcase(r"C:\Users\iant\Documents\DATA")
+    # paths["DATASTORE_ROOT_DIRECTORY"] = os.path.normcase(r"D:\DATA")
+    
     paths["RETRIEVAL_DIRECTORY"] = os.path.normcase(r"C:\Users\iant\Documents\DATA\retrievals_copy")
 #    paths["RETRIEVAL_DIRECTORY"] = os.path.normcase(r"X:\linux\input_tools\Tools")
+
     paths["DB_DIRECTORY"] = os.path.normcase(r"C:\Users\iant\Documents\DATA\db")
     paths["KERNEL_DIRECTORY"] = os.path.normcase(r"C:\Users\iant\Documents\DATA\local_spice_kernels\kernels\mk")
     paths["COP_TABLE_DIRECTORY"] = os.path.normcase(r"C:\Users\iant\Documents\DATA\cop_tables")
@@ -66,6 +75,9 @@ elif os.path.exists(os.path.normcase(r"C:\Users\iant\Dropbox\NOMAD\Python")): #o
 
     FIG_X = 10 #for PPT
     FIG_Y = 5 #for PPT
+    
+    FIG_X_PDF = 9
+    FIG_Y_PDF = 9
 
     paths["DATASTORE"] = {}
     paths["DATASTORE"]["DIRECTORY_STRUCTURE"] = True
@@ -107,6 +119,9 @@ elif os.path.exists(os.path.normcase(r"C:\Users\ithom\Dropbox\NOMAD\Python")): #
 #    FIG_Y = 5 #for PPT
     FIG_X = 25
     FIG_Y = 14
+
+    FIG_X_PDF = 9
+    FIG_Y_PDF = 9
     
     paths["DATASTORE"] = {}
     paths["DATASTORE"]["DIRECTORY_STRUCTURE"] = True

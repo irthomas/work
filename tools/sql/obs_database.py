@@ -23,8 +23,16 @@ from tools.file.hdf5_functions import make_filelist, get_filepath
 
 from tools.spectra.baseline_als import baseline_als
 
-import MySQLdb
-from MySQLdb import OperationalError
+from tools.general.python_version import python_version
+
+if python_version() >= 3.8:
+    CONNECTOR = True
+    import mysql.connector
+else:    
+    CONNECTOR = False
+    import MySQLdb
+    from MySQLdb import OperationalError
+
 import sqlite3
 
 
@@ -59,8 +67,13 @@ class obs_database(object):
 
             if not self.silent:
                 print("Connecting to central database %s" %host)
+                
+            if CONNECTOR:
+                self.db = mysql.connector.connect(user=user, password=passwd, host=host, database=db)
+            else:
+                self.db = MySQLdb.connect(host=host, user=user, passwd=passwd, db=db)
+                
  
-            self.db = MySQLdb.connect(host=host, user=user, passwd=passwd, db=db)
             self.cursor = self.db.cursor()
         else:
             

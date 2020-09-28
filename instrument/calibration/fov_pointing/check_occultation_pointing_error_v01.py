@@ -4,7 +4,7 @@ Created on Mon Mar 23 18:24:51 2020
 
 @author: iant
 
-CHECK OCCULTATION MISPOINTING
+CHECK OCCULTATION MISPOINTING, SAVE TO PDF
 
 """
 import re

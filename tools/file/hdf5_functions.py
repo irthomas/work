@@ -25,7 +25,7 @@ DATASTORE_PATHS = paths["DATASTORE"]
 
 if SYSTEM == "Windows":
     print("Running on windows")
-    import getpass
+    # import getpass
     import pysftp
 #    import spiceypy as sp
 
@@ -128,7 +128,8 @@ def get_file_from_datastore(file_level, year_in, month_in, day_in, filename_in, 
     global PASSWORD
 
     if PASSWORD == "":
-        PASSWORD = getpass.getpass('Password:')
+        # PASSWORD = getpass.getpass('Password:')
+        PASSWORD = input('Password:')
 
     future_path = os.path.join(paths["DATA_DIRECTORY"], file_level, year_in, month_in, day_in)
     os.makedirs(future_path, exist_ok=True)

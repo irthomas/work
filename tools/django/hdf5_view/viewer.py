@@ -17,7 +17,8 @@ SECRET_KEY = '4l0ngs3cr3tstr1ngw3lln0ts0l0ngw41tn0w1tsl0ng3n0ugh'
 ROOT_URLCONF = __name__
 
 #DATA_DIRECTORY = os.path.normcase(r"C:\Users\iant\Documents\DATA\hdf5_copy")
-DATA_DIRECTORY = os.path.normcase(r"W:\data\SATELLITE\TRACE-GAS-ORBITER\NOMAD\hdf5")
+#DATA_DIRECTORY = os.path.normcase(r"W:\data\SATELLITE\TRACE-GAS-ORBITER\NOMAD\hdf5")
+DATA_DIRECTORY = os.path.normcase(r"D:\DATA\hdf5")
 
 
 CHANNELS = ["so", "lno", "uvis"]
@@ -308,7 +309,7 @@ def hdf5_level(request):
                 Highcharts.chart('container2', {
                     chart: {
                         type: 'line',
-                        height: 1000,
+                        height: 700,
                         zoomType: 'xy'
                     },
                     title: {

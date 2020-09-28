@@ -78,6 +78,9 @@ def simple_retrieval(y_in, alt, molecule, order, instrument_temperature, snr=500
     elif molecule == "HCl":
         retDict["xa"] = np.ones(len(atmo['Z'])) * 1.0e-9 #1ppb constant, converted to dimensionless quantity
         retDict["sa"] = np.ones(len(atmo['Z'])) * 10.0 #10x variation allowed above/below.  #for CH4, don't scale CO2 allowed deviation
+    elif molecule == "PH3":
+        retDict["xa"] = np.ones(len(atmo['Z'])) * 1.0e-9 #1ppb constant, converted to dimensionless quantity
+        retDict["sa"] = np.ones(len(atmo['Z'])) * 10.0 #10x variation allowed above/below.  #for CH4, don't scale CO2 allowed deviation
     else:
         name = molecule
         atmo_dir = os.path.join(gem_version_string, apriori_version)

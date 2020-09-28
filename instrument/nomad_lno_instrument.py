@@ -154,6 +154,8 @@ def nu_grid(m, dnu, t, n=2):
 """AOTF is old formulation from Liuzzi draft"""
 I0 = 0.6290016 #from IG/I0 = +0.589821 and I0 + IG = 1
 IG = 0.3709984
+# I0 = 0.8 #test for LNO dust curvature
+# IG = 0.2
 W0 = 18.188122
 SIGMAG = 12.181137
 def F_aotf_goddard19draft(m, nu, t, A=None, nu0=None, iG=IG, i0=I0, w0=W0, sigmaG=SIGMAG):
