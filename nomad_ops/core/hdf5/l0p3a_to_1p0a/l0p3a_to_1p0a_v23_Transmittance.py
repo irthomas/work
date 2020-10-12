@@ -259,7 +259,7 @@ def doTransmittanceCalibrationForS(hdf5file_path, hdf5FilepathOut):
             """
         """
         End loop over orders
-        """      
+        """
         """RECOMBINE BINS"""
         # This is the list of the index of spectra_1 that have to be saved.
         indrec=np.argsort(alt_1)

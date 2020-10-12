@@ -14,6 +14,8 @@ def get_local_minima(values):
 
 
 
+
+
 def get_local_minima_or_equals(values):
     """find indices of all local minima, including those with equal adjacent values """
     import numpy as np
@@ -22,3 +24,9 @@ def get_local_minima_or_equals(values):
     return minimum_indices
 
 
+def get_local_maxima_or_equals(values):
+    """find indices of all local maxima, including those with equal adjacent values """
+    import numpy as np
+    
+    minimum_indices = (np.diff(np.sign(np.diff(values))) < 0).nonzero()[0] + 1
+    return minimum_indices

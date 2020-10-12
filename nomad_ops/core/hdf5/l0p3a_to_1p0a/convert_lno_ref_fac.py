@@ -11,7 +11,7 @@ LNO CALIBRATION:
     3. USE CAL TABLE TO MAKE SOLAR REF SPECTRUM, USE SOLAR/MOLECULAR LINES TO CALIBRATE NADIR DATA
 
 
-GET NADIR DATA FROM SQL DATABASE AND CALIBRATE WITH RADIANCE FACTOR AUX FILE
+GET NADIR DATA FROM SQL DATABASE AND CALIBRATE WITH REFLECTANCE FACTOR AUX FILE
 PLOT SPECTRAL CALIBRATION FITS TO LINES IN THE ORDER AND CHECK
 
 # currently working for orders 160, 162, 163, 167, 168, 169, 189, 194, 196
@@ -28,8 +28,8 @@ NEW:
     _LNO_1_DF_168 (IF FILE FAILS)
 
     Y = Radiance
-    YRadianceFactor = Radiance factor
-    YRadianceFactorError = error on radiance factor
+    YReflectanceFactor = Reflectance factor
+    YReflectanceFactorError = error on reflectance factor
     YSimple = Radiance simple conversion
     
     
@@ -46,12 +46,12 @@ import matplotlib.pyplot as plt
 #from scipy import interpolate
 
 
-from nomad_ops.core.hdf5.l0p3a_to_1p0a.lno_rad_fac_orders import rad_fact_orders_dict
+from nomad_ops.core.hdf5.l0p3a_to_1p0a.lno_ref_fac_orders import ref_fact_orders_dict
 
 from nomad_ops.core.hdf5.l0p3a_to_1p0a.functions.baseline_als import baseline_als
 from nomad_ops.core.hdf5.l0p3a_to_1p0a.functions.get_y_normalised import get_y_normalised
 from nomad_ops.core.hdf5.l0p3a_to_1p0a.functions.make_synth_solar_spectrum import make_synth_solar_spectrum
-from nomad_ops.core.hdf5.l0p3a_to_1p0a.functions.calculate_radiance_factor import calculate_radiance_factor
+from nomad_ops.core.hdf5.l0p3a_to_1p0a.functions.calculate_reflectance_factor import calculate_reflectance_factor
 from nomad_ops.core.hdf5.l0p3a_to_1p0a.functions.find_mean_nu_shift import find_mean_nu_shift
 from nomad_ops.core.hdf5.l0p3a_to_1p0a.functions.find_absorption_lines import find_ref_spectra_minima, find_nadir_spectra_minima
 from nomad_ops.core.hdf5.l0p3a_to_1p0a.functions.make_reference_line_dict import make_reference_line_dict
@@ -60,7 +60,7 @@ from nomad_ops.core.hdf5.l0p3a_to_1p0a.functions.get_min_mean_max_of_field impor
 from nomad_ops.core.hdf5.l0p3a_to_1p0a.functions.prepare_nadir_fig_tree import prepare_nadir_fig_tree
 
 from nomad_ops.core.hdf5.l0p3a_to_1p0a.config import RADIOMETRIC_CALIBRATION_AUXILIARY_FILES, \
-    LNO_RADIANCE_FACTOR_CALIBRATION_TABLE_NAME, PFM_AUXILIARY_FILES, FIG_X, FIG_Y, SYSTEM, GOOD_PIXELS
+    LNO_REFLECTANCE_FACTOR_CALIBRATION_TABLE_NAME, PFM_AUXILIARY_FILES, FIG_X, FIG_Y, SYSTEM, GOOD_PIXELS
 
 #if SYSTEM == "Windows":
 #    logging.basicConfig(level=logging.INFO)
@@ -75,7 +75,7 @@ logger = logging.getLogger( __name__ )
 
 
     
-def convert_lno_rad_fac(hdf5_filename, hdf5_file, errorType):
+def convert_lno_ref_fac(hdf5_filename, hdf5_file, errorType):
     
     diffraction_order = int(hdf5_filename.split("_")[-1])
     
@@ -94,7 +94,7 @@ def convert_lno_rad_fac(hdf5_filename, hdf5_file, errorType):
     mean_incidence_angles_deg = np.mean(incidence_angles, axis=1)
 
     #get info from rad fac order dictionary
-    rad_fact_order_dict = rad_fact_orders_dict[diffraction_order]
+    ref_fact_order_dict = ref_fact_orders_dict[diffraction_order]
     
 
 
@@ -104,8 +104,8 @@ def convert_lno_rad_fac(hdf5_filename, hdf5_file, errorType):
     #raw nadir / synth solar counts
     #reference solar/molecular spectra
     #nadir continuum removed
-    #rad_fac
-    #rad_fac_normalised
+    #ref_fac
+    #ref_fac_normalised
     gs = fig2.add_gridspec(3,2)
     ax2a = fig2.add_subplot(gs[0, 0])
     ax2b = fig2.add_subplot(gs[1, 0], sharex=ax2a)
@@ -116,10 +116,10 @@ def convert_lno_rad_fac(hdf5_filename, hdf5_file, errorType):
     ax2a2 = ax2a.twinx()
 
     #if no solar or nadir lines - set cutoff to be 75% of max value
-    if rad_fact_order_dict["solar_molecular"] == "":
+    if ref_fact_order_dict["solar_molecular"] == "":
         mean_nadir_signal_cutoff = np.max(y_mean_nadir) * 0.75
     else:
-        mean_nadir_signal_cutoff = rad_fact_order_dict["mean_sig"]
+        mean_nadir_signal_cutoff = ref_fact_order_dict["mean_sig"]
 
     #first, check how many spectra pass the cutoff test
     validIndices = np.where(y_mean_nadir > mean_nadir_signal_cutoff)[0]
@@ -161,13 +161,13 @@ def convert_lno_rad_fac(hdf5_filename, hdf5_file, errorType):
     ax2a.plot(x, obs_continuum, "k--")
     ax2c.plot(x, obs_absorption, "k")
     
-    solar_line = rad_fact_order_dict["solar_line"]
-    solar_molecular = rad_fact_order_dict["solar_molecular"]
+    solar_line = ref_fact_order_dict["solar_line"]
+    solar_molecular = ref_fact_order_dict["solar_molecular"]
     
     
     hr_simulation_filepath = os.path.join(PFM_AUXILIARY_FILES, "radiometric_calibration", "lno_radiance_factor_order_data", "order_%i.txt" %diffraction_order)
 
-    reference_dict = make_reference_line_dict(rad_fact_order_dict, hr_simulation_filepath)
+    reference_dict = make_reference_line_dict(ref_fact_order_dict, hr_simulation_filepath)
     nu_solar_hr = reference_dict["nu_hr"]
     solar_spectrum_hr = reference_dict["solar"]
     molecular_spectrum_hr = reference_dict["molecular"]
@@ -214,25 +214,25 @@ def convert_lno_rad_fac(hdf5_filename, hdf5_file, errorType):
         x_obs = x
 
     #make solar reference spectrum from LNO fullscans
-    rad_fac_aux_filepath = os.path.join(RADIOMETRIC_CALIBRATION_AUXILIARY_FILES, LNO_RADIANCE_FACTOR_CALIBRATION_TABLE_NAME)
-    synth_solar_spectrum = make_synth_solar_spectrum(diffraction_order, x, t, rad_fac_aux_filepath)
+    ref_fac_aux_filepath = os.path.join(RADIOMETRIC_CALIBRATION_AUXILIARY_FILES, LNO_REFLECTANCE_FACTOR_CALIBRATION_TABLE_NAME)
+    synth_solar_spectrum = make_synth_solar_spectrum(diffraction_order, x, t, ref_fac_aux_filepath)
     ax2a2.plot(x, synth_solar_spectrum, "b")
 
-    #calculate radiance factor for all nadir spectra
-    y_rad_fac = calculate_radiance_factor(y, synth_solar_spectrum, sun_mars_distance_au, mean_incidence_angles_deg)
+    #calculate reflectance factor for all nadir spectra
+    y_ref_fac, synth_solar_spectrum_tiled, solar_to_nadir_scaling_factor_tiled = calculate_reflectance_factor(y, synth_solar_spectrum, sun_mars_distance_au, mean_incidence_angles_deg)
     
     for valid_index in validIndices:
-        ax2d.plot(x_obs, y_rad_fac[valid_index, :], "grey", alpha=0.3)
+        ax2d.plot(x_obs, y_ref_fac[valid_index, :], "grey", alpha=0.3)
             
-    mean_rad_fac = np.mean(y_rad_fac[validIndices, :], axis=0)
+    mean_ref_fac = np.mean(y_ref_fac[validIndices, :], axis=0)
     
-    #remove wavey continuum from mean radiance factor spectrum
-    mean_rad_fac_continuum = baseline_als(mean_rad_fac, lam=500.0)
-    rad_fac_normalised = mean_rad_fac / mean_rad_fac_continuum
+    #remove wavey continuum from mean reflectance factor spectrum
+    mean_ref_fac_continuum = baseline_als(mean_ref_fac, lam=500.0)
+    ref_fac_normalised = mean_ref_fac / mean_ref_fac_continuum
     
-    ax2d.plot(x_obs, mean_rad_fac, "k", label="Mean YRadianceFactor")
-    ax2d.plot(x_obs, mean_rad_fac_continuum, "k--", label="Continuum Fit")
-    ax2e.plot(x_obs, rad_fac_normalised, "k")
+    ax2d.plot(x_obs, mean_ref_fac, "k", label="Mean YReflectanceFactor")
+    ax2d.plot(x_obs, mean_ref_fac_continuum, "k--", label="Continuum Fit")
+    ax2e.plot(x_obs, ref_fac_normalised, "k")
 
     #format plot
     ax2c.set_xlabel("Wavenumber cm-1")
@@ -241,13 +241,13 @@ def convert_lno_rad_fac(hdf5_filename, hdf5_file, errorType):
     ax2a.set_ylabel("Counts\nper px per second")
     ax2b.set_ylabel("Reference\nspectra")
     ax2c.set_ylabel("Nadir\ncontinuum removed")
-    ax2d.set_ylabel("Radiance\nfactor")
-    ax2e.set_ylabel("Continuum removed\nmean radiance factor")
+    ax2d.set_ylabel("Reflectance\nfactor")
+    ax2e.set_ylabel("Continuum removed\nmean reflectance factor")
     
     ax2a.set_ylim(bottom=0)
     ax2a2.set_ylim(bottom=0)
     ax2c.set_ylim((min(obs_absorption[GOOD_PIXELS])-0.1, max(obs_absorption[GOOD_PIXELS])+0.1))
-    ax2d.set_ylim([min(mean_rad_fac[10:310])-0.05, max(mean_rad_fac[10:310])+0.05])
+    ax2d.set_ylim([min(mean_ref_fac[10:310])-0.05, max(mean_ref_fac[10:310])+0.05])
 #    ax2e.set_ylim(bottom=0)
 
     ax2c.set_xlim([np.floor(min(x)), np.ceil(max(x))])
@@ -280,33 +280,36 @@ def convert_lno_rad_fac(hdf5_filename, hdf5_file, errorType):
 
 
 
-    rad_fac_cal_dict = {}
-    rad_fac_cal_dict["Science/X"] = {"data":x_obs, "dtype":np.float32, "compression":True}
-    rad_fac_cal_dict["Science/YRadianceFactor"] = {"data":y_rad_fac, "dtype":np.float32, "compression":True}
-    rad_fac_cal_dict["Criteria/LineFit/NumberOfLinesFit"] = {"data":len(chi_sq_matching), "dtype":np.int16, "compression":False}
-    rad_fac_cal_dict["Criteria/LineFit/ChiSqError"] = {"data":chi_sq_matching, "dtype":np.float32, "compression":True}
-    rad_fac_cal_dict["Geometry/MeanIncidenceAngle"] = {"data":mean_incidence_angles_deg, "dtype":np.float32, "compression":True}
+    ref_fac_cal_dict = {}
+    ref_fac_cal_dict["Science/SolarSpectrum"] = {"data":synth_solar_spectrum_tiled, "dtype":np.float32, "compression":True}
+    ref_fac_cal_dict["Science/SolarToNadirScalingFactor"] = {"data":solar_to_nadir_scaling_factor_tiled, "dtype":np.float32, "compression":True}
+    ref_fac_cal_dict["Geometry/MeanIncidenceAngle"] = {"data":mean_incidence_angles_deg, "dtype":np.float32, "compression":True}
+
+    ref_fac_cal_dict["Science/X"] = {"data":x_obs, "dtype":np.float32, "compression":True}
+    ref_fac_cal_dict["Science/YReflectanceFactor"] = {"data":y_ref_fac, "dtype":np.float32, "compression":True}
+    ref_fac_cal_dict["Criteria/LineFit/NumberOfLinesFit"] = {"data":len(chi_sq_matching), "dtype":np.int16, "compression":False}
+    ref_fac_cal_dict["Criteria/LineFit/ChiSqError"] = {"data":chi_sq_matching, "dtype":np.float32, "compression":True}
 
     #write calibration and error references    
     if solar_line and nadir_lines_fit:
-        calib_ref = "Radiance factor calibration fit to solar reference and nadir absorption lines"
+        calib_ref = "Reflectance factor calibration fit to solar reference and nadir absorption lines"
         error_ref = ""
         error = False
     elif nadir_lines_fit:
-        calib_ref = "Radiance factor calibration fit to nadir absorption lines only (no solar lines)"
+        calib_ref = "Reflectance factor calibration fit to nadir absorption lines only (no solar lines)"
         error_ref = ""
         error = True
     elif solar_line:
-        calib_ref = "Radiance factor calibration fit to solar reference only (no nadir absorption lines)"
+        calib_ref = "Reflectance factor calibration fit to solar reference only (no nadir absorption lines)"
         error_ref = ""
         error = True
     else:
-        calib_ref = "Radiance factor calibration did not fit solar reference or nadir absorption lines"
+        calib_ref = "Reflectance factor calibration did not fit solar reference or nadir absorption lines"
         error_ref = ""
         error = True
     
     #use error to update criteria
-    rad_fac_cal_dict["Criteria/LineFit/Error"] = {"data":error, "dtype":np.bool, "compression":False}
+    ref_fac_cal_dict["Criteria/LineFit/Error"] = {"data":error, "dtype":np.bool, "compression":False}
 
     #use error to update figure title to show correct filename
     hdf5_filename_new = output_filename(hdf5_filename, error)
@@ -331,14 +334,14 @@ def convert_lno_rad_fac(hdf5_filename, hdf5_file, errorType):
     
     fig2.suptitle(title)
     
-    thumbnail_path = prepare_nadir_fig_tree("%s_rad_fac.png" %hdf5_filename_new)
+    thumbnail_path = prepare_nadir_fig_tree("%s_ref_fac.png" %hdf5_filename_new)
     fig2.savefig(thumbnail_path)
     
 #    if SYSTEM != "Windows":
     plt.close(fig2)
     
         
-    rad_fac_refs = {"calib_ref":calib_ref, "error_ref":error_ref, "error":error}
+    ref_fac_refs = {"calib_ref":calib_ref, "error_ref":error_ref, "error":error}
     
-    return rad_fac_cal_dict, rad_fac_refs
+    return ref_fac_cal_dict, ref_fac_refs
         

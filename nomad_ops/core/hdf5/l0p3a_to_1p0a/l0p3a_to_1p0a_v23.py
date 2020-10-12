@@ -8,7 +8,7 @@ import numpy as np
 
     
 from nomad_ops.core.hdf5.l0p3a_to_1p0a.convert_lno_radiance import convert_lno_radiance
-from nomad_ops.core.hdf5.l0p3a_to_1p0a.convert_lno_rad_fac import convert_lno_rad_fac
+from nomad_ops.core.hdf5.l0p3a_to_1p0a.convert_lno_ref_fac import convert_lno_ref_fac
 
 from nomad_ops.core.hdf5.l0p3a_to_1p0a.functions.output_filename import output_filename
 from nomad_ops.core.hdf5.l0p3a_to_1p0a.functions.check_flags import check_flags
@@ -102,27 +102,27 @@ def convert(hdf5file_path):
             """radiance calibration only"""
             if calibrationType in ["Radiance"]:
                 radiance_cal_dict, radiance_refs = convert_lno_radiance(hdf5_basename, hdf5FileIn, errorType)
-                rad_fac_cal_dict = {}
-                rad_fac_refs = {"error":True}
+                ref_fac_cal_dict = {}
+                ref_fac_refs = {"error":True}
 
     
                 """radiance and radiance factor calibration"""
             elif calibrationType in ["Radiance & Radiance Factor"]:
                 radiance_cal_dict, radiance_refs = convert_lno_radiance(hdf5_basename, hdf5FileIn, errorType)
-                rad_fac_cal_dict, rad_fac_refs = convert_lno_rad_fac(hdf5_basename, hdf5FileIn, errorType)
+                ref_fac_cal_dict, ref_fac_refs = convert_lno_ref_fac(hdf5_basename, hdf5FileIn, errorType)
                 
             else:
                 logger.error("Calibration type %s not yet implemented", calibrationType)
 
             #make attribute labels
-            y_calib_ref = radiance_refs["calib_ref"] + ". " + rad_fac_refs["calib_ref"]
-            y_error_ref = radiance_refs["error_ref"] + ". " + rad_fac_refs["error_ref"]
+            y_calib_ref = radiance_refs["calib_ref"] + ". " + ref_fac_refs["calib_ref"]
+            y_error_ref = radiance_refs["error_ref"] + ". " + ref_fac_refs["error_ref"]
             logger.info("%s: %s", hdf5_basename, y_calib_ref)
 
             
             if calibrationType in ["Radiance & Radiance Factor"]:
                 #make output filename based on radiance factor pass/fail
-                hdf5_basename_new = output_filename(hdf5_basename, rad_fac_refs["error"])
+                hdf5_basename_new = output_filename(hdf5_basename, ref_fac_refs["error"])
 
             else:
                 hdf5_basename_new = hdf5_basename
@@ -145,7 +145,7 @@ def convert(hdf5file_path):
                     ]
                 
                 #if x values have been recalibrated from nadir solar/molecular lines
-                if "Science/X" in rad_fac_cal_dict.keys():
+                if "Science/X" in ref_fac_cal_dict.keys():
                     DATASETS_TO_BE_REMOVED.append("Science/X")
                 
                 ATTRIBUTES_TO_BE_REMOVED = ["YCalibRef", "YErrorRef"]
@@ -181,23 +181,21 @@ def convert(hdf5file_path):
                             hdf5FileOut.create_dataset(hdf5_dataset_path, dtype=dataset_dict["dtype"], data=dataset_dict["data"], compression="gzip", shuffle=True)
                         else:
                             hdf5FileOut.create_dataset(hdf5_dataset_path, dtype=dataset_dict["dtype"], data=dataset_dict["data"])
-                    for hdf5_dataset_path, dataset_dict in rad_fac_cal_dict.items():
+                    for hdf5_dataset_path, dataset_dict in ref_fac_cal_dict.items():
                         if dataset_dict["compression"]:
                             hdf5FileOut.create_dataset(hdf5_dataset_path, dtype=dataset_dict["dtype"], data=dataset_dict["data"], compression="gzip", shuffle=True)
                         else:
                             hdf5FileOut.create_dataset(hdf5_dataset_path, dtype=dataset_dict["dtype"], data=dataset_dict["data"])
         
+            if SAVE_FILE:
+                return [hdf5FilepathOut]
+            else:
+                return []
         
-
-
-
         else:
-            logger.error("%s: %s calibration cannot be performed on %s data", hdf5_basename, calibrationType, channel)
+            logger.error("%s: Calibration cannot be performed on %s data", hdf5_basename, channel)
+            return []
     
-    if SAVE_FILE:
-        return [hdf5FilepathOut]
-    else:
-        return []
 
 
 

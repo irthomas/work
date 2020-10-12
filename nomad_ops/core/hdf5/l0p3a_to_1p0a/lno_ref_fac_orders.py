@@ -4,7 +4,7 @@ Created on Tue Mar 31 16:37:15 2020
 
 @author: iant
 
-LNO RADIANCE FACTOR ORDERS
+LNO REFLECTANCE FACTOR ORDERS
 
 """
 
@@ -15,7 +15,7 @@ LNO RADIANCE FACTOR ORDERS
 #[nadir mean signal cutoff px 160:240, minimum signal for absorption, n stds for absorption, n stds for reference spectrum absorption]
 #can't do 197+ due to no solar spectrum
 
-rad_fact_orders_dict = {
+ref_fact_orders_dict = {
 115:{"solar_line":True, "trans_solar":0.8, "nu_range":[2585., 2587.], "solar_molecular":"solar", "mean_sig":3.0, "min_sig":2.0, "stds_sig":2.0, "stds_ref":2.0},
 116:{"solar_line":False, "solar_molecular":""},
 117:{"solar_line":False, "solar_molecular":""},

@@ -7,6 +7,7 @@ Created on Mon Sep  7 21:26:38 2020
 
 import time
 from datetime import datetime
+import re
 
 import requests
 from bs4 import BeautifulSoup
@@ -22,6 +23,7 @@ while go: #repeat
     # download the google form
     response = requests.get(url, headers=headers)
     soup = BeautifulSoup(response.text, "html.parser")
+    soup_string = str(soup).lower()
 
     datetime_now = str(datetime.now())[:-7].replace(" ","_").replace(":","-")
     
@@ -30,7 +32,22 @@ while go: #repeat
         
     else:
         print(datetime_now, ": times are available!")
-        send_email("Times are available!", "Sign up")
+        
+        results = [i.start() for i in re.finditer("dimanche", soup_string)]
+        
+        output_times = []
+        for result in results:
+            snippet = soup_string[result:result+50]
+            index = snippet.find("\"")
+            if index == -1:
+                index = snippet.find("<")
+            if index != -1:
+                output_times.append(soup_string[result:result+index])
+        output_times = list(set(output_times))
+            
+       
+        
+        send_email("Times are available!", "\n".join(output_times))
         go = False
         
         # #save page
@@ -38,7 +55,7 @@ while go: #repeat
         #     f.writelines(str(soup))
     
     #wait 1 hour
-    for i in range(600):
+    for i in range(360):
         time.sleep(10)
 
     
