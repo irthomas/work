@@ -96,5 +96,5 @@ GOOD_PIXELS = np.arange(50,320)
 
 HDF5_TIME_FORMAT = "%Y %b %d %H:%M:%S.%f"
 
-
+LNO_HEATER_DB_INDEX = 2
 

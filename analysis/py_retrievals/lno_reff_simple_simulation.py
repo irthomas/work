@@ -21,7 +21,7 @@ from matplotlib import pyplot as plt
 # from analysis.retrievals.NOMAD_instrument import freq_mp, F_blaze, F_aotf_3sinc
 # from tools.spectra.solar_spectrum_so import get_solar_hr
 
-# from instrument.nomad_so_instrument import nu_mp, F_blaze, F_aotf_goddard18b
+# from instrument.nomad_lno_instrument import nu_mp, F_blaze, F_aotf_goddard18b
 from analysis.py_retrievals.lno_reff_simple_retrieval import simple_retrieval, forward_model
 
 

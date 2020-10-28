@@ -58,6 +58,8 @@ from nomad_ops.core.hdf5.l0p3a_to_1p0a.functions.make_reference_line_dict import
 from nomad_ops.core.hdf5.l0p3a_to_1p0a.functions.output_filename import output_filename
 from nomad_ops.core.hdf5.l0p3a_to_1p0a.functions.get_min_mean_max_of_field import get_min_mean_max_of_field
 from nomad_ops.core.hdf5.l0p3a_to_1p0a.functions.prepare_nadir_fig_tree import prepare_nadir_fig_tree
+from nomad_ops.core.hdf5.l0p3a_to_1p0a.curvature.curvature_functions import get_temperature_corrected_mean_curve
+
 
 from nomad_ops.core.hdf5.l0p3a_to_1p0a.config import RADIOMETRIC_CALIBRATION_AUXILIARY_FILES, \
     LNO_REFLECTANCE_FACTOR_CALIBRATION_TABLE_NAME, PFM_AUXILIARY_FILES, FIG_X, FIG_Y, SYSTEM, GOOD_PIXELS
@@ -221,10 +223,14 @@ def convert_lno_ref_fac(hdf5_filename, hdf5_file, errorType):
     #calculate reflectance factor for all nadir spectra
     y_ref_fac, synth_solar_spectrum_tiled, solar_to_nadir_scaling_factor_tiled = calculate_reflectance_factor(y, synth_solar_spectrum, sun_mars_distance_au, mean_incidence_angles_deg)
     
+    #get mean temperature corrected curvature from hdf5 aux file
+    mean_curve_shifted = get_temperature_corrected_mean_curve(t, diffraction_order)
+    y_ref_fac_flat = y_ref_fac / mean_curve_shifted
+    
     for valid_index in validIndices:
-        ax2d.plot(x_obs, y_ref_fac[valid_index, :], "grey", alpha=0.3)
+        ax2d.plot(x_obs, y_ref_fac_flat[valid_index, :], "grey", alpha=0.3)
             
-    mean_ref_fac = np.mean(y_ref_fac[validIndices, :], axis=0)
+    mean_ref_fac = np.mean(y_ref_fac_flat[validIndices, :], axis=0)
     
     #remove wavey continuum from mean reflectance factor spectrum
     mean_ref_fac_continuum = baseline_als(mean_ref_fac, lam=500.0)
@@ -287,6 +293,7 @@ def convert_lno_ref_fac(hdf5_filename, hdf5_file, errorType):
 
     ref_fac_cal_dict["Science/X"] = {"data":x_obs, "dtype":np.float32, "compression":True}
     ref_fac_cal_dict["Science/YReflectanceFactor"] = {"data":y_ref_fac, "dtype":np.float32, "compression":True}
+    ref_fac_cal_dict["Science/YReflectanceFactorFlat"] = {"data":y_ref_fac_flat, "dtype":np.float32, "compression":True}
     ref_fac_cal_dict["Criteria/LineFit/NumberOfLinesFit"] = {"data":len(chi_sq_matching), "dtype":np.int16, "compression":False}
     ref_fac_cal_dict["Criteria/LineFit/ChiSqError"] = {"data":chi_sq_matching, "dtype":np.float32, "compression":True}
 

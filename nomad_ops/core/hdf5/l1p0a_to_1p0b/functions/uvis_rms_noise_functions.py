@@ -33,15 +33,17 @@ def make_rms_dict(rms_dataset_name):
     return rms_dict
 
 
-def get_rms_dict(hdf5FileIn):
+def get_rms_dict(horizontal_binning):
     """get RMS data"""
-    #determine horizontal binning
-    horizontal_binning = hdf5FileIn["Channel/HorizontalAndCombinedBinningSize"][0]
     #choose rms noise dataset
     rms_dataset_dict = {
-        0:"transerr_err2_nt21_1024.idlsav", 
-        3:"transerr_err2_nt21_256.idlsav", 
-        7:"transerr_err2_nt21_128.idlsav",
+        # 0:"transerr_err2_nt21_1024.idlsav", 
+        # 3:"transerr_err2_nt21_256.idlsav", 
+        # 7:"transerr_err2_nt21_128.idlsav",
+
+        0:"transerr_err3_nt21_1024_md.idlsav", 
+        3:"transerr_err3_nt21_256_md.idlsav", 
+        7:"transerr_err3_nt21_128_md.idlsav",
         }
     
     if horizontal_binning in rms_dataset_dict.keys():

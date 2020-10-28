@@ -30,7 +30,7 @@ calFilepathList = [filepath for filepath in calFilepathList if ("SO" in filepath
 calFilenameList = [os.path.split(filename)[1] for filename in calFilepathList]
 
 copDirs = sorted(os.listdir(paths["COP_TABLE_DIRECTORY"]))
-copDirsGood = [dirname for dirname in copDirs if len(dirname)==15]
+copDirsGood = [dirname for dirname in copDirs if len(dirname)==15 and dirname[-1]=="0"]
 
 copDirsDatetime = [datetime.datetime.strptime(dirname, HDF5_FILENAME_FORMAT) for dirname in copDirsGood]
 #add future cop table datetime so last value in table can be found
@@ -92,5 +92,6 @@ for calFilename, calFilepath in zip(calFilenameList, calFilepathList):
     
 h += "</table>"
 
+print("Writing output")
 with open(os.path.join(paths["BASE_DIRECTORY"], "calibration_log.html"), "w") as f:
     f.write(h)

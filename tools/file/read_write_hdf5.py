@@ -4,12 +4,12 @@ Created on Sat Apr 18 17:40:57 2020
 
 @author: iant
 
-COPY HDF5
+READ AND WRITE HDF5 FILES TO/FROM DICTIONARIES
 """
 
 
-hdf5_filename = "20190102_190343_1p0a_SO_A_E_129"
-hdf5_filename_new = "20190102_190343_1p0a_SO_A_E_129_test"
+# hdf5_filename = "20190102_190343_1p0a_SO_A_E_129"
+# hdf5_filename_new = "20190102_190343_1p0a_SO_A_E_129_test"
 
 
 def read_hdf5_to_dict(hdf5_filename):

@@ -106,17 +106,30 @@ import matplotlib.pyplot as plt
 
 
 
-from nomad_ops.core.hdf5.l1p0a_to_1p0b.functions.uvis_rms_noise_functions import get_rms_dict, find_index, convolve_smooth
-from nomad_ops.core.hdf5.l1p0a_to_1p0b.functions.prepare_uvis_rms_fig_tree import prepare_uvis_rms_fig_tree
-from nomad_ops.core.hdf5.l1p0a_to_1p0b.config import WAVELENGTH_TO_PLOT, PLOT_FIGS
-
+# from nomad_ops.core.hdf5.l1p0a_to_1p0b.functions.uvis_rms_noise_functions import get_rms_dict, find_index, convolve_smooth
+# from nomad_ops.core.hdf5.l1p0a_to_1p0b.functions.prepare_uvis_rms_fig_tree import prepare_uvis_rms_fig_tree
+# from nomad_ops.core.hdf5.l1p0a_to_1p0b.config import WAVELENGTH_TO_PLOT, PLOT_FIGS
 
 
 # from tools.file.hdf5_functions import get_file
+from tools.plotting.colours import get_colours
 # hdf5_filename, hdf5FileIn = get_file("20180426_022949_1p0a_UVIS_E", "hdf5_level_1p0a", 0)
-# hdf5_basename = os.path.splitext(os.path.basename(hdf5_filename))[0]
-
-
+# hdf5_filename, hdf5FileIn = get_file("20181001_111429_1p0a_UVIS_I", "hdf5_level_1p0a", 0)
+# hdf5_filename, hdf5FileIn = get_file("20190304_093635_1p0a_UVIS_E", "hdf5_level_1p0a", 0)
+# horizontal_binning = hdf5FileIn["Channel/HorizontalAndCombinedBinningSize"][0]
+# rms_dict = get_rms_dict(horizontal_binning)
+"""or"""
+# rms_dict = get_rms_dict(0)
+# rms_dict = get_rms_dict(3)
+rms_dict = get_rms_dict(7)
+plt.figure()
+plt.title(rms_dict["INPUT_SAVEFILE"].decode())
+plt.xlabel("Transmittance bin")
+plt.ylabel("RMS Noise")
+colours = get_colours(47)
+for i in range(47): plt.plot(rms_dict["TRANS_BIN"], rms_dict["RMS"][i, :].T, color=colours[i], label="%inm bin" %rms_dict["WAVE_BIN"][i])
+plt.legend(prop={'size': 6})
+plt.savefig("%s.png" %rms_dict["INPUT_SAVEFILE"].decode())
 
 
 
@@ -124,8 +137,12 @@ def uvis_rms_noise(hdf5_filename, hdf5FileIn):
 
     y = hdf5FileIn["Science/YMean"][...]
     x = hdf5FileIn["Science/X"][0, :]
+ 
+    #determine horizontal binning
+    horizontal_binning = hdf5FileIn["Channel/HorizontalAndCombinedBinningSize"][0]
+
+    rms_dict = get_rms_dict(horizontal_binning)
     
-    rms_dict = get_rms_dict(hdf5FileIn)
 
     plot_px_index = find_index(WAVELENGTH_TO_PLOT, x)
     
@@ -184,7 +201,7 @@ def uvis_rms_noise(hdf5_filename, hdf5FileIn):
             
             
             fig, ax = plt.subplots(figsize=(9,9))
-            plt.title(hdf5_filename_new)
+            plt.title("%s (binning=%i)" %(hdf5_filename_new, horizontal_binning))
             plt.xlabel("Transmittance", color="b")
             plt.ylabel("TangentAltAreoid (km)")
             ax.errorbar(y_px, alt, xerr=y_error_px, capsize=5, color="b", label="Original YMean & YMeanError at %0.1fnm" %x_px)
