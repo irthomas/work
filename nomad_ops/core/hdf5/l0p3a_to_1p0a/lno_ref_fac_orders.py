@@ -74,7 +74,7 @@ ref_fact_orders_dict = {
 # 165:{"solar_line":False, "solar_molecular":"molecular", "molecule":"CO2"},
 # 166:{"solar_line":True, "trans_solar":0.91, "nu_range":[3749., 3751.], "solar_molecular":"molecular", "molecule":"H2O", "mean_sig":4.0, "min_sig":2.0, "stds_sig":2.0, "stds_ref":2.0},
 # 167:{"solar_line":True, "trans_solar":0.89, "nu_range":[3766., 3768.], "solar_molecular":"molecular", "molecule":"H2O", "mean_sig":4.0, "min_sig":2.0, "stds_sig":2.0, "stds_ref":2.0},
-# 168:{"solar_line":True, "trans_solar":0.78, "nu_range":[3787., 3789.], "solar_molecular":"both", "molecule":"H2O", "mean_sig":4.0, "min_sig":2.0, "stds_sig":2.0, "stds_ref":2.0},
+168:{"solar_line":True, "trans_solar":0.78, "nu_range":[3787., 3789.], "solar_molecular":"both", "molecule":"H2O", "mean_sig":4.0, "min_sig":2.0, "stds_sig":2.0, "stds_ref":2.0},
 # 169:{"solar_line":True, "trans_solar":0.9, "nu_range":[3812., 3814.], "solar_molecular":"both", "molecule":"H2O", "mean_sig":4.0, "min_sig":2.0, "stds_sig":2.0, "stds_ref":2.0},
 
 # 170:{"solar_line":True, "trans_solar":0.97, "nu_range":[3843., 3845.], "solar_molecular":"molecular", "molecule":"H2O", "mean_sig":4.0, "min_sig":2.0, "stds_sig":2.0, "stds_ref":2.0},

@@ -74,7 +74,7 @@ RADIOMETRIC_CALIBRATION_AUXILIARY_FILES = os.path.join(PFM_AUXILIARY_FILES, "rad
 RADIOMETRIC_CALIBRATION_ORDERS = os.path.join(RADIOMETRIC_CALIBRATION_AUXILIARY_FILES, "lno_radiance_factor_order_data")
 
 #coefficient table to make synthetic solar spectrum
-LNO_REFLECTANCE_FACTOR_CALIBRATION_TABLE_NAME = "LNO_Radiance_Factor_Calibration_Table_v04"
+LNO_REFLECTANCE_FACTOR_CALIBRATION_TABLE_NAME = "LNO_Reflectance_Factor_Calibration_Table_v05"
 
 #radiance look up table
 LNO_RADIOMETRIC_CALIBRATION_TABLE_NAME = "LNO_Radiometric_Calibration_Table_v03"

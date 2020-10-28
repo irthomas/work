@@ -33,3 +33,4 @@ def make_synth_solar_spectrum(diffraction_order, observation_wavenumbers, observ
     
     return corrected_solar_spectrum
 
+
