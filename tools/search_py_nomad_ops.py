@@ -11,7 +11,7 @@ import os
 import glob
 import posixpath
 
-SEARCH_STRING = "pfm_auxiliary_files/matlab/v_Test"
+SEARCH_STRING = "2016"
 
 
 #from tools.file.paths import paths
