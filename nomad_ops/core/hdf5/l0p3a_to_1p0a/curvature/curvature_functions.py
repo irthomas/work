@@ -44,13 +44,10 @@ def read_hdf5_to_dict(hdf5_filename):
 
 
 
-def get_temperature_corrected_mean_curve(temperature_in, diffraction_order):
+def get_temperature_corrected_mean_curve(temperature_in, curvature_dict):
     """get mean curve, shift peak to correct for temperature, interpolate back onto original pixel grid"""
 
     
-    #get data from hdf5 dict
-    curvature_dict = read_hdf5_to_dict("lno_reflectance_factor_curvature_order_%i" %diffraction_order)[0]
-
     temperature_shift_coeffs = curvature_dict["temperature_shift_coeffs"]
     reference_temperature_peak = curvature_dict["reference_temperature_peak"]
     mean_curve = curvature_dict["mean_curve"]

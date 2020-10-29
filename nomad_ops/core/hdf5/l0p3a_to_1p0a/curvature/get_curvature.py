@@ -82,6 +82,7 @@ for file_index, (hdf5_filename, hdf5_file) in enumerate(zip(chosen_hdf5_filename
     
     y = hdf5_file["Science/YReflectanceFactor"][...]
     x = hdf5_file["Science/X"][...]
+    sza = np.mean(hdf5_file["Geometry/Point0/IncidenceAngle"][...], axis=1)
     temperature = float(hdf5_file["Channel/MeasurementTemperature"][0][0])
     
     valid_ys = np.where(sza == np.min(sza))[0]

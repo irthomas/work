@@ -13,7 +13,7 @@ from nomad_ops.core.hdf5.l0p3a_to_1p0a.config import THUMBNAILS_DESTINATION
 
 def prepare_nadir_fig_tree(fig_name):
     
-    fig_path = os.path.join(THUMBNAILS_DESTINATION, "lno_1p0a_radiance_factor")  
+    fig_path = os.path.join(THUMBNAILS_DESTINATION, "lno_1p0a_reflectance_factor")  
     
     m = re.match("(\d{4})(\d{2})(\d{2}).*", fig_name)
     year = m.group(1)

@@ -31,12 +31,10 @@ FIG_Y = 9
 
 MAX_SZA = 30.
 
-# SAVE_PDF = True
-SAVE_PDF = False
 
 lno_curvature_dict = {
 168:{"clear_nu":[[3780., 3784.], [3785., 3796.], [3797., 3801.], [3802., 3810.]], "temperature_shift_coeffs":[-1.00061872, 88.19576276], },
-189:{"clear_nu":[[4254., 4263.], [4265., 4267.], [4268., 4270.], [4272., 4274.], [4275.5, 4281.]], "temperature_shift_coeffs":[ -1.25805608, 112.75089597], },
+189:{"clear_nu":[[4253., 4263.], [4265., 4267.], [4268., 4270.], [4272., 4274.], [4275.5, 4281.]], "temperature_shift_coeffs":[ -1.9975845,  109.42755998], },
 
 # 189:{"clear_nu":[]},
 }
@@ -166,47 +164,49 @@ for file_index, (hdf5_filename, hdf5_file) in enumerate(zip(chosen_hdf5_filename
     #for plotting the peak point - find pixel at the peak
     max_index = np.where(y_fit_normalised == np.max(y_fit_normalised[:150]))[0][0]
 
+    #if peak is not in first 20 pixels
+    if max_index > 20:
     
-    #shift the pixel peak to account for temperature -> shift to reference temperature
-    pixel_temperature_shift = np.polyval(lno_curvature_dict[diffraction_order]["temperature_shift_coeffs"], temperature) - reference_temperature_peak
-    pixels_shifted = pixels - pixel_temperature_shift
-
-    # print(max_index)
-    # print(np.polyval(TEMPERATURE_CORRECTION_COEFFS, temperature))
-    # print(pixel_temperature_shift)
-    # print(max_index-pixel_temperature_shift)
-    # stop()
+        #shift the pixel peak to account for temperature -> shift to reference temperature
+        pixel_temperature_shift = np.polyval(lno_curvature_dict[diffraction_order]["temperature_shift_coeffs"], temperature) - reference_temperature_peak
+        pixels_shifted = pixels - pixel_temperature_shift
     
-
-
-    """"plot all"""
-    # plt.plot(y_fit, color=colours[file_index], label=hdf5_filename[:15], alpha=0.4)
-    # plt.scatter(max_index, y_fit[max_index], color=colours[file_index])
-
-    ax1.plot(pixels, y_fit_normalised, color=colours[file_index], label=hdf5_filename[:15], alpha=0.2)
-    ax1.scatter(max_index, y_fit_normalised[max_index], color=colours[file_index])
-
-    """plot normalised and shifted for temperature"""
-    ax2.plot(pixels_shifted, y_fit_normalised, color=colours[file_index], label=hdf5_filename[:15], alpha=0.2)
-    ax2.scatter(max_index-pixel_temperature_shift, y_fit_normalised[max_index], color=colours[file_index])
-
-    # print(max_index, pixel_temperature_shift, temperature, max_index-pixel_temperature_shift)
-
-
-    """make mean curvature spectrum from normalised + temperature adjusted curves: interpolate each normalised curve at set pixel points"""
-    for interpolation_pixel in interpolation_pixels:
-        y_interp = np.interp(interpolation_pixel, pixels_shifted, y_fit_normalised)
-        curvature_dict[interpolation_pixel].append(y_interp)
-
-
-
+        # print(max_index)
+        # print(np.polyval(TEMPERATURE_CORRECTION_COEFFS, temperature))
+        # print(pixel_temperature_shift)
+        # print(max_index-pixel_temperature_shift)
+        # stop()
+        
     
     
-    variables["temperature"].append(temperature)
-    variables["peak"].append(max_index)
-    variables["shift"].append(pixel_temperature_shift)
-    variables["peak_shifted"].append(max_index-pixel_temperature_shift)
-    variables["colours"].append(colours[file_index])
+        """"plot all"""
+        # plt.plot(y_fit, color=colours[file_index], label=hdf5_filename[:15], alpha=0.4)
+        # plt.scatter(max_index, y_fit[max_index], color=colours[file_index])
+    
+        ax1.plot(pixels, y_fit_normalised, color=colours[file_index], label=hdf5_filename[:15], alpha=0.2)
+        ax1.scatter(max_index, y_fit_normalised[max_index], color=colours[file_index])
+    
+        """plot normalised and shifted for temperature"""
+        ax2.plot(pixels_shifted, y_fit_normalised, color=colours[file_index], label=hdf5_filename[:15], alpha=0.2)
+        ax2.scatter(max_index-pixel_temperature_shift, y_fit_normalised[max_index], color=colours[file_index])
+    
+        # print(max_index, pixel_temperature_shift, temperature, max_index-pixel_temperature_shift)
+    
+    
+        """make mean curvature spectrum from normalised + temperature adjusted curves: interpolate each normalised curve at set pixel points"""
+        for interpolation_pixel in interpolation_pixels:
+            y_interp = np.interp(interpolation_pixel, pixels_shifted, y_fit_normalised)
+            curvature_dict[interpolation_pixel].append(y_interp)
+    
+    
+    
+        
+        
+        variables["temperature"].append(temperature)
+        variables["peak"].append(max_index)
+        variables["shift"].append(pixel_temperature_shift)
+        variables["peak_shifted"].append(max_index-pixel_temperature_shift)
+        variables["colours"].append(colours[file_index])
     
 
 
