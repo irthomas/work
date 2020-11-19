@@ -42,6 +42,7 @@ import numpy as np
 #import h5py
 #import re
 import matplotlib.pyplot as plt
+import platform
 #import datetime
 #from scipy import interpolate
 
@@ -59,6 +60,7 @@ from nomad_ops.core.hdf5.l0p3a_to_1p0a.functions.output_filename import output_f
 from nomad_ops.core.hdf5.l0p3a_to_1p0a.functions.get_min_mean_max_of_field import get_min_mean_max_of_field
 from nomad_ops.core.hdf5.l0p3a_to_1p0a.functions.prepare_nadir_fig_tree import prepare_nadir_fig_tree
 from nomad_ops.core.hdf5.l0p3a_to_1p0a.curvature.curvature_functions import get_temperature_corrected_mean_curve, read_hdf5_to_dict
+from nomad_ops.core.hdf5.l0p3a_to_1p0a.guillaume.lno_guillaume_cal import convert_ref_fac_guillaume
 
 
 from nomad_ops.core.hdf5.l0p3a_to_1p0a.config import RADIOMETRIC_CALIBRATION_AUXILIARY_FILES, \
@@ -118,7 +120,7 @@ def convert_lno_ref_fac(hdf5_filename, hdf5_file, errorType):
     
     ax2a2 = ax2a.twinx()
     ax2d2 = ax2d.twinx()
-    ax2e2 = ax2e.twinx()
+    # ax2e2 = ax2e.twinx()
 
     #if no solar or nadir lines - set cutoff to be 75% of max value
     if ref_fact_order_dict["solar_molecular"] == "":
@@ -241,14 +243,20 @@ def convert_lno_ref_fac(hdf5_filename, hdf5_file, errorType):
     
     #remove wavey continuum from mean reflectance factor spectrum
     mean_ref_fac_continuum = baseline_als(mean_ref_fac, lam=500.0)
-    ref_fac_normalised = mean_ref_fac / mean_ref_fac_continuum
+    ref_fac_normalised = mean_ref_fac / mean_ref_fac_continuum * np.mean(mean_ref_fac[50:310]) #scale to mean ref fac value in centre of detector
+
+    ###add Guillaume calibration###
+    ref_fac_baseline_removed = convert_ref_fac_guillaume(hdf5_file, mean_incidence_angles_deg)
+    mean_ref_fac_baseline_removed = np.mean(ref_fac_baseline_removed[validIndices, :], axis=0)
+
     
     ax2d.plot(x_obs, mean_ref_fac, "k", label="Mean YReflectanceFactor")
     ax2d.plot(x_obs, mean_ref_fac_continuum, "k--", label="Continuum Fit")
     ax2d2.plot(x_obs, mean_curve_shifted, "g--", label="Temperature-corrected Mean Curve")
 
-    ax2e.plot(x_obs, ref_fac_normalised, "k")
-    ax2e2.plot(x_obs, mean_ref_fac_flat, "g")
+    ax2e.plot(x_obs, ref_fac_normalised, "k--", label="Ref fac (continuum removed & scaled to mean)")
+    ax2e.plot(x_obs, mean_ref_fac_flat, "g", label="Temperature-dependent curvature corrected")
+    ax2e.plot(x_obs, mean_ref_fac_baseline_removed, "b", label="Guillaume calibration")
 
     #format plot
     ax2c.set_xlabel("Wavenumber cm-1")
@@ -258,15 +266,15 @@ def convert_lno_ref_fac(hdf5_filename, hdf5_file, errorType):
     ax2b.set_ylabel("Reference\nspectra")
     ax2c.set_ylabel("Nadir\ncontinuum removed")
     ax2d.set_ylabel("Reflectance\nfactor")
-    ax2e.set_ylabel("Continuum removed\nmean reflectance factor")
+    ax2e.set_ylabel("Mean reflectance factor")
     
     ax2a.set_ylim(bottom=0)
     ax2a2.set_ylim(bottom=0)
     
     ax2c.set_ylim((min(obs_absorption[GOOD_PIXELS])-0.1, max(obs_absorption[GOOD_PIXELS])+0.1))
     ax2d.set_ylim([min(mean_ref_fac[10:310])-0.05, max(mean_ref_fac[10:310])+0.05])
-    ax2e.set_ylim([min(ref_fac_normalised[10:310])-0.05, max(ref_fac_normalised[10:310])+0.05])
-    ax2e2.set_ylim([min(mean_ref_fac_flat[50:310])-0.05, max(mean_ref_fac_flat[50:310])+0.05])
+    ax2e.set_ylim([min(ref_fac_normalised[10:310])-0.15, max(ref_fac_normalised[10:310])+0.15])
+    # ax2e2.set_ylim([min(mean_ref_fac_flat[50:310])-0.05, max(mean_ref_fac_flat[50:310])+0.05])
 #    ax2e.set_ylim(bottom=0)
 
     ax2c.set_xlim([np.floor(min(x)), np.ceil(max(x))])
@@ -279,7 +287,7 @@ def convert_lno_ref_fac(hdf5_filename, hdf5_file, errorType):
     ax2d.set_xticks(np.arange(ticks[0], ticks[-1], 2.0))
     ax2d2.set_xticks(np.arange(ticks[0], ticks[-1], 2.0))
     ax2e.set_xticks(np.arange(ticks[0], ticks[-1], 2.0))
-    ax2e2.set_xticks(np.arange(ticks[0], ticks[-1], 2.0))
+    # ax2e2.set_xticks(np.arange(ticks[0], ticks[-1], 2.0))
 
     ax2a.grid()
     ax2b.grid()
@@ -290,6 +298,7 @@ def convert_lno_ref_fac(hdf5_filename, hdf5_file, errorType):
     ax2a.legend(loc="upper right")
     ax2b.legend(loc="lower right")
     ax2d.legend(loc="lower right")
+    ax2e.legend(loc="lower right")
     
     fig2.tight_layout(rect=[0, 0.03, 1, 0.95])
     
@@ -298,6 +307,8 @@ def convert_lno_ref_fac(hdf5_filename, hdf5_file, errorType):
         ax2a.annotate("Warning: no solar reference line correction", xycoords='axes fraction', xy=(0.05, 0.05), fontsize=16)
     if not nadir_lines_fit:
         ax2c.annotate("Warning: no nadir absorption line correction", xycoords='axes fraction', xy=(0.05, 0.05), fontsize=16)
+
+
 
 
 
@@ -312,6 +323,8 @@ def convert_lno_ref_fac(hdf5_filename, hdf5_file, errorType):
     ref_fac_cal_dict["Science/YReflectanceFactorFlat"] = {"data":y_ref_fac_flat, "dtype":np.float32, "compression":True}
     ref_fac_cal_dict["Criteria/LineFit/NumberOfLinesFit"] = {"data":len(chi_sq_matching), "dtype":np.int16, "compression":False}
     ref_fac_cal_dict["Criteria/LineFit/ChiSqError"] = {"data":chi_sq_matching, "dtype":np.float32, "compression":True}
+
+    ref_fac_cal_dict["Science/YReflectanceFactorBaselineRemoved"] = {"data":ref_fac_baseline_removed, "dtype":np.float32, "compression":True}
 
     #write calibration and error references    
     if solar_line and nadir_lines_fit:
@@ -361,8 +374,8 @@ def convert_lno_ref_fac(hdf5_filename, hdf5_file, errorType):
     logger.info("Saving thumbnail: %s_ref_fac.png", hdf5_filename_new)
     fig2.savefig(thumbnail_path), 
     
-#    if SYSTEM != "Windows":
-    plt.close(fig2)
+    if platform.system() != "Windows":
+        plt.close(fig2)
     
         
     ref_fac_refs = {"calib_ref":calib_ref, "error_ref":error_ref, "error":error}

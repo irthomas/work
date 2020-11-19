@@ -41,3 +41,8 @@ for hdf5_file, hdf5_filename in zip(hdf5_files, hdf5_filenames):
 detector_start_rows = np.asfarray(detector_start_rows)
 
 plt.scatter(detector_datetimes, detector_start_rows)
+plt.xlabel("Time")
+plt.ylabel("Detector top row used")
+
+plt.text(datetime.datetime(2018, 4, 1), 121, "Not pointing to sun centre at start of mission")
+plt.text(datetime.datetime(2018, 8, 11), 120.5, "Nominal pointing starts 11th August 2018")

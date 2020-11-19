@@ -69,7 +69,7 @@ for index, averages in enumerate(averages_list):
     delta = 7
     for start_date in range(0, len(save_dict[index]["CASES"]) - delta + 1):
         end_date = start_date + delta - 1
-        print(save_dict[index]["DATE"][start_date], "-", save_dict[index]["DATE"][end_date], ":", sum(save_dict[index]["CASES"][start_date:end_date+1]))
+        # print(save_dict[index]["DATE"][start_date], "-", save_dict[index]["DATE"][end_date], ":", sum(save_dict[index]["CASES"][start_date:end_date+1]))
         averages["start"].append(save_dict[index]["DATE"][start_date])
         averages["end"].append(save_dict[index]["DATE"][end_date])
         averages["cases"].append(sum(save_dict[index]["CASES"][start_date:end_date+1])/populations[index] * 100000.)
@@ -77,14 +77,14 @@ for index, averages in enumerate(averages_list):
 plt.figure(figsize=(12, 6))
 plt.title("7-day average per 100k residents")
 plt.xlabel("End date")
-# plt.ylabel()
+plt.ylabel("Positive cases")
 for index, commune in enumerate(communes):
     plt.plot(averages_list[index]["end"], averages_list[index]["cases"], label=commune)
 # plt.ylim(ymin=0, ymax=max(averages_list[index]["cases"])+10)
 # plt.axhline(y=4)
 plt.legend()
 
-
+plt.savefig("covid.png")
 
 
 

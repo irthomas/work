@@ -41,8 +41,8 @@ from nomad_ops.core.hdf5.l0p3a_to_1p0a.config import PFM_AUXILIARY_FILES, LNO_HE
 # FORMAT_STR_SECONDS = "%Y %b %d %H:%M:%S.%f"
 Y_OFFSET = 0.05
 
-MAKE_AUX_FILE = True
-# MAKE_AUX_FILE = False
+# MAKE_AUX_FILE = True
+MAKE_AUX_FILE = False
 
 # regex = re.compile("(20161121_233000|20180702_112352|20181101_213226|20190314_021825|20190609_011514|20191207_051654)_0p1a_LNO_1")
 regex = re.compile("(20161121_233000|20180702_112352|20181101_213226|20190314_021825|20190609_011514|20190921_222413|20191207_051654|20200105_132318|20200324_145739)_0p1a_LNO_1")
@@ -88,7 +88,7 @@ for diffraction_order in ref_fact_orders_dict.keys():
     else:
         fig2.suptitle("Diffraction order %i" %diffraction_order)
 
-    hr_simulation_filepath = os.path.join(PFM_AUXILIARY_FILES, "radiometric_calibration", "lno_radiance_factor_order_data", "order_%i.txt" %diffraction_order)
+    hr_simulation_filepath = os.path.join(PFM_AUXILIARY_FILES, "radiometric_calibration", "lno_reflectance_factor_order_data", "order_%i.txt" %diffraction_order)
 
     reference_dict = make_reference_line_dict(ref_fact_order_dict, hr_simulation_filepath)
 
@@ -372,6 +372,7 @@ for diffraction_order in ref_fact_orders_dict.keys():
     min_nu = []
     max_nu = []
     for hdf5_filename in hdf5Filenames:
+        #find indices of unique filenames
         indices = [i for i,s in enumerate(calibration_dict["hdf5_filename"]) if hdf5_filename in s]
         min_nu.append(np.min(calibration_dict["interpolated_nu_hr"][indices, 0]))
         max_nu.append(np.max(calibration_dict["interpolated_nu_hr"][indices, -1]))
@@ -380,7 +381,7 @@ for diffraction_order in ref_fact_orders_dict.keys():
     last_nu_hr = sorted(max_nu)[-3]
     
     #make new wavenumber grid covering all temperatures
-    wavenumber_grid = np.linspace(first_nu_hr, last_nu_hr, num=6720)
+    wavenumber_grid = np.linspace(first_nu_hr-1.0, last_nu_hr+1.0, num=6720)
     
     
     #get data from dictionary, interpolate onto hr nu grid
