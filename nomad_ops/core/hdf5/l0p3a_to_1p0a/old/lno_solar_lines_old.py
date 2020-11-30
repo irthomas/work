@@ -19,7 +19,7 @@ from scipy import interpolate
 from fit_absorption_band_v01 import fit_gaussian_absorption
 
 from hdf5_functions_v04 import BASE_DIRECTORY, DATA_DIRECTORY, FIG_X, FIG_Y, makeFileList
-from plot_solar_line_simulations_lno import smoothHighRes#, nu_mp, t_p0
+from tools.spectra.smooth_hr import smooth_hr as smoothHighRes#, nu_mp, t_p0
 
 
 SMOOTHING_LEVEL = 600 #must be even number

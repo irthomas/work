@@ -11,7 +11,7 @@ import os
 import glob
 import posixpath
 
-SEARCH_STRING = "FOV calibration"
+SEARCH_STRING = "smoothHighRes"
 
 
 from tools.file.paths import paths

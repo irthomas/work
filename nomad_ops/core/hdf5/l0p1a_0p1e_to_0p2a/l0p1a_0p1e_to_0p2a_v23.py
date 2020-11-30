@@ -50,6 +50,7 @@ from nomad_ops.core.hdf5.l0p1a_0p1e_to_0p2a.boresight_functions import getFovPoi
     
 from nomad_ops.core.hdf5.l0p1a_0p1e_to_0p2a.units import getUnitMappings, addUnits
 
+from nomad_ops.core.hdf5.l0p1a_0p1e_to_0p2a.config import USE_AREOID, USE_REDUCED_ELLIPSE
 
 
 
@@ -57,7 +58,9 @@ __project__   = "NOMAD"
 __author__    = "Ian Thomas, Roland Clairquin & Justin Erwin"
 __contact__   = "ian.thomas@oma.be"
 
-from nomad_ops.core.hdf5.l0p1a_0p1e_to_0p2a.config import USE_AREOID, USE_REDUCED_ELLIPSE
+logger = logging.getLogger( __name__ )
+VERSION = 80
+OUTPUT_VERSION = "0.2A"
 
 #============================================================================================
 # 4. CONVERT HDF5 LEVEL 0.1E TO LEVEL 0.2A
@@ -73,22 +76,15 @@ from nomad_ops.core.hdf5.l0p1a_0p1e_to_0p2a.config import USE_AREOID, USE_REDUCE
 #============================================================================================
 
 
-
-
+# OBS_TYPES_TO_CONVERT = ["D", "N", "F", "I", "E", "G", "S", "L", "O"]
+OBS_TYPES_TO_CONVERT = ["I", "E", "G", "S"]
 
 #t1 = time.clock()
-
-logger = logging.getLogger( __name__ )
-
-VERSION = 80
-OUTPUT_VERSION = "0.2A"
 
 
 #make non-point dictionary
 d = {}
 d_tmp = {}
-
-
 
 
 ####START CODE#####
@@ -122,17 +118,90 @@ def convert(hdf5file_path):
         bins = [0]*nSpectra #UVIS doesn't have bins!!
         if platform.system() != "Windows":
             obs_db_res = obs_type.get_obs_type(hdf5file_path)
-            observationType = obs_db_res[4]
+            if obs_db_res == None:
+                observationType = None
+            else:
+                observationType = obs_db_res[4]
 
 #    logger.info("observationType=%s for %s", observationType, hdf5FileIn.file)
     if observationType is None:
-        raise RuntimeError("Observation type is not defined. Update the ITL db.")
+        logger.error("Observation type is not defined for file %s. Update the ITL db.", hdf5_basename)
         return []
         
     if observationMode == "error":
-        logger.warning("%s: flip mirror position error. Skipping", hdf5_basename)
+        logger.error("%s: flip mirror position error. Skipping", hdf5_basename)
         # raise RuntimeError("%s: flip mirror position error. Skipping" %hdf5_basename)
         return []
+
+
+    #check observation type
+    obsType_in_DNF = observationType in ["D","N","F"]
+    obsType_in_IEGSLO = observationType in ["I","E","G","S","L","O"] #limb measurements are like occultations
+    obsType_in_C = observationType in ["C"] #do nothing
+    obsType_in_X = observationType in ["X"] #unknown type
+
+    if observationType not in OBS_TYPES_TO_CONVERT:
+
+        """Error"""
+        if obsType_in_X:
+            logger.error("Error: Observation type unknown for file %s", hdf5_basename)
+            # raise RuntimeError("Error: Observation type unknown for file %s" %hdf5_basename)
+            return []
+            
+            """Calibration file"""
+        elif obsType_in_C:
+            logger.warning("Observation found of type C. No geometric calibration added to file %s except ephemeris time", hdf5_basename)
+
+            if channel=="uvis":
+                hdf5FilepathOut = os.path.join(NOMAD_TMP_DIR,"%s_%s.h5" % (hdf5_basename, observationType))
+            else:
+                hdf5FilepathOut = os.path.join(NOMAD_TMP_DIR, os.path.basename(hdf5file_path))
+        
+            #convert datetimes to et
+            et_s = np.asfarray([sp.utc2et(observationDatetime[0].decode()) for observationDatetime in observationDatetimes])
+            et_e = np.asfarray([sp.utc2et(observationDatetime[1].decode()) for observationDatetime in observationDatetimes])
+            et = np.vstack((et_s, et_e)).T
+
+            with h5py.File(hdf5FilepathOut, "w") as hdf5FileOut:
+        
+                # Copy datasets and attributes
+                if platform.system() != "Windows": #for testing locally
+                    generics.copyAttributesExcept(hdf5FileIn, hdf5FileOut, OUTPUT_VERSION)
+                    for dset_path, dset in generics.iter_datasets(hdf5FileIn):
+                        dest = generics.createIntermediateGroups(hdf5FileOut, dset_path.split("/")[:-1])
+                        hdf5FileIn.copy(dset_path, dest)
+        
+                hdf5FileIn.close()
+        
+                #write only ephemeris time to calibration files. Rest remains unchanged.
+                hdf5FileOut.create_dataset("Geometry/ObservationEphemerisTime", dtype=np.float,
+                                        data=et, fillvalue=NA_VALUE, compression="gzip", shuffle=True)
+                if channel == "uvis":
+                    write_attrs_from_itl(hdf5FilepathOut, obs_db_res)
+
+            return [hdf5FilepathOut]
+
+            """if observation type not in list of those to convert, exit"""
+        else:
+            logger.warning("Observation type %s not in list. Skipping file %s", observationType, hdf5_basename)
+            return []
+
+    
+    
+    #check UVIS. If mode > 2 or acquistion mode = 1, this file cannot be calibrated and should not be created at 0.2A level (except if type C)
+    if channel == "uvis":
+        mode = hdf5FileIn["Channel/Mode"][0] #1=SO, 2=Nadir. Higher values=Calibration
+        acquistionMode = hdf5FileIn["Channel/AcquisitionMode"][0] #0=unbinned, 1=vertical binning, 2=horizontal /square binning
+        if not obsType_in_C:
+            if mode > 2:
+                logger.warning("File %s has mode %i. This file will not be created at 0.2A level", hdf5_basename, mode)
+                return []
+            if acquistionMode == 1:
+                logger.warning("File %s has acquisition mode %i. This file will not be created at 0.2A level", hdf5_basename, acquistionMode)
+                return []
+
+
+
 
         
 
@@ -148,31 +217,6 @@ def convert(hdf5file_path):
     [channelShape, name, boresightVector, nvectors, boresightVectorbounds] = sp.getfov(channelId, 4)
 
 
-    #check observation type
-    obsType_in_DNF = observationType in ["D","N","F"]
-    obsType_in_IEGSLO = observationType in ["I","E","G","S","L","O"] #limb measurements are like occultations
-    obsType_in_C = observationType in ["C"] #do nothing
-    obsType_in_X = observationType in ["X"] #unknown type
-    if obsType_in_X:
-        logger.error("Error: Observation type unknown for file %s", hdf5_basename)
-        raise RuntimeError("Error: Observation type unknown for file %s" %hdf5_basename)
-        return []
-        
-    if obsType_in_C:
-        logger.warning("Observation found of type C. No geometric calibration added to file %s except ephemeris time", hdf5_basename)
-
-
-    #check UVIS. If mode > 2 or acquistion mode = 1, this file cannot be calibrated and should not be created at 0.2A level (except if type C)
-    if channel == "uvis":
-        mode = hdf5FileIn["Channel/Mode"][0] #1=SO, 2=Nadir. Higher values=Calibration
-        acquistionMode = hdf5FileIn["Channel/AcquisitionMode"][0] #0=unbinned, 1=vertical binning, 2=horizontal /square binning
-        if not obsType_in_C:
-            if mode > 2:
-                logger.warning("File %s has mode %i. This file will not be created at 0.2A level", hdf5_basename, mode)
-                return []
-            if acquistionMode == 1:
-                logger.warning("File %s has acquisition mode %i. This file will not be created at 0.2A level", hdf5_basename, acquistionMode)
-                return []
 
     if obsType_in_DNF or obsType_in_IEGSLO:
 

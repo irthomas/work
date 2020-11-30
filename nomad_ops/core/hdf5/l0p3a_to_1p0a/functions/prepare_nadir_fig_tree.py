@@ -11,9 +11,10 @@ import re
 from nomad_ops.core.hdf5.l0p3a_to_1p0a.config import THUMBNAILS_DESTINATION
 
 
-def prepare_nadir_fig_tree(fig_name):
+def prepare_nadir_fig_tree(hdf5_filename, diffraction_order):
     
-    fig_path = os.path.join(THUMBNAILS_DESTINATION, "lno_1p0a_reflectance_factor")  
+    fig_name = "%s_ref_fac.png" %hdf5_filename
+    fig_path = os.path.join(THUMBNAILS_DESTINATION, "lno_1p0a_reflectance_factor_order_%i" %diffraction_order)
     
     m = re.match("(\d{4})(\d{2})(\d{2}).*", fig_name)
     year = m.group(1)

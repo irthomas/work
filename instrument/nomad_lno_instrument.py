@@ -62,6 +62,14 @@ def pixel_mnu(m, nu, t, F0=F0, F1=F1, F2=F2):
     p = (-F1 + np.sqrt(F1**2 - 4*F2*(F0-nu/m))) / (2*F2) - p0
     return p
 
+def t_nu_mp(m, nu, p, F0=F0, F1=F1, F2=F2, Q0=Q0, Q1=Q1):
+    """order, wavenumber and pixel to temperature calibration. Inverse of function from Liuzzi et al. 2018 using same coefficients"""
+    #give single nu and p (e.g. absorption band minimum) to find t
+    # p0 = t_p0(t)
+    p0 = (-F1 + np.sqrt(F1**2 - 4*F2*(F0-nu/m))) / (2*F2) - p
+    t = (p0 - Q0)/Q1
+    return t
+
 
  
 bl0=150.80

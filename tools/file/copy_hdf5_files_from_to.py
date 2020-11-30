@@ -10,21 +10,21 @@ import re
 from shutil import copyfile
 
 from tools.file.passwords import passwords
-
+from tools.file.paths import paths
 
 
 #OVERWRITE = True
 OVERWRITE = False
 
 
-_from = "hera"
-to = "local"
+# _from = "hera"
+# to = "local"
 
 #_from = "datastore"
 #to = "local"
 
-#_from = "datastore"
-#to = "ftp"
+# _from = "datastore"
+# to = "ftp"
 
 #_from = "local"
 #to = "ftp"
@@ -32,20 +32,32 @@ to = "local"
 # _from = "datastore_linux"
 # to = "archive_linux"
 
+# _from = "hera"
+# to = "local_hdd"
+
+_from = "datastore_linux"
+to = "nomad_ftp"
+
 
 
 #regex = "20180422_.*_SO_.*_134"
 #regex = "20(18|19|20)[0-1][0-9][0-9][0-9]_.*_LNO_.*_D_(178|167|166|162)"
 #regex = "20(18|19|20)[0-1][0-9][0-9][0-9]_.*_SO_.*_[IE]_(134|136)"
 #regex = "20(18|19|20)[0-1][0-9][0-9][0-9]_.*_SO"
-regex = re.compile("20(18|19|20)[0-1][0-9][0-9][0-9]_.*_(LNO|SO)_[0-9]_C")
 # regex = "2020050[0-9]_.*_LNO_"
 
+# regex = re.compile("2020.*_LNO_._._189")
+regex = re.compile("20.*_UVIS_[IEG]")
 
-level = "hdf5_l02a"
-#level = "hdf5_l03a"
-# level = "hdf5_l10a"
+# level = "hdf5_l02a"
+# level = "hdf5_l03a"
+level = "hdf5_l10a"
 
+
+
+# copy calibrations
+# regex = re.compile("20(18|19|20)[0-1][0-9][0-9][0-9]_.*_(LNO|SO)_[0-9]_C")
+# level = "hdf5_l02a"
 
 
 def get_input_output_paths(to, _from, level):
@@ -69,6 +81,7 @@ def get_input_output_paths(to, _from, level):
     "local":{"sep":"os", "root":r"C:\Users\iant\Documents\DATA\hdf5_copy"}, #windows computer
     "local_hdd":{"sep":"os", "root":r"D:\DATA\hdf5"}, #windows at home HDD
     "ftp":{"sep":"posix", "root":"/Data"},
+    "nomad_ftp":{"sep":"posix", "root":"/Data_temp"},
     "archive_linux":{"sep":"posix", "root":"/bira-iasb/data/SATELLITE/TRACE-GAS-ORBITER/NOMAD/archive/hdf5"}
         
     }
@@ -155,11 +168,14 @@ def get_filepaths_from(_from, from_path, regex):
                     if regex.match(posixpath.split(remotepath)[1]):
                         file_paths.append(remotepath)
             return file_paths
-
+        
+        
         cnopts = pysftp.CnOpts()
         cnopts.hostkeys = None
-    
-        with pysftp.Connection(host=server[0], username=server[1], password=password, cnopts=cnopts) as sftp:
+        private_key_path = os.path.join(paths["REFERENCE_DIRECTORY"], "id_rsa_hera")
+
+        with pysftp.Connection(host=server[0], username=server[1], password=password, private_key=private_key_path, cnopts=cnopts) as sftp:
+        # with pysftp.Connection(host=server[0], username=server[1], password=password) as sftp:
             file_paths = []
             # print(from_path, file_paths)
             hdf5DatastoreFilepathsUnsorted = listdir_r(sftp, from_path, file_paths)
@@ -181,7 +197,7 @@ def copy_files_to(to, to_path, _from, hdf5DatastoreFilepaths):
     print("#############")
     
           
-    if to == "local":
+    if to in ["local", "local_hdd"]:
         import pysftp
         file_number = 0
         for hdf5DatastoreFilepath in hdf5DatastoreFilepaths:
@@ -232,7 +248,7 @@ def copy_files_to(to, to_path, _from, hdf5DatastoreFilepaths):
             
     
     
-    if to == "ftp":
+    if to in ["nomad_ftp", "ftp"]:
         import ftplib
     
         def open_ftp(server_address, username, password):
@@ -247,10 +263,11 @@ def copy_files_to(to, to_path, _from, hdf5DatastoreFilepaths):
         
     
         SC_FTP_ADR = "ftp-ae.oma.be"
-        SC_FTP_USR = "nomadadm"
-        SC_FTP_PWD = passwords["nomadadm"]
         
-        ftp_conn = open_ftp(SC_FTP_ADR, SC_FTP_USR, SC_FTP_PWD)
+        if to == "ftp":
+            ftp_conn = open_ftp(SC_FTP_ADR, "nomadadm", passwords["nomadadm"])
+        if to == "nomad_ftp":
+            ftp_conn = open_ftp(SC_FTP_ADR, "nomad", passwords["nomad_ftp"])
     
         file_number = 0
         for hdf5DatastoreFilepath in hdf5DatastoreFilepaths:

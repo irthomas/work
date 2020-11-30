@@ -31,18 +31,32 @@ FIG_Y = 9
 
 MAX_SZA = 30.
 
+POLYFIT_DEGREE = 4
+
+# PLOT_FITS = True
+PLOT_FITS = False
+
 
 lno_curvature_dict = {
-168:{"clear_nu":[[3780., 3784.], [3785., 3796.], [3797., 3801.], [3802., 3810.]], "temperature_shift_coeffs":[-1.00061872, 88.19576276], },
-189:{"clear_nu":[[4253., 4263.], [4265., 4267.], [4268., 4270.], [4272., 4274.], [4275.5, 4281.]], "temperature_shift_coeffs":[ -1.9975845,  109.42755998], },
+# 168:{"clear_nu":[[3780., 3784.], [3785., 3796.], [3797., 3801.], [3802., 3810.]], "temperature_shift_coeffs":[-1.00061872, 88.19576276], },
+189:{"clear_nu":[[4250., 4263.], [4265., 4267.], [4268., 4270.], [4272., 4274.], [4275.5, 4281.]], "temperature_shift_coeffs":[ -1.82687357, 119.2335941 ], },
 
 # 189:{"clear_nu":[]},
 }
+
 
 diffraction_order = 189
 
 
 reference_temperature = 0.0
+
+
+
+def find_nearest_index(array,value):
+    idx,val = min(enumerate(array), key=lambda x: abs(x[1]-value))
+    return idx
+
+
 
 
 if diffraction_order not in lno_curvature_dict.keys():
@@ -56,34 +70,57 @@ file_level = "hdf5_level_1p0a"
 hdf5_files, hdf5_filenames, _ = make_filelist(regex, file_level)
 
 
-fig1 = plt.figure(figsize=(FIG_X, FIG_Y))
-gs = fig1.add_gridspec(2,2)
-ax1 = fig1.add_subplot(gs[0, 0])
-ax2 = fig1.add_subplot(gs[1, 0], sharex=ax1)
-ax3 = fig1.add_subplot(gs[0, 1])
-ax4 = fig1.add_subplot(gs[1, 1])
+
+#if absorption lines not yet defined, plot raw data and stop
+if len(lno_curvature_dict[diffraction_order]["clear_nu"]) == 0:
+    plot_raw = True
+else:
+    plot_raw = False
+
+
+if plot_raw or PLOT_FITS:
+    
+    fig, ax = plt.subplots(figsize=(FIG_X, FIG_Y))
+    fig2 = plt.figure(figsize=(FIG_X, FIG_Y))
+    gs = fig2.add_gridspec(2,2)
+    ax1 = fig2.add_subplot(gs[0, 0])
+    ax2 = fig2.add_subplot(gs[1, 0], sharex=ax1)
+    ax3 = fig2.add_subplot(gs[0, 1])
+    ax4 = fig2.add_subplot(gs[1, 1])
+    
+else:
+    
+    fig1 = plt.figure(figsize=(FIG_X, FIG_Y))
+    gs = fig1.add_gridspec(2,2)
+    ax1 = fig1.add_subplot(gs[0, 0])
+    ax2 = fig1.add_subplot(gs[1, 0], sharex=ax1)
+    ax3 = fig1.add_subplot(gs[0, 1])
+    ax4 = fig1.add_subplot(gs[1, 1])
+    
+    
+    
+    ax1.set_title("Search pattern: %s" %regex.pattern)
+    ax2.set_title("Search pattern: %s (temperature correction)" %regex.pattern)
+    
+    ax1.set_xlabel("Pixel number")
+    ax1.set_ylabel("Reflectance factor")
+    
+    ax2.set_xlabel("Pixel number")
+    ax2.set_ylabel("Reflectance factor")
+    
+    ax2.set_xlabel("Pixel number")
+    ax2.set_ylabel("Reflectance factor")
+    
+    ax3.set_title("Search pattern: %s" %regex.pattern)
+    ax3.set_xlabel("Instrument temperature")
+    ax3.set_ylabel("Pixel position of polynomial peak (in first 150 pixels)")
+    
+    ax4.set_title("Search pattern: %s (temperature correction)" %regex.pattern)
+    ax4.set_xlabel("Instrument temperature")
+    ax4.set_ylabel("Pixel position of polynomial peak (in first 150 pixels)")
 
 
 
-ax1.set_title("Search pattern: %s" %regex.pattern)
-ax2.set_title("Search pattern: %s (temperature correction)" %regex.pattern)
-
-ax1.set_xlabel("Pixel number")
-ax1.set_ylabel("Reflectance factor")
-
-ax2.set_xlabel("Pixel number")
-ax2.set_ylabel("Reflectance factor")
-
-ax2.set_xlabel("Pixel number")
-ax2.set_ylabel("Reflectance factor")
-
-ax3.set_title("Search pattern: %s" %regex.pattern)
-ax3.set_xlabel("Instrument temperature")
-ax3.set_ylabel("Pixel position of polynomial peak (in first 150 pixels)")
-
-ax4.set_title("Search pattern: %s (temperature correction)" %regex.pattern)
-ax4.set_xlabel("Instrument temperature")
-ax4.set_ylabel("Pixel position of polynomial peak (in first 150 pixels)")
 
 
 #first remove low sza files
@@ -115,6 +152,8 @@ reference_temperature_peak = np.polyval(lno_curvature_dict[diffraction_order]["t
 
 
 variables = {"temperature":[], "peak":[], "peak_shifted":[], "shift":[], "colours":[]}
+
+#loop through low SZA files
 for file_index, (hdf5_filename, hdf5_file) in enumerate(zip(chosen_hdf5_filenames, chosen_hdf5_files)):
 
     pixels = np.arange(320.)
@@ -125,41 +164,84 @@ for file_index, (hdf5_filename, hdf5_file) in enumerate(zip(chosen_hdf5_filename
     x = hdf5_file["Science/X"][...]
     temperature = float(hdf5_file["Channel/MeasurementTemperature"][0][0])
 
+    #get spectra closest to min solar incidence angle
     y_selected = np.mean(y[valid_ys[0]-4:valid_ys[0]+5], axis=0)
 
     
-    #find and remove water line indices
-    valid_xs = []
     
-    #if absorption lines not yet defined, plot raw data and stop
-    if len(lno_curvature_dict[diffraction_order]["clear_nu"]) == 0:
-        ax1.plot(x, y_selected)
+    if plot_raw:
+        ax.plot(x, y_selected)
         
+       #plot first 100 only
         if file_index == 100:
             sys.exit()
-        
         continue
     
     else:
-        
+
+        #find and remove atmospheric line indices
+        valid_xs = []
         for abs_line in lno_curvature_dict[diffraction_order]["clear_nu"]:
+            #get pixels not containing absorption line or too close to edges of detector
             valid_xs.extend(np.where((abs_line[0] < x) & (x < abs_line[1]))[0])
         
     
 
     x_mean = np.mean(x)
     x_centre = x - x_mean
+    # x_first_pixel = valid_xs[0] #the first pixel where the polynomial fit is made
+    poly_fit = np.polyfit(x_centre[valid_xs], y_selected[valid_xs], POLYFIT_DEGREE)
+    y_fit = np.polyval(poly_fit, x_centre)
+
+
+    #plot time as colour
+    colour = colours[file_index]
     
-    x_first_pixel = valid_xs[0] #the first pixel where the polynomial fit is made
+    #plot temperature as colour
+    colour_grid = np.linspace(-12.0, 3.0, num=len(colours))
+    colour = colours[find_nearest_index(colour_grid, temperature)]
     
-    
-    y_fit = np.polyval(np.polyfit(x_centre[valid_xs], y_selected[valid_xs], 4), x_centre)
+
+    #normalise curve to peak at 1.0 considering peak only in first 150 pixels
+    y_fit_normalised = y_fit/np.max(y_fit[:150])
+
+
+    if PLOT_FITS:
+        # ax1.plot(x, y_selected+file_index/20.0, color=colour)
+        # ax1.plot(x, y_fit+file_index/20.0, linestyle="--", color=colour)
+        # ax.plot(pixels, y_selected+file_index/10.0, color=colour)
+        # ax.plot(pixels, y_fit+file_index/10.0, linestyle="--", color=colour)
+        ax.plot(pixels, y_fit_normalised, linestyle="--", color=colour)
+        
+        #doesn't work
+        # ax1.scatter(temperature, poly_fit[0])
+        # ax2.scatter(temperature, poly_fit[1])
+        # ax3.scatter(temperature, poly_fit[2])
+        # ax4.scatter(temperature, poly_fit[3])
+
+        #plot min max points
+        # ax1.scatter(temperature, np.where(y_fit == np.max(y_fit[:150]))[0][0])
+        # ax2.scatter(temperature, np.where(y_fit == np.min(y_fit[150:]))[0][0])
+        
+        #plot specific pixels
+        ax1.scatter(temperature, y_fit_normalised[0])
+        ax2.scatter(temperature, y_fit_normalised[20])
+        ax3.scatter(temperature, y_fit_normalised[300])
+        ax4.scatter(temperature, y_fit_normalised[319])
+        
+
+        #plot all
+        if file_index == len(chosen_hdf5_filenames)-1:
+            sys.exit()
+        
+        continue
+        
+
+
     # y_fit = smooth_hr(y[valid_y, valid_xs], window_len=19)
     # y_fit = savitzky_golay(y[valid_y, valid_xs], 39, 2)
     # y_fit = fit_polynomial(x, y[valid_y, :], degree=2, indices=valid_xs)
 
-    #normalise curve to peak at 1.0 considering peak only in first 150 pixels
-    y_fit_normalised = y_fit/np.max(y_fit[:150])
 
     #for plotting the peak point - find pixel at the peak
     max_index = np.where(y_fit_normalised == np.max(y_fit_normalised[:150]))[0][0]
@@ -178,17 +260,16 @@ for file_index, (hdf5_filename, hdf5_file) in enumerate(zip(chosen_hdf5_filename
         # stop()
         
     
-    
         """"plot all"""
-        # plt.plot(y_fit, color=colours[file_index], label=hdf5_filename[:15], alpha=0.4)
-        # plt.scatter(max_index, y_fit[max_index], color=colours[file_index])
+        # plt.plot(y_fit, color=colour, label=hdf5_filename[:15], alpha=0.4)
+        # plt.scatter(max_index, y_fit[max_index], color=colour)
     
-        ax1.plot(pixels, y_fit_normalised, color=colours[file_index], label=hdf5_filename[:15], alpha=0.2)
-        ax1.scatter(max_index, y_fit_normalised[max_index], color=colours[file_index])
+        ax1.plot(pixels, y_fit_normalised, color=colour, label=hdf5_filename[:15], alpha=0.2)
+        ax1.scatter(max_index, y_fit_normalised[max_index], color=colour)
     
         """plot normalised and shifted for temperature"""
-        ax2.plot(pixels_shifted, y_fit_normalised, color=colours[file_index], label=hdf5_filename[:15], alpha=0.2)
-        ax2.scatter(max_index-pixel_temperature_shift, y_fit_normalised[max_index], color=colours[file_index])
+        ax2.plot(pixels_shifted, y_fit_normalised, color=colour, label=hdf5_filename[:15], alpha=0.2)
+        ax2.scatter(max_index-pixel_temperature_shift, y_fit_normalised[max_index], color=colour)
     
         # print(max_index, pixel_temperature_shift, temperature, max_index-pixel_temperature_shift)
     
@@ -206,7 +287,7 @@ for file_index, (hdf5_filename, hdf5_file) in enumerate(zip(chosen_hdf5_filename
         variables["peak"].append(max_index)
         variables["shift"].append(pixel_temperature_shift)
         variables["peak_shifted"].append(max_index-pixel_temperature_shift)
-        variables["colours"].append(colours[file_index])
+        variables["colours"].append(colour)
     
 
 
@@ -217,7 +298,7 @@ for interpolation_pixel in interpolation_pixels:
     #get mean fit 
     mean_y_interps.append(np.mean(curvature_dict[interpolation_pixel]))
     
-mean_curve_coeffs = np.polyfit(interpolation_pixels, mean_y_interps, 4)
+mean_curve_coeffs = np.polyfit(interpolation_pixels, mean_y_interps, POLYFIT_DEGREE)
 mean_curve = np.polyval(mean_curve_coeffs, pixels)
 ax2.plot(pixels, mean_curve, "k:", linewidth=3)
 

@@ -15,11 +15,14 @@ from nomad_ops.core.hdf5.l0p3a_to_1p0a.functions.check_flags import check_flags
 
 from nomad_ops.core.hdf5.l0p3a_to_1p0a.config import NOMAD_TMP_DIR, LNO_FLAGS_DICT, SAVE_FILE, trans, generics
 
+
+
 __project__   = "NOMAD"
 __author__    = "Ian Thomas"
 __contact__   = "ian . thomas @ aeronomie .be"
 
 logger = logging.getLogger( __name__ )
+
 
 
 #============================================================================================
@@ -95,8 +98,12 @@ def convert(hdf5file_path):
         
             if calibrationType == "":
                 logger.error("Error: Calibration type unknown for Y_UNIT_FLAG = %i and Y_TYPE_FLAG = %i", LNO_FLAGS_DICT["Y_UNIT_FLAG"], LNO_FLAGS_DICT["Y_TYPE_FLAG"])
-            elif errorType == "":
+                # raise RuntimeError("Error: Calibration type unknown for Y_UNIT_FLAG = %i and Y_TYPE_FLAG = %i" %(LNO_FLAGS_DICT["Y_UNIT_FLAG"], LNO_FLAGS_DICT["Y_TYPE_FLAG"]))
+                return []
+            if errorType == "":
                 logger.error("Error: Error type unknown for Y_ERROR_FLAG = %i", LNO_FLAGS_DICT["Y_ERROR_FLAG"])
+                # raise RuntimeError("Error: Error type unknown for Y_ERROR_FLAG = %i" %(LNO_FLAGS_DICT["Y_ERROR_FLAG"]))
+                return []
  
     
             """radiance calibration only"""
@@ -110,9 +117,16 @@ def convert(hdf5file_path):
             elif calibrationType in ["Radiance & Radiance Factor"]:
                 radiance_cal_dict, radiance_refs = convert_lno_radiance(hdf5_basename, hdf5FileIn, errorType)
                 ref_fac_cal_dict, ref_fac_refs = convert_lno_ref_fac(hdf5_basename, hdf5FileIn, errorType)
+                if ref_fac_cal_dict == {}:
+                    logger.warning("Reflectance factor calibration not yet implemented for file %s. Skipping", hdf5_basename)
+                    return []
+                    
                 
             else:
-                logger.error("Calibration type %s not yet implemented", calibrationType)
+                logger.error("Calibration type %s not yet implemented for file %s", calibrationType, hdf5_basename)
+                # raise RuntimeError("Error: Calibration type %s not yet implemented for file %s" %(calibrationType, hdf5_basename))
+                return []
+
 
             #make attribute labels
             y_calib_ref = radiance_refs["calib_ref"] + ". " + ref_fac_refs["calib_ref"]
@@ -199,3 +213,4 @@ def convert(hdf5file_path):
 
 
 # convert("20200705_031603_0p3a_LNO_1_D_189.h5")
+# convert("20200817_060636_0p3a_LNO_1_D_189.h5")

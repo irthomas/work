@@ -213,15 +213,18 @@ def open_hdf5_file(hdf5_filename):
     return hdf5_file
 
 
-def make_filelist(obs_paths, file_level, model="INFLIGHT", silent=False, open_files=True):
+def make_filelist(obs_paths, file_level, model="INFLIGHT", silent=False, open_files=True, path=None):
     """make list of filenames containing matching attributes and datasets"""
     """new version uses regex"""
-    if model == "INFLIGHT":
-        DATA_DIRECTORY_IN = paths["DATA_DIRECTORY"]
-    elif model == "PFM":
-        DATA_DIRECTORY_IN = paths["DATA_DIRECTORY"]
-    elif model == "FS":
-        DATA_DIRECTORY_IN = paths["DATA_DIRECTORY_FS"]
+    if path:
+        DATA_DIRECTORY_IN = path
+    else:
+        if model == "INFLIGHT":
+            DATA_DIRECTORY_IN = paths["DATA_DIRECTORY"]
+        elif model == "PFM":
+            DATA_DIRECTORY_IN = paths["DATA_DIRECTORY"]
+        elif model == "FS":
+            DATA_DIRECTORY_IN = paths["DATA_DIRECTORY_FS"]
 
     
     """new regex type check"""

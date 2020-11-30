@@ -14,19 +14,30 @@ ADD GUILLAUME CAL TO LNO NADIR FILES
 import numpy as np
 import os
 from datetime import datetime
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
+import h5py
 
 from nomad_ops.core.hdf5.l0p3a_to_1p0a.config import RADIOMETRIC_CALIBRATION_AUXILIARY_FILES, HDF5_TIME_FORMAT
 from nomad_ops.core.hdf5.l0p3a_to_1p0a.guillaume.temp_lin_reg import get_temp_lin_reg
 from nomad_ops.core.hdf5.l0p3a_to_1p0a.functions.baseline_als import baseline_als
 
-def load_solar_spectrum():
+def load_old_solar_spectrum():
     
     solar_spectrum_file = os.path.join(RADIOMETRIC_CALIBRATION_AUXILIARY_FILES, "irrad_spectrale_1_5_UA_ACE_kurucz.npz")
     
     npzfile = np.load(solar_spectrum_file)
     x = np.asarray(npzfile['arr_0']).squeeze()
     y = np.asarray(npzfile['arr_1']).squeeze()
+
+    return x, y
+
+def load_solar_spectrum():
+    
+    solar_spectrum_file = os.path.join(RADIOMETRIC_CALIBRATION_AUXILIARY_FILES, "irrad_spectrale_1_5_UA_ACE_kurucz.h5")
+    
+    with h5py.File(solar_spectrum_file, "r") as f:
+        x = f["x"][...]
+        y = f["y"][...]
 
     return x, y
 
@@ -59,6 +70,7 @@ def convert_ref_fac_guillaume(hdf5_file, inc_angle):
     
     
     
+    # wavenb_kurucz, irrad_mars = load_old_solar_spectrum()
     wavenb_kurucz, irrad_mars = load_solar_spectrum()
     
     true_irrad_mars = irrad_mars * ((1.524**2) / (np.nanmean(dist_to_sun, axis=0))**2)  ## Correction of the distance for the irradiance for each filenames

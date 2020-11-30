@@ -10,6 +10,7 @@ import numpy as np
 
 
 
+
 def read_hdf5_to_dict(hdf5_filename):
 
     import h5py
@@ -63,4 +64,20 @@ def get_temperature_corrected_mean_curve(temperature_in, curvature_dict):
     mean_curve_shifted = np.interp(pixels, pixels_shifted, mean_curve)
 
     return mean_curve_shifted
+
+
+
+def make_correction_curve(temperature, coeffs, pixels, degree=3):
+    
+    points = np.zeros((4, 2))
+    for i in range(4):
+        for j in range(2):
+            points[i, j] = np.polyval(coeffs[i, j, :], temperature)
+    
+    polyfit = np.polyfit(points[:, 0], points[:, 1], degree)
+    
+    curve = np.polyval(polyfit, pixels)
+    return curve    
+
+
 

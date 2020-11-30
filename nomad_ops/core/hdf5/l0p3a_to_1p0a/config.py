@@ -74,7 +74,7 @@ RADIOMETRIC_CALIBRATION_AUXILIARY_FILES = os.path.join(PFM_AUXILIARY_FILES, "rad
 RADIOMETRIC_CALIBRATION_ORDERS = os.path.join(RADIOMETRIC_CALIBRATION_AUXILIARY_FILES, "lno_reflectance_factor_order_data")
 
 #coefficient table to make synthetic solar spectrum
-LNO_REFLECTANCE_FACTOR_CALIBRATION_TABLE_NAME = "LNO_Reflectance_Factor_Calibration_Table_v05"
+LNO_REFLECTANCE_FACTOR_CALIBRATION_TABLE_NAME = "LNO_Reflectance_Factor_Calibration_Table_v06"
 
 #curvature correction files
 RADIOMETRIC_CALIBRATION_CURVATURE_FILES = os.path.join(RADIOMETRIC_CALIBRATION_AUXILIARY_FILES, "curvature_correction")
@@ -101,3 +101,10 @@ HDF5_TIME_FORMAT = "%Y %b %d %H:%M:%S.%f"
 
 LNO_HEATER_DB_INDEX = 2
 
+Y_DATASET_PATH = "Science/Y"
+# Y_DATASET_PATH = "Science/YUnmodified"
+
+FIX_FIRST_PIXEL_OFFSET = True
+# FIX_FIRST_PIXEL_OFFSET = False
+# FIRST_PIXEL_OFFSET = -0.02
+FIRST_PIXEL_OFFSET = 0.00000001

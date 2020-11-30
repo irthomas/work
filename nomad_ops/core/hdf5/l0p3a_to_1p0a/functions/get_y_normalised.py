@@ -5,11 +5,11 @@ Created on Mon May  4 21:32:50 2020
 @author: iant
 """
 
-def get_y_normalised(hdf5_file):
+def get_y_normalised(hdf5_file, y_dataset_path):
     """get y dataset from file and normalise to counts per pixel per second"""
     import numpy as np
     
-    y = hdf5_file["Science/Y"][:, :]
+    y = hdf5_file[y_dataset_path][:, :]
     y[np.isnan(y)] = 0.0 #replace nans
 
     integration_time_raw = hdf5_file["Channel/IntegrationTime"][0]

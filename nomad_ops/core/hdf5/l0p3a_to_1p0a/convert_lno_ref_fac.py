@@ -59,13 +59,17 @@ from nomad_ops.core.hdf5.l0p3a_to_1p0a.functions.make_reference_line_dict import
 from nomad_ops.core.hdf5.l0p3a_to_1p0a.functions.output_filename import output_filename
 from nomad_ops.core.hdf5.l0p3a_to_1p0a.functions.get_min_mean_max_of_field import get_min_mean_max_of_field
 from nomad_ops.core.hdf5.l0p3a_to_1p0a.functions.prepare_nadir_fig_tree import prepare_nadir_fig_tree
-from nomad_ops.core.hdf5.l0p3a_to_1p0a.curvature.curvature_functions import get_temperature_corrected_mean_curve, read_hdf5_to_dict
+# from nomad_ops.core.hdf5.l0p3a_to_1p0a.curvature.curvature_functions import get_temperature_corrected_mean_curve, read_hdf5_to_dict
+from nomad_ops.core.hdf5.l0p3a_to_1p0a.curvature.curvature_functions import make_correction_curve
+from nomad_ops.core.hdf5.l0p3a_to_1p0a.curvature.curvature_dict import curvature_dict
 from nomad_ops.core.hdf5.l0p3a_to_1p0a.guillaume.lno_guillaume_cal import convert_ref_fac_guillaume
 
 
 from nomad_ops.core.hdf5.l0p3a_to_1p0a.config import RADIOMETRIC_CALIBRATION_AUXILIARY_FILES, \
-    LNO_REFLECTANCE_FACTOR_CALIBRATION_TABLE_NAME, RADIOMETRIC_CALIBRATION_CURVATURE_FILES, \
-    RADIOMETRIC_CALIBRATION_ORDERS, PFM_AUXILIARY_FILES, FIG_X, FIG_Y, SYSTEM, GOOD_PIXELS
+    LNO_REFLECTANCE_FACTOR_CALIBRATION_TABLE_NAME, \
+    RADIOMETRIC_CALIBRATION_ORDERS, FIG_X, FIG_Y, SYSTEM, GOOD_PIXELS, Y_DATASET_PATH, \
+    FIX_FIRST_PIXEL_OFFSET, FIRST_PIXEL_OFFSET
+
 
 #if SYSTEM == "Windows":
 #    logging.basicConfig(level=logging.INFO)
@@ -79,18 +83,38 @@ __contact__   = "ian . thomas @ aeronomie .be"
 logger = logging.getLogger( __name__ )
 
 
+
+
     
 def convert_lno_ref_fac(hdf5_filename, hdf5_file, errorType):
     
     diffraction_order = int(hdf5_filename.split("_")[-1])
     
     x = hdf5_file["Science/X"][0, :]
-    y = get_y_normalised(hdf5_file)
+    y = get_y_normalised(hdf5_file, Y_DATASET_PATH)
+    
+    pixels = np.arange(320)
+    
+    n_bins = hdf5_file.attrs["NBins"]
+    n_binned_spec = hdf5_file.attrs["NSpec"]
+    
+    
+    #if using YUnmodified, need to reshape dataset
+    # print(n_bins, len(y[:,0]), n_binned_spec)
+    if len(y[:,0]) != n_binned_spec:
+        y_summed = np.zeros((n_binned_spec, len(x)))
+        
+        for i in range(n_binned_spec):
+            y_summed[i, :] = np.sum(y[i*n_bins:(i+1)*n_bins, :], axis=0)
+        y = y_summed
+    
+    
     y_mean_nadir = np.mean(y, axis=1)
     t = hdf5_file["Channel/MeasurementTemperature"][0]
 
     #get sun-mars distance
     sun_mars_distance_au = hdf5_file["Geometry/DistToSun"][0,0] #in AU. Take first value in file only
+
 
     #get solar incidence angles from all points in FOV, find mean for each spectrum
     incidence_angles = np.zeros((len(y_mean_nadir), 5))
@@ -99,8 +123,11 @@ def convert_lno_ref_fac(hdf5_filename, hdf5_file, errorType):
     mean_incidence_angles_deg = np.mean(incidence_angles, axis=1)
 
     #get info from rad fac order dictionary
-    ref_fact_order_dict = ref_fact_orders_dict[diffraction_order]
-    
+    if diffraction_order in ref_fact_orders_dict.keys():
+        ref_fact_order_dict = ref_fact_orders_dict[diffraction_order]
+    else:
+        logger.warning("Diffraction order %i not in orders dictionary. Exiting", diffraction_order)
+        return {}, {}
 
 
 
@@ -119,7 +146,7 @@ def convert_lno_ref_fac(hdf5_filename, hdf5_file, errorType):
     ax2e = fig2.add_subplot(gs[2, 1], sharex=ax2a)
     
     ax2a2 = ax2a.twinx()
-    ax2d2 = ax2d.twinx()
+    # ax2d2 = ax2d.twinx()
     # ax2e2 = ax2e.twinx()
 
     #if no solar or nadir lines - set cutoff to be 75% of max value
@@ -157,15 +184,26 @@ def convert_lno_ref_fac(hdf5_filename, hdf5_file, errorType):
         ax2a.plot(x, y[validIndex, :], "grey", alpha=0.3)#, label="%i %0.1f" %(frameIndex, mean_nadir))
 
     obs_spectrum = np.mean(y[validIndices, :], axis=0)
-    ax2a.plot(x[0], obs_spectrum[0], "b", label="Solar") #dummy for legend only
-    ax2a.plot(x, obs_spectrum, "k", label="Nadir") #plot good signal averaged spectrum
-
 
     #find pixel containing minimum value in subset of real data
     obs_continuum = baseline_als(obs_spectrum)
+    
+    #code for changing the nadir spectra offset
+    if FIX_FIRST_PIXEL_OFFSET:
+        delta_offset = obs_continuum[0] - FIRST_PIXEL_OFFSET
+        obs_continuum -= delta_offset
+        obs_spectrum -= delta_offset
+        y -= delta_offset
+
+
+
+    ax2a.plot(x[0], obs_spectrum[0], "b", label="Solar") #dummy for legend only
+    ax2a.plot(x, obs_spectrum, "k", label="Nadir") #plot good signal averaged spectrum
+    ax2a.plot(x, obs_continuum, "k--")
+        
+    
     obs_absorption = obs_spectrum / obs_continuum
             
-    ax2a.plot(x, obs_continuum, "k--")
     ax2c.plot(x, obs_absorption, "k")
     
     solar_line = ref_fact_order_dict["solar_line"]
@@ -227,23 +265,51 @@ def convert_lno_ref_fac(hdf5_filename, hdf5_file, errorType):
 
     #calculate reflectance factor for all nadir spectra
     y_ref_fac, synth_solar_spectrum_tiled, solar_to_nadir_scaling_factor_tiled = calculate_reflectance_factor(y, synth_solar_spectrum, sun_mars_distance_au, mean_incidence_angles_deg)
-    
-    """get mean temperature corrected curvature from hdf5 aux file"""
-    #get data from hdf5 dict
-    curvature_dict = read_hdf5_to_dict(os.path.join(RADIOMETRIC_CALIBRATION_CURVATURE_FILES, "lno_reflectance_factor_curvature_order_%i") %diffraction_order)[0]
 
-    mean_curve_shifted = get_temperature_corrected_mean_curve(t, curvature_dict)
-    y_ref_fac_flat = y_ref_fac / mean_curve_shifted
+
+    """get mean temperature corrected curvature from hdf5 aux file"""
+    # #get data from hdf5 dict
+    # curvature_file = os.path.join(RADIOMETRIC_CALIBRATION_CURVATURE_FILES, "lno_reflectance_factor_curvature_order_%i.h5") %diffraction_order
+    # #check if file exists
+    # if os.path.isfile(curvature_file):
+    #     curvature_dict = read_hdf5_to_dict(os.path.join(RADIOMETRIC_CALIBRATION_CURVATURE_FILES, "lno_reflectance_factor_curvature_order_%i") %diffraction_order)[0]
+    #     mean_curve_shifted = get_temperature_corrected_mean_curve(t, curvature_dict)
+    #     y_ref_fac_flat = y_ref_fac / mean_curve_shifted
+        
+    #     mean_ref_fac_flat = np.mean(y_ref_fac_flat[validIndices, :], axis=0)
+        
+    # else:
+    #     logger.info("No curvature info for order %i" %diffraction_order)
+
+
+    """new version - simple cubic"""
+    if diffraction_order in curvature_dict.keys():
+        curvature_coefficients = curvature_dict[diffraction_order]["coeffs"]
+
+        curve = make_correction_curve(t, curvature_coefficients, pixels)
+        y_ref_fac_flat = y_ref_fac / curve
     
-    for valid_index in validIndices:
-        ax2d.plot(x_obs, y_ref_fac_flat[valid_index, :], "grey", alpha=0.3)
-            
+    else:
+        logger.warning("Diffraction order %i not in curvature dictionary. No curvature correction", diffraction_order)
+        curve = np.ones_like(obs_spectrum)
+        y_ref_fac_flat = np.ones_like(y_ref_fac)
+        # return {}, {}
+
+        
+
+    #get mean spectrum of best indices
     mean_ref_fac = np.mean(y_ref_fac[validIndices, :], axis=0)
     mean_ref_fac_flat = np.mean(y_ref_fac_flat[validIndices, :], axis=0)
-    
+        
     #remove wavey continuum from mean reflectance factor spectrum
     mean_ref_fac_continuum = baseline_als(mean_ref_fac, lam=500.0)
     ref_fac_normalised = mean_ref_fac / mean_ref_fac_continuum * np.mean(mean_ref_fac[50:310]) #scale to mean ref fac value in centre of detector
+
+    #and again with cubic fit
+    #x relative to centre
+    # x_centre = x_obs - np.mean(x_obs)
+    # poly_fit = np.polyfit(x_centre, mean_ref_fac, 3)
+    # cubic_fit = np.polyval(poly_fit, x_centre)
 
     ###add Guillaume calibration###
     ref_fac_baseline_removed = convert_ref_fac_guillaume(hdf5_file, mean_incidence_angles_deg)
@@ -251,10 +317,16 @@ def convert_lno_ref_fac(hdf5_filename, hdf5_file, errorType):
 
     
     ax2d.plot(x_obs, mean_ref_fac, "k", label="Mean YReflectanceFactor")
-    ax2d.plot(x_obs, mean_ref_fac_continuum, "k--", label="Continuum Fit")
-    ax2d2.plot(x_obs, mean_curve_shifted, "g--", label="Temperature-corrected Mean Curve")
+    ax2d.plot(x_obs, mean_ref_fac_continuum, "k--", label="ALS Continuum Fit")
+    # ax2d.plot(x_obs, cubic_fit, "b", label="Cubic Continuum Fit")
+    # ax2d.plot(x_obs, mean_curve_shifted* np.max(mean_ref_fac_continuum[50:310]), "g--", label="Temperature-corrected Mean Curve")
+    ax2d.plot(x_obs, curve* np.max(mean_ref_fac_continuum[50:310]), "g--", label="Temperature-corrected Mean Curve")
+
+
+
 
     ax2e.plot(x_obs, ref_fac_normalised, "k--", label="Ref fac (continuum removed & scaled to mean)")
+    # if os.path.isfile(curvature_file):
     ax2e.plot(x_obs, mean_ref_fac_flat, "g", label="Temperature-dependent curvature corrected")
     ax2e.plot(x_obs, mean_ref_fac_baseline_removed, "b", label="Guillaume calibration")
 
@@ -265,7 +337,7 @@ def convert_lno_ref_fac(hdf5_filename, hdf5_file, errorType):
     ax2a.set_ylabel("Counts\nper px per second")
     ax2b.set_ylabel("Reference\nspectra")
     ax2c.set_ylabel("Nadir\ncontinuum removed")
-    ax2d.set_ylabel("Reflectance\nfactor")
+    ax2d.set_ylabel("Reflectance factor")
     ax2e.set_ylabel("Mean reflectance factor")
     
     ax2a.set_ylim(bottom=0)
@@ -285,7 +357,7 @@ def convert_lno_ref_fac(hdf5_filename, hdf5_file, errorType):
     ax2b.set_xticks(np.arange(ticks[0], ticks[-1], 2.0))
     ax2c.set_xticks(np.arange(ticks[0], ticks[-1], 2.0))
     ax2d.set_xticks(np.arange(ticks[0], ticks[-1], 2.0))
-    ax2d2.set_xticks(np.arange(ticks[0], ticks[-1], 2.0))
+    # ax2d2.set_xticks(np.arange(ticks[0], ticks[-1], 2.0))
     ax2e.set_xticks(np.arange(ticks[0], ticks[-1], 2.0))
     # ax2e2.set_xticks(np.arange(ticks[0], ticks[-1], 2.0))
 
@@ -294,6 +366,16 @@ def convert_lno_ref_fac(hdf5_filename, hdf5_file, errorType):
     ax2c.grid()
     ax2d.grid()
     ax2e.grid()
+
+    if diffraction_order in curvature_dict.keys():
+        points = np.zeros((4, 2))
+        for i in range(4):
+            for j in range(2):
+                points[i, j] = np.polyval(curvature_coefficients[i, j, :], t)
+        #convert point to wavenumber
+        x_nu = np.interp(points[:, 0], pixels, x_obs)
+
+        ax2d.scatter(x_nu, points[:, 1]*np.max(mean_ref_fac_continuum[:150]), color="g", s=150, marker="X")
 
     ax2a.legend(loc="upper right")
     ax2b.legend(loc="lower right")
@@ -319,7 +401,7 @@ def convert_lno_ref_fac(hdf5_filename, hdf5_file, errorType):
 
     ref_fac_cal_dict["Science/X"] = {"data":x_obs, "dtype":np.float32, "compression":True}
     ref_fac_cal_dict["Science/YReflectanceFactor"] = {"data":y_ref_fac, "dtype":np.float32, "compression":True}
-    ref_fac_cal_dict["Science/MeanCurveShifted"] = {"data":mean_curve_shifted, "dtype":np.float32, "compression":True}
+    ref_fac_cal_dict["Science/CorrectionCurve"] = {"data":curve, "dtype":np.float32, "compression":True}
     ref_fac_cal_dict["Science/YReflectanceFactorFlat"] = {"data":y_ref_fac_flat, "dtype":np.float32, "compression":True}
     ref_fac_cal_dict["Criteria/LineFit/NumberOfLinesFit"] = {"data":len(chi_sq_matching), "dtype":np.int16, "compression":False}
     ref_fac_cal_dict["Criteria/LineFit/ChiSqError"] = {"data":chi_sq_matching, "dtype":np.float32, "compression":True}
@@ -363,14 +445,14 @@ def convert_lno_ref_fac(hdf5_filename, hdf5_file, errorType):
     if len(chi_sq_matching) == 0: #change from emtpy list to zero for adding to figure title
         chi_sq_string = "N/A"
     else:
-        chi_sq_string = "%0.2f (%i lines fit)" %(np.mean(chi_sq_matching), len(chi_sq_matching))
+        chi_sq_string = "%0.2f (%i lines fit; smaller is better)" %(np.mean(chi_sq_matching), len(chi_sq_matching))
     
-    title = "%s: absorption line fit quality: %s\nL$_s$: %0.3f$^\circ$; mean longitude: %0.2f$^\circ$E; latitude range: %0.1f to %0.1f$^\circ$; solar incidence angle: min=%0.1f$^\circ$; max=%0.1f$^\circ$" \
-        %(hdf5_filename_new, chi_sq_string, ls[1], lons[1], lats[0], lats[2], incid[0], incid[2])
+    title = "%s: absorption line fit quality: %s\nL$_s$: %0.3f$^\circ$; mean longitude: %0.2f$^\circ$E; latitude range: %0.1f to %0.1f$^\circ$; solar incidence angle: min=%0.1f$^\circ$; max=%0.1f$^\circ$; t=%0.1f$^\circ$C" \
+        %(hdf5_filename_new, chi_sq_string, ls[1], lons[1], lats[0], lats[2], incid[0], incid[2], t)
     
     fig2.suptitle(title)
     
-    thumbnail_path = prepare_nadir_fig_tree("%s_ref_fac.png" %hdf5_filename_new)
+    thumbnail_path = prepare_nadir_fig_tree(hdf5_filename_new, diffraction_order)
     logger.info("Saving thumbnail: %s_ref_fac.png", hdf5_filename_new)
     fig2.savefig(thumbnail_path), 
     

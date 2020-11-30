@@ -25,7 +25,7 @@ from tools.spectra.baseline_als import baseline_als
 #from tools.general.get_nearest_index import get_nearest_index
 from tools.plotting.colours import get_colours
 
-from instrument.nomad_lno_instrument import nu_mp, temperature_p0
+from instrument.nomad_lno_instrument import nu_mp, temperature_p0, t_nu_mp
 from nomad_ops.core.hdf5.l0p3a_to_1p0a.lno_ref_fac_orders import ref_fact_orders_dict
 from nomad_ops.core.hdf5.l0p3a_to_1p0a.make_aux_files.get_lno_diffraction_orders import get_lno_diffraction_orders
 from nomad_ops.core.hdf5.l0p3a_to_1p0a.functions.make_reference_line_dict import make_reference_line_dict
@@ -39,10 +39,17 @@ from tools.general.get_minima_maxima import get_local_minima
 from nomad_ops.core.hdf5.l0p3a_to_1p0a.config import PFM_AUXILIARY_FILES, LNO_HEATER_DB_INDEX, HDF5_TIME_FORMAT
     
 # FORMAT_STR_SECONDS = "%Y %b %d %H:%M:%S.%f"
-Y_OFFSET = 0.05
+Y_OFFSET = 0.05 #for plotting only
 
-# MAKE_AUX_FILE = True
-MAKE_AUX_FILE = False
+MAKE_AUX_FILE = True
+# MAKE_AUX_FILE = False
+
+CLOSE_FIGS = True
+# CLOSE_FIGS = False
+
+# TEMPERATURE_GRID_TO_USE = "measurement_temperature"
+TEMPERATURE_GRID_TO_USE = "calculated_temperature"
+# TEMPERATURE_GRID_TO_USE = "mean_temperature"
 
 # regex = re.compile("(20161121_233000|20180702_112352|20181101_213226|20190314_021825|20190609_011514|20191207_051654)_0p1a_LNO_1")
 regex = re.compile("(20161121_233000|20180702_112352|20181101_213226|20190314_021825|20190609_011514|20190921_222413|20191207_051654|20200105_132318|20200324_145739)_0p1a_LNO_1")
@@ -174,6 +181,8 @@ for diffraction_order in ref_fact_orders_dict.keys():
         "pixels":[],
         "spectrum_counts":[],
         "measurement_temperature":[],
+        "calculated_temperature":[],
+        "mean_temperature":[],
         "interpolated_nu_hr":[],
         "interpolated_counts_hr":[],
     }
@@ -190,6 +199,9 @@ for diffraction_order in ref_fact_orders_dict.keys():
         diffraction_orders = get_lno_diffraction_orders(aotf_frequencies)
         frame_indices = list(np.where(diffraction_orders == diffraction_order)[0])
         
+        sum_temperature = 0.0
+        n_frames = 0.0
+        
         for frame_index in frame_indices[1:-1]:
         # frame_index = frame_indices[0] #just take first frame of solar fullscan
         
@@ -198,6 +210,9 @@ for diffraction_order in ref_fact_orders_dict.keys():
         
             #get temperature from TGO readout instead of channel
             measurement_temperature = float(get_temperature(observation_datetime)[LNO_HEATER_DB_INDEX])
+            
+            sum_temperature += measurement_temperature
+            n_frames += 1.0
     
             nu_px = nu_mp(diffraction_order, pixels, measurement_temperature)
     
@@ -264,6 +279,11 @@ for diffraction_order in ref_fact_orders_dict.keys():
                 delta_wavenumber = solar_minimum_nu - spectrum_minimum_nu
     #            print("measurement_temperature=", measurement_temperature)
                 # print("delta_wavenumber=", delta_wavenumber)
+                
+                
+                #calculate temeperature from absorption minimum
+                calculated_temperature = t_nu_mp(diffraction_order, solar_minimum_nu, spectrum_minimum_px)
+                                
         
                 #shift wavenumber scale to match solar line
                 nu_obs = nu_px + delta_wavenumber
@@ -309,8 +329,12 @@ for diffraction_order in ref_fact_orders_dict.keys():
             calibration_dict["pixels"].append(pixels)
             calibration_dict["spectrum_counts"].append(spectrum_counts)
             calibration_dict["measurement_temperature"].append(measurement_temperature)
+            calibration_dict["calculated_temperature"].append(calculated_temperature)
             calibration_dict["interpolated_nu_hr"].append(interpolated_nu_hr)
             calibration_dict["interpolated_counts_hr"].append(interpolated_counts_hr)
+
+        
+        calibration_dict["mean_temperature"].extend([sum_temperature / n_frames for i in range(int(n_frames))])
                 
     
     #convert to arrays
@@ -351,8 +375,9 @@ for diffraction_order in ref_fact_orders_dict.keys():
     fig2.savefig(os.path.join(paths["BASE_DIRECTORY"], "lno_solar_fullscan_order_%i_counts.png" %diffraction_order))
     
     
-    plt.close(fig1)
-    plt.close(fig2)
+    if CLOSE_FIGS:
+        plt.close(fig1)
+        plt.close(fig2)
 
     
 #    if solar_line and not error:
@@ -361,13 +386,17 @@ for diffraction_order in ref_fact_orders_dict.keys():
     #get coefficients for all wavenumbers
     POLYNOMIAL_DEGREE = 2
     
-    #TODO: interpolate over extended grid using fewer temperature set points where all aren't available
-    #OR: extrapolate coefficients
 
     #find min/max wavenumber of any temperature
     # first_nu_hr = np.max(calibration_dict["interpolated_nu_hr"][:, 0])
     # last_nu_hr = np.min(calibration_dict["interpolated_nu_hr"][:, -1])
+    
+    
+    # plt.figure()
+    # for 
+    # plt.plot()
 
+    #interpolate over extended grid using fewer temperature set points where all aren't available
     #new version -> use all available wavenumbers where at least 3 observations are present
     min_nu = []
     max_nu = []
@@ -380,8 +409,8 @@ for diffraction_order in ref_fact_orders_dict.keys():
     first_nu_hr = sorted(min_nu)[3]
     last_nu_hr = sorted(max_nu)[-3]
     
-    #make new wavenumber grid covering all temperatures
-    wavenumber_grid = np.linspace(first_nu_hr-1.0, last_nu_hr+1.0, num=6720)
+    #make new wavenumber grid covering all temperatures.
+    wavenumber_grid = np.linspace(first_nu_hr, last_nu_hr, num=6720)
     
     
     #get data from dictionary, interpolate onto hr nu grid
@@ -398,9 +427,10 @@ for diffraction_order in ref_fact_orders_dict.keys():
         spectra_grid_unsorted[i, :] = spectrum_interpolated
     
     #sort by temperature
-    sort_indices = np.argsort(calibration_dict["measurement_temperature"])
+    
+    sort_indices = np.argsort(calibration_dict[TEMPERATURE_GRID_TO_USE])
     spectra_grid = spectra_grid_unsorted[sort_indices, :]
-    temperature_grid = calibration_dict["measurement_temperature"][sort_indices]
+    temperature_grid = calibration_dict[TEMPERATURE_GRID_TO_USE][sort_indices]
     
     
     #plot solar fullscan relationship between temperature and counts
@@ -415,50 +445,88 @@ for diffraction_order in ref_fact_orders_dict.keys():
         fig3.suptitle("Interpolating spectra w.r.t. temperature order %i - no solar line" %diffraction_order)
 
 
-    coefficientsAll = []
+    #loop through each hr pixel, taking the spectra at all temperatures to calculate the coefficients
+    coefficients_list = []
+    printed = False
     for wavenumberIndex in range(len(wavenumber_grid)):
         
-        spectrum = spectra_grid[:, wavenumberIndex]
-        not_nan_indices = ~np.isnan(spectrum)
+        #pixel slice goes from coldest spectrum to hottest
+        pixel_slice = spectra_grid[:, wavenumberIndex]
+        not_nan_indices = ~np.isnan(pixel_slice)
         
-        if len(not_nan_indices) > 0:
+        #use linear interpolation if 
+        if sum(not_nan_indices) < len(not_nan_indices):
             degree = 1
         else:
             degree = POLYNOMIAL_DEGREE
+            if not printed:
+                print("First nu:", wavenumber_grid[wavenumberIndex])
+                printed = True
     
-        coefficients = np.polyfit(temperature_grid[not_nan_indices], spectrum[not_nan_indices], degree)
-        coefficientsAll.append(coefficients)
-        if wavenumberIndex in range(40, 6700, 400):
+        #get temperature vs pixel count for each spectrum
+        coefficients = np.polyfit(temperature_grid[not_nan_indices], pixel_slice[not_nan_indices], degree)
+
+        #if linear interpolation, add zero coefficients until matching length of POLYNOMIAL_DEGREE
+        while len(coefficients) < (POLYNOMIAL_DEGREE+1):
+            coefficients = np.asfarray([0] + list(coefficients))
+            
+        #make nice temperature grid
+        even_temperature_grid = np.arange(temperature_grid[0], temperature_grid[-1]+3.0, 0.1)
+        
+        
+        coefficients_list.append(coefficients)
+        if wavenumberIndex in [10, 20, 30] + list(range(40, 6700, 400)) + [6670, 6680, 6690]:
             quadratic_fit = np.polyval(coefficients, temperature_grid)
-            linear_coefficients_normalised = np.polyfit(temperature_grid[not_nan_indices], spectrum[not_nan_indices]/np.max(spectrum[not_nan_indices]), degree)
-            linear_fit_normalised = np.polyval(linear_coefficients_normalised, temperature_grid)
-            ax3.scatter(temperature_grid[not_nan_indices], spectrum[not_nan_indices]/np.max(spectrum[not_nan_indices]), label="Wavenumber %0.1f" %wavenumber_grid[wavenumberIndex], color=colours2[wavenumberIndex])
-            ax3.plot(temperature_grid, linear_fit_normalised, "--", color=colours2[wavenumberIndex])
+            coefficients_normalised = np.polyfit(temperature_grid[not_nan_indices], pixel_slice[not_nan_indices]/np.max(pixel_slice[not_nan_indices]), degree)
+            fit_normalised = np.polyval(coefficients_normalised, even_temperature_grid)
+            ax3.scatter(temperature_grid[not_nan_indices], pixel_slice[not_nan_indices]/np.max(pixel_slice[not_nan_indices]), label="Wavenumber %0.1f" %wavenumber_grid[wavenumberIndex], color=colours2[wavenumberIndex])
+            ax3.plot(even_temperature_grid, fit_normalised, "--", color=colours2[wavenumberIndex])
     
-    coefficientsAll = np.asfarray(coefficientsAll).T
     
+    #correct curve error on left side of detector
+    coefficientsAll = np.asfarray(coefficients_list).T
+    
+    line = np.zeros_like(coefficientsAll[2, :])
+    if diffraction_order in [189, 190, 191, 193]:
+        # # coefficients_old = coefficientsAll.copy()
+        b = 60000
+        a = -1 * (b/1400)
+        x2 = np.arange(1400)
+        line[x2] = a*x2 + b
+        
+        coefficientsAll[2, :] += line
+        # plt.figure()
+        # plt.plot(wavenumber_grid, coefficients_old[2, :])
+        # plt.plot(wavenumber_grid, coefficientsAll[2, :])
+
+
+
+
+
     ax3.set_xlabel("Instrument temperature (Celsius)")
     ax3.set_ylabel("Counts for given pixel (normalised to peak)")
     ax3.legend()
     fig3.savefig(os.path.join(paths["BASE_DIRECTORY"], "lno_solar_fullscan_order_%i_interpolation.png" %diffraction_order))
-    plt.close(fig3)
+    if CLOSE_FIGS:
+        plt.close(fig3)
  
     
     #plot sample synthetic solar spectra
     fig4, ax4 = plt.subplots(figsize=(FIG_X+3, FIG_Y+3))
     #use pre-defined wavenumber grid
-    for temperature in np.arange(-15, 5, 3):
-        spectrum = np.ones_like(wavenumber_grid)
+    for temperature in np.arange(-15, 10, 3):
+        spectrum_hr = np.ones_like(wavenumber_grid)
         for i in range(len(wavenumber_grid)):
-            spectrum[i] = np.polyval(coefficientsAll[:, i], temperature)
-        ax4.plot(wavenumber_grid, spectrum, label="T=%0.1f" %temperature)
+            spectrum_hr[i] = np.polyval(coefficientsAll[:, i], temperature)
+        ax4.plot(wavenumber_grid, spectrum_hr, label="T=%0.1f" %temperature)
     
     ax4.set_title("Synthetic LNO Solar Spectra")
     ax4.set_xlabel("Wavenumber cm-1")
     ax4.set_ylabel("Counts")
     ax4.legend()
     fig4.savefig(os.path.join(paths["BASE_DIRECTORY"], "lno_solar_fullscan_order_%i_synthetic.png" %diffraction_order))
-    plt.close(fig4)
+    if CLOSE_FIGS:
+        plt.close(fig4)
 
 
     #write to hdf5 aux file
@@ -468,6 +536,10 @@ for diffraction_order in ref_fact_orders_dict.keys():
         hdf5_file_out["%i" %diffraction_order+"/temperature_grid"] = temperature_grid
         hdf5_file_out["%i" %diffraction_order+"/coefficients"] = coefficientsAll
         
+        if not np.all(line == 0):
+            hdf5_file_out["%i" %diffraction_order+"/offset"] = line
+            
+        
         if not solar_line:
             hdf5_file_out["%i" %diffraction_order+"/warning"] = 1.0
  
@@ -475,5 +547,37 @@ for diffraction_order in ref_fact_orders_dict.keys():
 if MAKE_AUX_FILE:
     hdf5_file_out.close()
     
+
+
+
+
+
+# #test on spectra
+
+# import shutil
+# shutil.copyfile(os.path.join(paths["BASE_DIRECTORY"], output_title+".h5"), r"C:\Users\iant\Documents\DATA\pfm_auxiliary_files\radiometric_calibration\LNO_Reflectance_Factor_Calibration_Table_v06.h5")
+
+# lno_curvature_dict = {
+# # 168:{"clear_nu":[[3780., 3784.], [3785., 3796.], [3797., 3801.], [3802., 3810.]], "temperature_shift_coeffs":[-1.00061872, 88.19576276], },
+# 189:{"clear_nu":[[4250., 4251.], [4253., 4254.], [4257., 4263.], [4265., 4267.], [4268., 4270.], [4272., 4274.], [4275.5, 4283.]], "px_left":40, "px_right":310},
+# }
+
+# from nomad_ops.core.hdf5.l0p3a_to_1p0a.convert_lno_ref_fac import convert_lno_ref_fac
+
+# regex = re.compile("20.*_LNO_._D_%i" %diffraction_order)
+# file_level = "hdf5_level_0p3a"
+
+# hdf5_files, hdf5_filenames, _ = make_filelist(regex, file_level, path=os.path.normcase(r"D:\DATA\hdf5"))
+
+
+# for file_index, (hdf5_filename, hdf5_file) in enumerate(zip(hdf5_filenames, hdf5_files)):
+#     if file_index in list(range(0, len(hdf5_filenames), 30)):
+#         a,b = convert_lno_ref_fac(hdf5_filename, hdf5_file, "")
+
+
+
+
+
+
 
 
