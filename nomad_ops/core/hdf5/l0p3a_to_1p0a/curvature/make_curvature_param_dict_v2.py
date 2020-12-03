@@ -21,7 +21,7 @@ import sys
 import numpy as np
 import matplotlib.pyplot as plt
 # from matplotlib.backends.backend_pdf import PdfPages
-from datetime import datetime
+# from datetime import datetime
 
 from tools.file.hdf5_functions import make_filelist
 from tools.spectra.fit_polynomial import fit_polynomial_errors
@@ -30,7 +30,7 @@ from tools.spectra.baseline_als import baseline_als
 from tools.spectra.savitzky_golay import savitzky_golay
 from tools.plotting.colours import get_colours
 
-from tools.file.read_write_hdf5 import write_hdf5_from_dict
+# from tools.file.read_write_hdf5 import write_hdf5_from_dict
 
 
 from nomad_ops.core.hdf5.l0p3a_to_1p0a.curvature.curvature_functions import make_correction_curve
@@ -46,20 +46,18 @@ POLYFIT_DEGREE = 3 #must be 3 for 4 points
 
 
 lno_curvature_dict = {
-167:{"clear_nu":[[3752., 3756.], [3757., 3759.], [3760.5, 3765.], [3766.5, 3769.], [3771., 3779.], [3780., 3782.], [3783., 3785.]], "px_left":40, "px_right":310},
-169:{"clear_nu":[[3798., 3801.], [3805., 3806.], [3807.5, 3812.], [3813., 3815.], [3817., 3819.5], [3822., 3823.5], [3827., 3829.]], "px_left":40, "px_right":310},
 
 
 # 168:{"clear_nu":[[3780., 3784.], [3785., 3796.], [3797., 3801.], [3802., 3810.]], "temperature_shift_coeffs":[-1.00061872, 88.19576276], },
 # 189:{"clear_nu":[[4250., 4251.], [4253., 4254.], [4257., 4263.], [4265., 4267.], [4268., 4270.], [4272., 4274.], [4275.5, 4283.]], "px_left":40, "px_right":310}, #not used
 
-
+167:{"clear_nu":[[3752., 3756.], [3757., 3759.], [3760.5, 3765.], [3766.5, 3769.], [3771., 3779.], [3780., 3782.], [3783., 3785.]], "px_left":40, "px_right":310},
 168:{"clear_nu":[[3780., 3784.], [3785., 3796.], [3797., 3801.], [3802., 3810.]], "px_left":40, "px_right":310},
+169:{"clear_nu":[[3790., 3799.], [3799.5, 3801.], [3802., 3802.5], [3803.5, 3804.],  [3805., 3805.5], [3807.5, 3812.], [3813., 3815.], [3817., 3819.5], [3822., 3823.5], [3827., 3829.]], "px_left":40, "px_right":310},
+
      
 189:{"clear_nu":[[4250., 4263.], [4265., 4267.], [4268., 4270.], [4272., 4274.], [4275.5, 4283.]], "px_left":40, "px_right":310}, #this one for 26th Nov analysis
-
 190:{"clear_nu":[[4265., 4278.], [4279., 4280.], [4282.5, 4284.5], [4285.8, 4287.8], [4289., 4291.], [4292., 4294.], [4295.5, 4296.5], [4299.5, 4300.], [4301.5, 4303.]], "px_left":40, "px_right":290},
-
 191:{"clear_nu":[[4294., 4303.], [4304., 4306.], [4307., 4308.5], [4310., 4311.5], [4312.4, 4314.], [4315., 4316.5], [4318., 4323.], [4324., 4326.]], "px_left":40, "px_right":290},
 193:{"clear_nu":[[4335., 4371.]], "px_left":40, "px_right":290},
 

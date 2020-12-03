@@ -67,8 +67,7 @@ from nomad_ops.core.hdf5.l0p3a_to_1p0a.guillaume.lno_guillaume_cal import conver
 
 from nomad_ops.core.hdf5.l0p3a_to_1p0a.config import RADIOMETRIC_CALIBRATION_AUXILIARY_FILES, \
     LNO_REFLECTANCE_FACTOR_CALIBRATION_TABLE_NAME, \
-    RADIOMETRIC_CALIBRATION_ORDERS, FIG_X, FIG_Y, SYSTEM, GOOD_PIXELS, Y_DATASET_PATH, \
-    FIX_FIRST_PIXEL_OFFSET, FIRST_PIXEL_OFFSET
+    RADIOMETRIC_CALIBRATION_ORDERS, FIG_X, FIG_Y, SYSTEM, GOOD_PIXELS, Y_DATASET_PATH
 
 
 #if SYSTEM == "Windows":
@@ -189,8 +188,8 @@ def convert_lno_ref_fac(hdf5_filename, hdf5_file, errorType):
     obs_continuum = baseline_als(obs_spectrum)
     
     #code for changing the nadir spectra offset
-    if FIX_FIRST_PIXEL_OFFSET:
-        delta_offset = obs_continuum[0] - FIRST_PIXEL_OFFSET
+    if "px0_offset" in ref_fact_order_dict.keys():
+        delta_offset = obs_continuum[0] - ref_fact_order_dict["px0_offset"]
         obs_continuum -= delta_offset
         obs_spectrum -= delta_offset
         y -= delta_offset

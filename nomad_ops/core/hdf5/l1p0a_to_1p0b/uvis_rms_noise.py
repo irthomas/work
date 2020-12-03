@@ -106,13 +106,13 @@ import matplotlib.pyplot as plt
 
 
 
-# from nomad_ops.core.hdf5.l1p0a_to_1p0b.functions.uvis_rms_noise_functions import get_rms_dict, find_index, convolve_smooth
-# from nomad_ops.core.hdf5.l1p0a_to_1p0b.functions.prepare_uvis_rms_fig_tree import prepare_uvis_rms_fig_tree
-# from nomad_ops.core.hdf5.l1p0a_to_1p0b.config import WAVELENGTH_TO_PLOT, PLOT_FIGS
+from nomad_ops.core.hdf5.l1p0a_to_1p0b.functions.uvis_rms_noise_functions import get_rms_dict, find_index, convolve_smooth
+from nomad_ops.core.hdf5.l1p0a_to_1p0b.functions.prepare_uvis_rms_fig_tree import prepare_uvis_rms_fig_tree
+from nomad_ops.core.hdf5.l1p0a_to_1p0b.config import WAVELENGTH_TO_PLOT, PLOT_FIGS
 
 
 # from tools.file.hdf5_functions import get_file
-from tools.plotting.colours import get_colours
+# from tools.plotting.colours import get_colours
 # hdf5_filename, hdf5FileIn = get_file("20180426_022949_1p0a_UVIS_E", "hdf5_level_1p0a", 0)
 # hdf5_filename, hdf5FileIn = get_file("20181001_111429_1p0a_UVIS_I", "hdf5_level_1p0a", 0)
 # hdf5_filename, hdf5FileIn = get_file("20190304_093635_1p0a_UVIS_E", "hdf5_level_1p0a", 0)
@@ -121,19 +121,20 @@ from tools.plotting.colours import get_colours
 """or"""
 # rms_dict = get_rms_dict(0)
 # rms_dict = get_rms_dict(3)
-rms_dict = get_rms_dict(7)
-plt.figure()
-plt.title(rms_dict["INPUT_SAVEFILE"].decode())
-plt.xlabel("Transmittance bin")
-plt.ylabel("RMS Noise")
-colours = get_colours(47)
-for i in range(47): plt.plot(rms_dict["TRANS_BIN"], rms_dict["RMS"][i, :].T, color=colours[i], label="%inm bin" %rms_dict["WAVE_BIN"][i])
-plt.legend(prop={'size': 6})
-plt.savefig("%s.png" %rms_dict["INPUT_SAVEFILE"].decode())
+# rms_dict = get_rms_dict(7)
+# plt.figure()
+# plt.title(rms_dict["INPUT_SAVEFILE"].decode())
+# plt.xlabel("Transmittance bin")
+# plt.ylabel("RMS Noise")
+# colours = get_colours(47)
+# for i in range(47): plt.plot(rms_dict["TRANS_BIN"], rms_dict["RMS"][i, :].T, color=colours[i], label="%inm bin" %rms_dict["WAVE_BIN"][i])
+# plt.legend(prop={'size': 6})
+# plt.savefig("%s.png" %rms_dict["INPUT_SAVEFILE"].decode())
 
 
 
 def uvis_rms_noise(hdf5_filename, hdf5FileIn):
+# def uvis_rms_noise(hdf5_filename, x, y, horizontal_binning, ):
 
     y = hdf5FileIn["Science/YMean"][...]
     x = hdf5FileIn["Science/X"][0, :]

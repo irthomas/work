@@ -11,7 +11,7 @@ import os
 import glob
 import posixpath
 
-SEARCH_STRING = "smoothHighRes"
+SEARCH_STRING = "ObservationDate"
 
 
 from tools.file.paths import paths

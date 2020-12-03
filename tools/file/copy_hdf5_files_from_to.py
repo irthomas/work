@@ -60,6 +60,8 @@ level = "hdf5_l10a"
 # level = "hdf5_l02a"
 
 
+print("Copying %s from %s to %s" %(level, _from, to))
+
 def get_input_output_paths(to, _from, level):
 
     dir_name = "hdf5_level_%sp%s" %(level[-3:-2], level[-2:])
@@ -135,11 +137,12 @@ def get_filepaths_from(_from, from_path, regex):
 
     print("Finding files matching regex %s" %regex)
 
-    server = ["hera.oma.be", "iant"]
-    password = passwords["hera"]
+    if _from in ["datastore", "datastore_test"]:
+        server = ["hera.oma.be", "iant"]
+        password = passwords["hera"]
 
     
-    if _from in ["datastore", "datastore_test", "local", "datastore_linux"]:
+    if _from in ["local", "datastore_linux"]:
         # nFiles = 0
         hdf5DatastoreFilepathsUnsorted = []
         for root, dirs, files in os.walk(from_path):
@@ -153,11 +156,11 @@ def get_filepaths_from(_from, from_path, regex):
     
     
     
-    if _from in ["hera", "hera_test"]:
+    elif _from in ["hera", "hera_test"]:
         import pysftp
+        from stat import S_ISDIR, S_ISREG
    
         def listdir_r(sftp, remotedir, file_paths):
-            from stat import S_ISDIR, S_ISREG
     
             for entry in sftp.listdir_attr(remotedir):
                 remotepath = remotedir + "/" + entry.filename
@@ -172,7 +175,7 @@ def get_filepaths_from(_from, from_path, regex):
         
         cnopts = pysftp.CnOpts()
         cnopts.hostkeys = None
-        private_key_path = os.path.join(paths["REFERENCE_DIRECTORY"], "id_rsa_hera")
+        private_key_path = os.path.join(paths["REFERENCE_DIRECTORY"], "ppk")
 
         with pysftp.Connection(host=server[0], username=server[1], password=password, private_key=private_key_path, cnopts=cnopts) as sftp:
         # with pysftp.Connection(host=server[0], username=server[1], password=password) as sftp:
@@ -188,8 +191,6 @@ def get_filepaths_from(_from, from_path, regex):
 
 def copy_files_to(to, to_path, _from, hdf5DatastoreFilepaths):
 
-    server = ["hera.oma.be", "iant"]
-    password = passwords["hera"]
 
 
     nFiles = len(hdf5DatastoreFilepaths)
@@ -199,6 +200,10 @@ def copy_files_to(to, to_path, _from, hdf5DatastoreFilepaths):
           
     if to in ["local", "local_hdd"]:
         import pysftp
+
+        server = ["hera.oma.be", "iant"]
+        password = passwords["hera"]
+
         file_number = 0
         for hdf5DatastoreFilepath in hdf5DatastoreFilepaths:
         
@@ -250,6 +255,7 @@ def copy_files_to(to, to_path, _from, hdf5DatastoreFilepaths):
     
     if to in ["nomad_ftp", "ftp"]:
         import ftplib
+
     
         def open_ftp(server_address, username, password):
             # Open an FTP connection with specified credentials
