@@ -10,13 +10,16 @@ GET MID-OBS TEMPERATURE FROM LNO OBSERVATIONS AND PLOT TEMPERATURE EVOLUTION
 
 import matplotlib.pyplot as plt
 import numpy as np
-import os
+# import os
 import re
 import h5py
 from datetime import datetime
 
 from tools.file.hdf5_functions import make_filelist
+from tools.spectra.savitzky_golay import savitzky_golay
 
+from tools.general.length import length
+        
 
 
 HDF5_DT_FORMAT = "%Y %b %d %H:%M:%S.%f"
@@ -34,11 +37,11 @@ hdf5_filepaths, hdf5_filenames, _ = make_filelist(regex, file_level, open_files=
 for hdf5_filepath, hdf5_filename in zip(hdf5_filepaths, hdf5_filenames):
     
     with h5py.File(hdf5_filepath, "r") as f:
-        temperature_in = f["Temperature/RedundantLNO"][...]
+        temperature_in = f["Temperature/NominalLNO"][...]
         
         datetime_in = f["Temperature/TemperatureDateTime"][...]
         
-        if len(temperature_in) > 20:
+        if length(temperature_in) > 20:
         
             temperatures.append(temperature_in[6])
             temperatures.append(temperature_in[-6])
@@ -50,9 +53,13 @@ for hdf5_filepath, hdf5_filename in zip(hdf5_filepaths, hdf5_filenames):
         
 datetimes = [datetime.strptime(x, HDF5_DT_FORMAT) for x in datetime_strings]
 
+temperatures = np.asfarray(temperatures)
+datetimes = np.asarray(datetimes)
 
+datetimes_sg = datetimes[~np.isnan(temperatures)]
+sg = savitzky_golay(np.asfarray(temperatures[~np.isnan(temperatures)]), 999, 1)
 
-
+datetimes_sg =list(datetimes_sg)
 
 
 regex = re.compile("%s.*_SO_A_I_134" %year)
@@ -114,8 +121,10 @@ ax1.scatter(so_e_datetimes, so_e_lats, label="Egress")
 ax1.set_ylabel("SO Lats")
 ax1.legend()
 
-ax2.plot(datetimes, temperatures)
+ax2.plot(datetimes, temperatures, "LNO Temperature")
+ax2.plot(datetimes_sg, sg, "Rolling Mean")
 ax2.set_xlabel("Time")
 ax2.set_ylabel("LNO Temperature")
-        
+ax2.legend()
+       
 plt.savefig("LNO_temperature_monitoring.png")
