@@ -28,7 +28,7 @@ HDF5_DT_FORMAT = "%Y %b %d %H:%M:%S.%f"
 
 # year = "2020[0-9][0-9][0-9][0-9]"
 
-regex = re.compile("2020[0-9][0-9][0-9][0-9]_.*_SO_A_I_134")
+regex = re.compile("20[0-9][0-9][0-9][0-9][0-9][0-9]_.*_SO_A_I_134")
 file_level = "hdf5_level_0p3k"
 
 datetime_strings = []
