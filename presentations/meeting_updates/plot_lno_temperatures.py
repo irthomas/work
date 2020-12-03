@@ -121,10 +121,11 @@ ax1.scatter(so_e_datetimes, so_e_lats, label="Egress")
 ax1.set_ylabel("SO Lats")
 ax1.legend()
 
-ax2.plot(datetimes, temperatures, "LNO Temperature")
-ax2.plot(datetimes_sg, sg, "Rolling Mean")
+ax2.plot(datetimes, temperatures, label="LNO Temperature")
+ax2.plot(datetimes_sg, sg, label="Rolling Mean")
 ax2.set_xlabel("Time")
 ax2.set_ylabel("LNO Temperature")
 ax2.legend()
+ax2.grid()
        
 plt.savefig("LNO_temperature_monitoring.png")
