@@ -14,22 +14,21 @@ import h5py
 
 
 
-NUM_MATCH1 = r"((?:(?:|-|\+)\D\d+[.]\d+e(?:-|\+)\d+|(?:|-|\+)\d+[.]\d+))"
-NUM_MATCH = r"((?:(?:|-|\+)\D\d+[.]\d+e(?:-|\+)\d+|(?:|-|\+)\d+[.]\d+)|\d+.)"
-TEXT_MATCH = r"(\S+)"
+
 
                                  
 def get_goddard_dict(filepath):
     """save Goddard data to a dictionary, where each HDF5 file is an entry"""
     
-
-    regex = r"\s+".join([NUM_MATCH1] + [NUM_MATCH]*2 + [TEXT_MATCH])
-
-
-    # regex = "\s+(\d+[.]\d+)\s+([- ]\d+[.]\d+)\s+(\d+[.]\d+)\s+(\d+[.]\d+)\s+((?:\d+[.]\d+e.\d+|\d+[.]))\s+((?:\d+[.]\d+e[+]\d+|\d+[.]))\s+(\S+)\s"
+#    regex = "\s+(\d+[.]\d+)\s+([- ]\d+[.]\d+)\s+(\d+[.]\d+)\s+(\d+[.]\d+)\s+((?:\d+[.]\d+e.\d+|\d+[.]))\s+\d+[.]\d+e.\d+\s+\d+[.]\d+e.\d+\s+(\S+)\s+\S+"
+#    data = np.fromregex(filepath, regex, 
+#        dtype={'names': ('ls', 'lat', 'lst', 'alt', 'o3', 'filename'),
+#               'formats': (np.float, np.float, np.float, np.float, np.float, 'U30')}
+#        )
+    regex = "\s+(\d+[.]\d+)\s+([- ]\d+[.]\d+)\s+(\d+[.]\d+)\s+(\d+[.]\d+)\s+((?:\d+[.]\d+e.\d+|\d+[.]))\s+((?:\d+[.]\d+e[+]\d+|\d+[.]))\s+(\S+)\s"
     data = np.fromregex(filepath, regex, 
-        dtype={'names': ('alt', 'o3', 'o3_error', 'filename'),
-               'formats': (np.float, np.float, np.float, 'U30')}
+        dtype={'names': ('ls', 'lat', 'lst', 'alt', 'o3', 'o3_error', 'filename'),
+               'formats': (np.float, np.float, np.float, np.float, np.float, np.float, 'U30')}
         )
 
     filenames = data["filename"].tolist()
@@ -38,11 +37,11 @@ def get_goddard_dict(filepath):
     goddard_dict = {}
     for each_filename in filenames_unique:
         indices = [index for index,value in enumerate(filenames) if value == each_filename]
-        # middle_index = int(len(indices)/2)
+        middle_index = int(len(indices)/2)
         goddard_dict[each_filename] = {
-            # "ls":data["ls"][indices[0]], 
-            # "lat":data["lat"][indices[middle_index]], 
-            # "lst":data["lst"][indices[middle_index]], 
+            "ls":data["ls"][indices[0]], 
+            "lat":data["lat"][indices[middle_index]], 
+            "lst":data["lst"][indices[middle_index]], 
             "alt":data["alt"][indices], 
             "o3":data["o3"][indices],
             "o3_error":data["o3_error"][indices],
@@ -79,6 +78,31 @@ def get_ssi_dict(dirpath):
 
 
 
+# def get_bira_dict_old(dirpath):
+#     """save BIRA data to a dictionary, where each HDF5 file is an entry - old version where each retrieval in separate h5 file"""
+
+#     bira_dict = {}
+    
+#     for each_path, _, filenames in os.walk(dirpath):
+#         for each_filename in filenames:
+#             # relative_path = os.path.relpath(each_path, dirpath)
+#             relative_filepath = os.path.join(each_path, each_filename)
+    
+#             hdf5_filename = each_filename[:27]
+    
+#             with h5py.File(relative_filepath, "r") as hdf5_file:
+#                 ls = 0.0 #TODO: calculate Ls (not included in Arianna's files) or take it from other datasets
+    
+    
+#                 o3 = hdf5_file['Pass_1']['Fit_0']['O3']['x_den'][...]
+#                 alt = hdf5_file['Pass_1']['Fit_0']['O3']['zf'][...]
+#                 lat = hdf5_file['Pass_1']['Fen_01']['Geometry']['Geo_Lat'][...]
+#                 # lon = hdf5_file['Pass_1']['Fen_01']['Geometry']['Geo_Lon'][...]
+#                 lst = hdf5_file['Pass_1']['Fen_01']['Geometry']['Geo_LST'][...]
+    
+#             bira_dict[hdf5_filename] = {"ls":ls, "lat":float(lat), "lst":float(lst), "alt":alt, "o3":o3}
+
+#     return bira_dict
 
 
 def get_bira_dict(filepath):
@@ -113,7 +137,7 @@ def get_bira_dict(filepath):
 
     return bira_dict
 
-def get_bira_ac_dict(filepath):
+def get_biraAC_dict(filepath):
     """save BIRA data to a dictionary, where each HDF5 file is an entry - new version where retrievals all in same file"""
 
     bira_dictAC = {}
@@ -163,16 +187,20 @@ def get_bira_ac_dict(filepath):
     return bira_dictAC
 
 
-#NO3_err_mean NO3_err_rms NO3_err_rand NO3_err_sys
+
 
 def get_ou_dict(filepath):
     """save OU data to a dictionary, where each HDF5 file is an entry"""
     
-    regex = r"\s+".join([NUM_MATCH]*9 + [TEXT_MATCH])
-    
+#    regex = "(\d+[.]\d+)\s*([- ]\d+[.]\d+)\s+(\d+[.]\d+)\s+(\d+[.]\d+)\s+((?:\d+[.]\d+e[+]\d+|\d+[.]\d+))\s+(\S+)"
+#    data = np.fromregex(filepath, regex, 
+#        dtype={'names': ('ls', 'lat', 'lst', 'alt', 'o3', 'filename'),
+#               'formats': (np.float, np.float, np.float, np.float, np.float, 'U30')}
+#        )
+    regex = "(\d+[.]\d+)\s*([- ]\d+[.]\d+)\s+(\d+[.]\d+)\s+(\d+[.]\d+)\s+((?:\d+[.]\d+e[+]\d+|\d+[.]\d+))\s+((?:\d+[.]\d+e[+]\d+|\d+[.]\d+))\s+(\S+)"
     data = np.fromregex(filepath, regex, 
-        dtype={'names': ('ls', 'lat', 'lst', 'alt', 'o3', 'o3_error_mean', 'o3_error_rms', 'o3_error_rand', 'o3_error_sys', 'filename'),
-               'formats': (np.float, np.float, np.float, np.float, np.float, np.float, np.float, np.float, np.float, 'U30')}
+        dtype={'names': ('ls', 'lat', 'lst', 'alt', 'o3', 'o3_error', 'filename'),
+               'formats': (np.float, np.float, np.float, np.float, np.float, np.float, 'U30')}
         )
     
     filenames = data["filename"].tolist()
@@ -188,7 +216,7 @@ def get_ou_dict(filepath):
             "lst":data["lst"][indices[middle_index]], 
             "alt":data["alt"][indices], 
             "o3":data["o3"][indices],
-            "o3_error":data["o3_error_rand"][indices],
+            "o3_error":data["o3_error"][indices],
             }
     return ou_dict
 

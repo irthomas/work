@@ -48,8 +48,6 @@ POLYFIT_DEGREE = 3 #must be 3 for 4 points
 lno_curvature_dict = {
 
 
-# 168:{"clear_nu":[[3780., 3784.], [3785., 3796.], [3797., 3801.], [3802., 3810.]], "temperature_shift_coeffs":[-1.00061872, 88.19576276], },
-# 189:{"clear_nu":[[4250., 4251.], [4253., 4254.], [4257., 4263.], [4265., 4267.], [4268., 4270.], [4272., 4274.], [4275.5, 4283.]], "px_left":40, "px_right":310}, #not used
 
 167:{"clear_nu":[[3752., 3756.], [3757., 3759.], [3760.5, 3765.], [3766.5, 3769.], [3771., 3779.], [3780., 3782.], [3783., 3785.]], "px_left":40, "px_right":310},
 168:{"clear_nu":[[3780., 3784.], [3785., 3796.], [3797., 3801.], [3802., 3810.]], "px_left":40, "px_right":310},
@@ -61,8 +59,13 @@ lno_curvature_dict = {
 191:{"clear_nu":[[4294., 4303.], [4304., 4306.], [4307., 4308.5], [4310., 4311.5], [4312.4, 4314.], [4315., 4316.5], [4318., 4323.], [4324., 4326.]], "px_left":40, "px_right":290},
 193:{"clear_nu":[[4335., 4371.]], "px_left":40, "px_right":290},
 
+
 }
-diffraction_order = 167
+# diffraction_order = 134
+# diffraction_order = 136
+
+
+# diffraction_order = 167
 # diffraction_order = 168
 # diffraction_order = 169
 
@@ -71,6 +74,11 @@ diffraction_order = 167
 # diffraction_order = 190
 # diffraction_order = 191
 # diffraction_order = 193
+
+diffraction_order = 194
+# diffraction_order = 196
+
+
 
 if diffraction_order not in lno_curvature_dict.keys():
     lno_curvature_dict[diffraction_order] = {"clear_nu":[]}
