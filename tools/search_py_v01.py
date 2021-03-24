@@ -11,7 +11,7 @@ import os
 import glob
 import posixpath
 
-SEARCH_STRING = "ObservationDate"
+SEARCH_STRING = 'Rolling Mean'
 
 
 from tools.file.paths import paths

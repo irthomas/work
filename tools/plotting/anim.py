@@ -34,18 +34,23 @@ def make_slice_anim(list_of_slices,y_min,y_max,filename):
     return 0
     
     
-def make_frame_anim(list_of_frames,z_min,z_max,filename):
+def make_frame_anim(list_of_frames,zmin,zmax,filename,ymax = 256):
     import numpy as np
     from matplotlib import pyplot as plt
     from matplotlib import animation
     
+    # Set up formatting for the movie files
+    Writer = animation.writers['html']
+    writer = Writer(fps=15, metadata=dict(artist='Me'), bitrate=1800)
+
+    
     # First set up the figure, the axis, and the plot element we want to animate
     fig = plt.figure()
-    plt.axes(xlim=(0, 320), ylim=(0, 256), xlabel="Spectral Pixel", ylabel="Spatial Pixel")
-    im=plt.imshow(list_of_frames[0],interpolation='none')
-    plt.clim(z_min,z_max)
+    plt.axes(xlim=(0, 320), ylim=(0, ymax), xlabel="Spectral Pixel", ylabel="Spatial Pixel")
+    im=plt.imshow(list_of_frames[0], interpolation='none', aspect=int(np.floor(256/ymax)))
+    plt.clim(zmin, zmax)
     plt.colorbar()
-    
+        
     
     # initialization function: plot the background of each frame
     def init():
@@ -60,7 +65,7 @@ def make_frame_anim(list_of_frames,z_min,z_max,filename):
     
     # call the animator.  blit=True means only re-draw the parts that have changed.
     anim = animation.FuncAnimation(fig, animate, init_func=init,frames=len(list_of_frames), interval=50, blit=True)
-    anim.save(filename+'.mp4')
+    anim.save(filename+".html", writer=writer)
     plt.show()
     return 0
 
@@ -75,36 +80,36 @@ def make_frame_anim(list_of_frames,z_min,z_max,filename):
 
 
 
-"""test with basemap"""
-from mpl_toolkits.basemap import Basemap
-import matplotlib.pyplot as plt
-import numpy as np
-import matplotlib.animation as animation
+# """test with basemap"""
+# from mpl_toolkits.basemap import Basemap
+# import matplotlib.pyplot as plt
+# import numpy as np
+# import matplotlib.animation as animation
 
-map = Basemap(resolution='l',projection='ortho',lon_0=0,lat_0=0)
-map.drawcoastlines()
-map.drawcountries()
-map.fillcontinents(color = 'gray')
-map.drawmapboundary()
-map.drawmeridians(np.arange(0, 360, 30))
-map.drawparallels(np.arange(-90, 90, 30))
+# map = Basemap(resolution='l',projection='ortho',lon_0=0,lat_0=0)
+# map.drawcoastlines()
+# map.drawcountries()
+# map.fillcontinents(color = 'gray')
+# map.drawmapboundary()
+# map.drawmeridians(np.arange(0, 360, 30))
+# map.drawparallels(np.arange(-90, 90, 30))
 
-x,y = map(0, 0)
-point = map.plot(x, y, 'ro', markersize=5)[0]
+# x,y = map(0, 0)
+# point = map.plot(x, y, 'ro', markersize=5)[0]
 
-def init():
-    point.set_data([], [])
-    return point,
+# def init():
+#     point.set_data([], [])
+#     return point,
 
-# animation function.  This is called sequentially
-def animate(i):
-    lons, lats =  np.random.random_integers(-130, 130, 2)
-    x, y = map(lons, lats)
-    point.set_data(x, y)
-    return point,
+# # animation function.  This is called sequentially
+# def animate(i):
+#     lons, lats =  np.random.random_integers(-130, 130, 2)
+#     x, y = map(lons, lats)
+#     point.set_data(x, y)
+#     return point,
 
-# call the animator.  blit=True means only re-draw the parts that have changed.
-anim = animation.FuncAnimation(plt.gcf(), animate, init_func=init,
-                               frames=20, interval=500, blit=True)
+# # call the animator.  blit=True means only re-draw the parts that have changed.
+# anim = animation.FuncAnimation(plt.gcf(), animate, init_func=init,
+#                                frames=20, interval=500, blit=True)
 
-plt.show()
+# plt.show()

@@ -33,7 +33,7 @@ from tools.plotting.colours import get_colours
 from tools.spectra.fit_polynomial import fit_polynomial
 from tools.sql.get_sql_spectrum_temperature import get_sql_spectrum_temperature
 
-from presentations.plot_figures_for_cal_paper_2020_functions import getExternalTemperatureReadings, findOrder
+from presentations.papers.calibration2021.plot_figures_for_cal_paper_2020_functions import getExternalTemperatureReadings, findOrder
 
 
 # DATA_TYPE = "ground"
@@ -410,7 +410,7 @@ for diffraction_order, order_dict in order_dicts.items():
 
 i = -1
 if len(order_dicts) == 0:
-    with open("pixel_shifts.txt", "r") as f:
+    with open("reference_files/pixel_shifts.txt", "r") as f:
         
         shift_dict = {}
         
