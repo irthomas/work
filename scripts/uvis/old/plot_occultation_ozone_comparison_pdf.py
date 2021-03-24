@@ -13,10 +13,10 @@ import os
 
 from matplotlib.backends.backend_pdf import PdfPages
 
-from get_ozone_retrieval_data import get_goddard_dict, get_ssi_dict, get_bira_dict, get_ou_dict, get_bira_ac_dict
+from get_ozone_retrieval_data import get_goddard_dict, get_ssi_dict, get_bira_dict, get_ou_dict
 
 
-OUTPUT_DIRECTORY = os.getcwd()
+OUTPUT_DIRECTORY = "output"
 
 
 
@@ -30,19 +30,10 @@ GODDARD_DAT_FILE_PATH = os.path.join(DATA_ROOT_DIR_PATH, os.path.normcase(r"Godd
 SSI_EXTRACTED_DIR_PATH = os.path.join(DATA_ROOT_DIR_PATH, os.path.normcase(r"SSI/ozone_010c_t010")) #Mike Wolff data is in lots of files in this directory
 # BIRA_H5_FILE_PATH_apriori = os.path.join(DATA_ROOT_DIR_PATH, os.path.normcase(r"BIRA/retrievals_All_112019_testSa.h5"))
 BIRA_H5_FILE_PATH = os.path.join(DATA_ROOT_DIR_PATH, os.path.normcase(r"BIRA/retrievals_All.h5"))
-BIRA_AC_H5_FILE_PATH = os.path.join(DATA_ROOT_DIR_PATH, os.path.normcase(r"BIRA/Retrieval_acv_2019_11_v6.h5"))
+# BIRA_AC_H5_FILE_PATH = os.path.join(DATA_ROOT_DIR_PATH, os.path.normcase(r"BIRA/Retrieval_all_acv3.h5"))
 
 OU_DAT_FILE_PATH = os.path.join(DATA_ROOT_DIR_PATH, os.path.normcase(r"OU/occ_retrievals_ou.dat")) #new
 # OU_DAT_FILE_PATH = os.path.join(DATA_ROOT_DIR_PATH, os.path.normcase(r"OU/occ_retrievals_ou_err.dat")) #old
-
-
-#NOVEMBER 2019
-
-#note that SSI data needs extracting from tar gz before reading in
-GODDARD_DAT_FILE_PATH = os.path.join(DATA_ROOT_DIR_PATH, os.path.normcase(r"Goddard/201911final/occ_retrievals_gsfc_201911_err_rand.dat"))
-SSI_EXTRACTED_DIR_PATH = os.path.join(DATA_ROOT_DIR_PATH, os.path.normcase(r"SSI/ozone_010c_t010")) #Mike Wolff data is in lots of files in this directory
-BIRA_H5_FILE_PATH = os.path.join(DATA_ROOT_DIR_PATH, os.path.normcase(r"BIRA/retrievals_All_112019_testErrRandom.h5"))
-OU_DAT_FILE_PATH = os.path.join(DATA_ROOT_DIR_PATH, os.path.normcase(r"OU/occ_retrievals_ou_201911.dat")) #new
 
 
 
@@ -50,10 +41,10 @@ OU_DAT_FILE_PATH = os.path.join(DATA_ROOT_DIR_PATH, os.path.normcase(r"OU/occ_re
 print("Getting Goddard data")
 goddard_data = get_goddard_dict(GODDARD_DAT_FILE_PATH)
 print("Getting SSI data")
-# ssi_data = get_ssi_dict(SSI_EXTRACTED_DIR_PATH)
+ssi_data = get_ssi_dict(SSI_EXTRACTED_DIR_PATH)
 print("Getting BIRA data")
 bira_data = get_bira_dict(BIRA_H5_FILE_PATH)
-bira_ac_data_temp = get_bira_ac_dict(BIRA_AC_H5_FILE_PATH)
+# bira_dataAC = get_biraAC_dict(BIRA_AC_H5_FILE_PATH)
 # bira_data_apriori = get_bira_dict(BIRA_H5_FILE_PATH_apriori)
 print("Getting OU data")
 ou_data = get_ou_dict(OU_DAT_FILE_PATH)
@@ -61,28 +52,19 @@ ou_data = get_ou_dict(OU_DAT_FILE_PATH)
 
 
 
-#fudge to correct filenames
-bira_ac_data = {}
-for key, value in bira_ac_data_temp.items():
-    new_key = key.replace("1p0a", "1p0b")
-    bira_ac_data[new_key] = value
-
-
-
-
-
 #get list of HDF5 filenames
 goddard_filenames = list(goddard_data.keys())
-# ssi_filenames = list(ssi_data.keys())
+ssi_filenames = list(ssi_data.keys())
 bira_filenames = list(bira_data.keys())
-bira_ac_filenames = list(bira_ac_data.keys())
+# bira_filenames_apriori = list(bira_data_apriori.keys())
+# bira_AC_filenames = list(bira_dataAC.keys())
 ou_filenames = list(ou_data.keys())
 
 
 #find common HDF5 files present in all comparison datasets
 
 #find which are present in both Goddard and SSI datasets
-matching_filenames1 = sorted(list(set(goddard_filenames).intersection(bira_ac_filenames)))
+matching_filenames1 = sorted(list(set(goddard_filenames).intersection(ssi_filenames)))
 
 #find which are present in both BIRA and OU datasets
 matching_filenames2 = sorted(list(set(bira_filenames).intersection(ou_filenames)))
@@ -123,7 +105,7 @@ with PdfPages(OUTPUT_DIRECTORY+os.sep+"ozone_comparisons_V8.pdf") as pdf: #open 
         ax = axes.flat[ax_index]
         
         #plot to subplot
-        ax.set_title("%s (Ls:%0.1f, lat:%0.0f)" %(matching_filename, bira_data[matching_filename]["ls"], bira_data[matching_filename]["lat"]))
+        ax.set_title("%s (Ls:%0.1f, lat:%0.0f)" %(matching_filename, goddard_data[matching_filename]["ls"], goddard_data[matching_filename]["lat"]))
 
         ax.plot(goddard_data[matching_filename]["o3"], goddard_data[matching_filename]["alt"], label="Goddard", color="b")
         x1 = goddard_data[matching_filename]["o3"] - goddard_data[matching_filename]["o3_error"]
@@ -131,10 +113,10 @@ with PdfPages(OUTPUT_DIRECTORY+os.sep+"ozone_comparisons_V8.pdf") as pdf: #open 
         ax.fill_betweenx(goddard_data[matching_filename]["alt"], x1, x2, color="b", alpha=alpha)
         
      
-        # ax.plot(ssi_data[matching_filename]["o3"], ssi_data[matching_filename]["alt"], label="SSI", color="orange")
-        # x1 = ssi_data[matching_filename]["o3"] - ssi_data[matching_filename]["err"]
-        # x2 = ssi_data[matching_filename]["o3"] + ssi_data[matching_filename]["err"]
-        # ax.fill_betweenx(ssi_data[matching_filename]["alt"], x1, x2, color="orange", alpha=alpha)
+        ax.plot(ssi_data[matching_filename]["o3"], ssi_data[matching_filename]["alt"], label="SSI", color="orange")
+        x1 = ssi_data[matching_filename]["o3"] - ssi_data[matching_filename]["err"]
+        x2 = ssi_data[matching_filename]["o3"] + ssi_data[matching_filename]["err"]
+        ax.fill_betweenx(ssi_data[matching_filename]["alt"], x1, x2, color="orange", alpha=alpha)
     
         ax.plot(bira_data[matching_filename]["o3"], bira_data[matching_filename]["alt"], label="BIRA", color="g")
         x1 = bira_data[matching_filename]["o3"] - bira_data[matching_filename]["err"]
@@ -146,10 +128,10 @@ with PdfPages(OUTPUT_DIRECTORY+os.sep+"ozone_comparisons_V8.pdf") as pdf: #open 
         x2 = ou_data[matching_filename]["o3"] + ou_data[matching_filename]["o3_error"]
         ax.fill_betweenx(ou_data[matching_filename]["alt"], x1, x2, color="r", alpha=alpha)
 
-        ax.plot(bira_ac_data[matching_filename]["o3"], bira_ac_data[matching_filename]["alt"], label="BIRA_AC", color="limegreen")
-        x1 = bira_ac_data[matching_filename]["o3"] - bira_ac_data[matching_filename]["err"]
-        x2 = bira_ac_data[matching_filename]["o3"] + bira_ac_data[matching_filename]["err"]
-        ax.fill_betweenx(bira_ac_data[matching_filename]["alt"], x1, x2, color="limegreen", alpha=alpha)        
+#        ax.plot(bira_data_apriori[matching_filename]["o3"], bira_data_apriori[matching_filename]["alt"], label="BIRA_apriori", color="limegreen")
+#        x1 = bira_data_apriori[matching_filename]["o3"] - bira_data_apriori[matching_filename]["err"]
+#        x2 = bira_data_apriori[matching_filename]["o3"] + bira_data_apriori[matching_filename]["err"]
+#        ax.fill_betweenx(bira_data_apriori[matching_filename]["alt"], x1, x2, color="limegreen", alpha=alpha)        
 
         ax2 = ax.twiny()
         ax2.plot(bira_data[matching_filename]["dof"], bira_data[matching_filename]["alt"], linestyle="--", color="k")

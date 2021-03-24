@@ -16,7 +16,7 @@ import matplotlib
 
 from get_ozone_retrieval_data import get_goddard_dict, get_ssi_dict, get_bira_dict, get_ou_dict
 
-OUTPUT_DIRECTORY = os.getcwd()
+OUTPUT_DIRECTORY = "output"
 
 
 
@@ -24,13 +24,16 @@ OUTPUT_DIRECTORY = os.getcwd()
 DATA_ROOT_DIR_PATH = os.path.normcase(r"D:\DATA\Radiative_Transfer\UVIS\Occultation\Comparison_Retrievals") #Ian extrnal HDD. Change as required
 
 
-#NOVEMBER 2019
-
 #note that SSI data needs extracting from tar gz before reading in
-GODDARD_DAT_FILE_PATH = os.path.join(DATA_ROOT_DIR_PATH, os.path.normcase(r"Goddard/201911final/occ_retrievals_gsfc_201911_err_rand.dat"))
+#GODDARD_DAT_FILE_PATH = os.path.join(DATA_ROOT_DIR_PATH, os.path.normcase(r"Goddard/GEM_khayat_fd-b204.dat"))
+GODDARD_DAT_FILE_PATH = os.path.join(DATA_ROOT_DIR_PATH, os.path.normcase(r"Goddard/GSFC_retrieved_o3.dat"))
 SSI_EXTRACTED_DIR_PATH = os.path.join(DATA_ROOT_DIR_PATH, os.path.normcase(r"SSI/ozone_010c_t010")) #Mike Wolff data is in lots of files in this directory
-BIRA_H5_FILE_PATH = os.path.join(DATA_ROOT_DIR_PATH, os.path.normcase(r"BIRA/retrievals_All_112019_testErrRandom.h5"))
-OU_DAT_FILE_PATH = os.path.join(DATA_ROOT_DIR_PATH, os.path.normcase(r"OU/occ_retrievals_ou_201911.dat")) #new
+# BIRA_H5_FILE_PATH_apriori = os.path.join(DATA_ROOT_DIR_PATH, os.path.normcase(r"BIRA/retrievals_All_112019_testSa.h5"))
+BIRA_H5_FILE_PATH = os.path.join(DATA_ROOT_DIR_PATH, os.path.normcase(r"BIRA/retrievals_All.h5"))
+# BIRA_AC_H5_FILE_PATH = os.path.join(DATA_ROOT_DIR_PATH, os.path.normcase(r"BIRA/Retrieval_all_acv3.h5"))
+
+OU_DAT_FILE_PATH = os.path.join(DATA_ROOT_DIR_PATH, os.path.normcase(r"OU/occ_retrievals_ou.dat")) #new
+# OU_DAT_FILE_PATH = os.path.join(DATA_ROOT_DIR_PATH, os.path.normcase(r"OU/occ_retrievals_ou_err.dat")) #old
 
 
 
@@ -38,7 +41,7 @@ OU_DAT_FILE_PATH = os.path.join(DATA_ROOT_DIR_PATH, os.path.normcase(r"OU/occ_re
 print("Getting Goddard data")
 goddard_data = get_goddard_dict(GODDARD_DAT_FILE_PATH)
 print("Getting SSI data")
-# ssi_data = get_ssi_dict(SSI_EXTRACTED_DIR_PATH)
+ssi_data = get_ssi_dict(SSI_EXTRACTED_DIR_PATH)
 print("Getting BIRA data")
 bira_data = get_bira_dict(BIRA_H5_FILE_PATH)
 # bira_dataAC = get_biraAC_dict(BIRA_AC_H5_FILE_PATH)
@@ -51,7 +54,7 @@ ou_data = get_ou_dict(OU_DAT_FILE_PATH)
 
 #get list of HDF5 filenames
 goddard_filenames = list(goddard_data.keys())
-# ssi_filenames = list(ssi_data.keys())
+ssi_filenames = list(ssi_data.keys())
 bira_filenames = list(bira_data.keys())
 # bira_filenames_apriori = list(bira_data_apriori.keys())
 # bira_AC_filenames = list(bira_dataAC.keys())
@@ -61,7 +64,7 @@ ou_filenames = list(ou_data.keys())
 #find common HDF5 files present in all comparison datasets
 
 #find which are present in both Goddard and SSI datasets
-# matching_filenames1 = sorted(list(set(goddard_filenames).intersection(ssi_filenames)))
+matching_filenames1 = sorted(list(set(goddard_filenames).intersection(ssi_filenames)))
 
 #find which are present in both BIRA and OU datasets
 matching_filenames2 = sorted(list(set(bira_filenames).intersection(ou_filenames)))
@@ -73,7 +76,7 @@ matching_filenames2 = sorted(list(set(bira_filenames).intersection(ou_filenames)
 # matching_filenames3 = sorted(list(set(matching_filenames2).intersection(bira_filenames_apriori)))
 
 #find which are present in all datasets
-matching_filenames = sorted(list(set(goddard_filenames).intersection(matching_filenames2)))
+matching_filenames = sorted(list(set(matching_filenames1).intersection(matching_filenames2)))
 
 
 
@@ -149,14 +152,11 @@ for file_index,matching_filename in enumerate(matching_filenames):
 cbar1 = plt.colorbar(s_m1,orientation='vertical', ax=ax1)
 cbar1.set_label('(bira-goddard)$\cdot 10^6$', fontsize=20) 
 cbar2 = plt.colorbar(s_m2,orientation='vertical', ax=ax2)
-cbar2.set_label('(ou-goddard)$\cdot 10^6$', fontsize=20)
-
-max_index = np.min((len(obs_dates)-1, 1500))
-
-# ax1.set_xticklabels([int(obs_dates[0]),int(max_index/3),int(max_index*2/3),int(max_index),
-#                     int(obs_dates[2000]),int(obs_dates[2500]),int(obs_dates[3000])], fontsize=16) 
-# ax2.set_xticklabels([int(obs_dates[0]),int(obs_dates[500]),int(obs_dates[1000]),int(obs_dates[1500]),
-#                     int(obs_dates[2000]),int(obs_dates[2500]),int(obs_dates[3000])], fontsize=16)     
+cbar2.set_label('(ou-goddard)$\cdot 10^6$', fontsize=20)   
+ax1.set_xticklabels([int(obs_dates[0]),int(obs_dates[500]),int(obs_dates[1000]),int(obs_dates[1500]),
+                    int(obs_dates[2000]),int(obs_dates[2500]),int(obs_dates[3000])], fontsize=16) 
+ax2.set_xticklabels([int(obs_dates[0]),int(obs_dates[500]),int(obs_dates[1000]),int(obs_dates[1500]),
+                    int(obs_dates[2000]),int(obs_dates[2500]),int(obs_dates[3000])], fontsize=16)     
 
 fig.set_size_inches(14, 10) 
 fig.tight_layout()
@@ -234,10 +234,10 @@ cbar1 = plt.colorbar(s_m1,orientation='vertical', ax=ax1)
 cbar1.set_label('(bira/goddard)', fontsize=20) 
 cbar2 = plt.colorbar(s_m2,orientation='vertical', ax=ax2)
 cbar2.set_label('(ou/goddard)', fontsize=20)   
-# ax1.set_xticklabels([int(obs_dates[0]),int(obs_dates[500]),int(obs_dates[1000]),int(obs_dates[1500]),
-#                     int(obs_dates[2000]),int(obs_dates[2500]),int(obs_dates[3000])], fontsize=16) 
-# ax2.set_xticklabels([int(obs_dates[0]),int(obs_dates[500]),int(obs_dates[1000]),int(obs_dates[1500]),
-#                     int(obs_dates[2000]),int(obs_dates[2500]),int(obs_dates[3000])], fontsize=16)     
+ax1.set_xticklabels([int(obs_dates[0]),int(obs_dates[500]),int(obs_dates[1000]),int(obs_dates[1500]),
+                    int(obs_dates[2000]),int(obs_dates[2500]),int(obs_dates[3000])], fontsize=16) 
+ax2.set_xticklabels([int(obs_dates[0]),int(obs_dates[500]),int(obs_dates[1000]),int(obs_dates[1500]),
+                    int(obs_dates[2000]),int(obs_dates[2500]),int(obs_dates[3000])], fontsize=16)     
 
 fig.set_size_inches(14, 10) 
 fig.tight_layout()

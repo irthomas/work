@@ -16,21 +16,33 @@ import decimal
 #import h5py
 import platform
 
+import sqlite3
+
+
+
 if platform.system() == "Windows":
     from tools.file.paths import paths
     from tools.file.passwords import passwords
+    from tools.general.python_version import python_version
 
 elif os.path.isdir("tools"):
     from tools.file.paths import paths
     from tools.file.passwords import passwords
+    from tools.general.python_version import python_version
     
 else: #if running in pipeline
     paths = {}
-    with open("passwords.txt", "r") as f:  passwords = eval("".join(f.readlines()))
+    from nomad_ops.core.tools.passwords import passwords
 
-import MySQLdb
-from MySQLdb import OperationalError
-import sqlite3
+if python_version() >= 3.8:
+    CONNECTOR = True
+    import mysql.connector #not yet implemented
+else:    
+    CONNECTOR = False
+    import MySQLdb
+    from MySQLdb import OperationalError
+
+
 
 
 SQL_DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
