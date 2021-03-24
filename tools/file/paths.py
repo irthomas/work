@@ -20,6 +20,7 @@ paths = {}
 if SYSTEM == "Linux": #linux system
     paths["BASE_DIRECTORY"] = os.path.normcase(r"/home/iant/linux/Python")
     paths["DATA_DIRECTORY"] = os.path.normcase(r"/bira-iasb/data/SATELLITE/TRACE-GAS-ORBITER/NOMAD/hdf5")
+    # paths["DATA_DIRECTORY"] = os.path.normcase(r"/bira-iasb/data/SATELLITE/TRACE-GAS-ORBITER/NOMAD/test/iant/hdf5")
     paths["DATASTORE_ROOT_DIRECTORY"] = os.path.normcase(r"/bira-iasb/data/SATELLITE/TRACE-GAS-ORBITER/NOMAD")
     paths["LOCAL_DIRECTORY"] = os.path.normcase(r"/home/iant/linux/DATA")
     paths["RETRIEVAL_DIRECTORY"] = os.path.normcase(r"/home/iant/linux/input_tools/Tools")
