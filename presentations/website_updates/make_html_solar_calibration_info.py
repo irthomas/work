@@ -15,6 +15,13 @@ import h5py
 #import platform
 
 from tools.file.paths import paths
+from instrument.nomad_lno_instrument import order_nu0p as lno_order
+from instrument.nomad_lno_instrument import nu0_aotf as lno_centre
+
+from instrument.nomad_so_instrument import order_nu0p as so_order
+from instrument.nomad_so_instrument import nu0_aotf as so_centre
+
+
 
 HDF5_FILENAME_FORMAT = "%Y%m%d_%H%M%S"
 
@@ -36,7 +43,8 @@ copDirsDatetime = [datetime.datetime.strptime(dirname, HDF5_FILENAME_FORMAT) for
 #add future cop table datetime so last value in table can be found
 copDirsDatetime.append(datetime.datetime(2050, 1, 1))
 
-h = "<table border=2><tr><th>Filename</th><th>COP Table Version</th><th>Observation Type</th><th>Description</th></tr>\n"
+h = "<html><head></head><body>\n"
+h += "<table border=2><tr><th>Filename</th><th>Observation Type</th><th>Description</th><th>COP Table Version</th></tr>\n"
 
 #for calFilename, calFilepath in zip(calFilenameList[0:1], calFilepathList[0:1]):
 for calFilename, calFilepath in zip(calFilenameList, calFilepathList):
@@ -71,8 +79,19 @@ for calFilename, calFilepath in zip(calFilenameList, calFilepathList):
     aotfFrequencies = sorted(list(set(aotfFrequency)))
     if len(aotfFrequencies)>1: #miniscan or fullscan
         if aotfFrequencies[1] - aotfFrequencies[0] < 50.0: #miniscan
+        
+            if channel == "so":
+                nu0_min = so_centre(min(aotfFrequencies))
+                nu0_max = so_centre(max(aotfFrequencies))
+                orders = [so_order(nu0_min, 160, 0.0), so_order(nu0_max, 160, 0.0)]
+            elif channel == "lno":
+                nu0_min = lno_centre(min(aotfFrequencies))
+                nu0_max = lno_centre(max(aotfFrequencies))
+                orders = [lno_order(nu0_min, 160, 0.0), lno_order(nu0_max, 160, 0.0)]
+                
+                
             obsType += "miniscan"
-            description = "%i-%ikHz in steps of %ikHz" %(min(aotfFrequencies), max(aotfFrequencies), aotfFrequencies[1]-aotfFrequencies[0])
+            description = "%i-%ikHz (approx. orders %i-%i) in steps of %ikHz" %(min(aotfFrequencies), max(aotfFrequencies), min(orders), max(orders), aotfFrequencies[1]-aotfFrequencies[0])
         else:
             obsType += "fullscan"
             description = "%i orders" %len(aotfFrequencies)
@@ -87,10 +106,10 @@ for calFilename, calFilepath in zip(calFilenameList, calFilepathList):
     description += ". %i accumulations" %naccs[0]
         
     copVersionString = "%s-%s-%s" %(copVersion[0:4], copVersion[4:6], copVersion[6:8])
-    h += "<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>\n" %(calFilename, copVersionString, obsType, description)
+    h += "<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>\n" %(calFilename, obsType, description, copVersionString)
 #    print(calFilename, description)
     
-h += "</table>"
+h += "</table></body></html>"
 
 print("Writing output")
 with open(os.path.join(paths["BASE_DIRECTORY"], "calibration_log.html"), "w") as f:

@@ -54,12 +54,17 @@ def nu_mp(m, p, t, F0=F0, F1=F1, F2=F2):
     return f
 
 
-
 def pixel_mnu(m, nu, t, F0=F0, F1=F1, F2=F2):
     """order and wavenumber to pixel calibration. Inverse of function from Liuzzi et al. 2018 using same coefficients"""
     p0 = t_p0(t)
     p = (-F1 + np.sqrt(F1**2 - 4*F2*(F0-nu/m))) / (2*F2) - p0
     return p
+
+def order_nu0p(nu0, p, t, F0=F0, F1=F1, F2=F2):
+    """pixel number and wavenumber to order calibration. Inverse of Liuzzi et al. 2018"""
+    p0 = t_p0(t)
+    m = nu0 / (F0 + (p+p0)*(F1 + F2*(p+p0)))
+    return m
 
 
  

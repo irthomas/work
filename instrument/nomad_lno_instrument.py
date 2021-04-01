@@ -50,6 +50,12 @@ F2=3.774791e-8
 #F0=22.473422
 #F1=5.559526e-4
 #F2=1.751279e-8
+
+"""
+nu/m = FO + (p+p0) F1 + (p+p0)**2 F2
+
+"""
+
 def nu_mp(m, p, t, F0=F0, F1=F1, F2=F2):
     """pixel number and order to wavenumber calibration. Liuzzi et al. 2018"""
     p0 = t_p0(t)
@@ -69,6 +75,12 @@ def t_nu_mp(m, nu, p, F0=F0, F1=F1, F2=F2, Q0=Q0, Q1=Q1):
     p0 = (-F1 + np.sqrt(F1**2 - 4*F2*(F0-nu/m))) / (2*F2) - p
     t = (p0 - Q0)/Q1
     return t
+
+def order_nu0p(nu0, p, t, F0=F0, F1=F1, F2=F2):
+    """pixel number and wavenumber to order calibration. Inverse of Liuzzi et al. 2018"""
+    p0 = t_p0(t)
+    m = nu0 / (F0 + (p+p0)*(F1 + F2*(p+p0)))
+    return m
 
 
  

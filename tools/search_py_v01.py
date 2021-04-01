@@ -11,7 +11,7 @@ import os
 import glob
 import posixpath
 
-SEARCH_STRING = 'Rolling Mean'
+SEARCH_STRING = 'in steps of'
 
 
 from tools.file.paths import paths
