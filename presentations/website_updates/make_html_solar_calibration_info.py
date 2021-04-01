@@ -80,11 +80,11 @@ for calFilename, calFilepath in zip(calFilenameList, calFilepathList):
     if len(aotfFrequencies)>1: #miniscan or fullscan
         if aotfFrequencies[1] - aotfFrequencies[0] < 50.0: #miniscan
         
-            if channel == "so":
+            if channel == "SO":
                 nu0_min = so_centre(min(aotfFrequencies))
                 nu0_max = so_centre(max(aotfFrequencies))
                 orders = [so_order(nu0_min, 160, 0.0), so_order(nu0_max, 160, 0.0)]
-            elif channel == "lno":
+            elif channel == "LNO":
                 nu0_min = lno_centre(min(aotfFrequencies))
                 nu0_max = lno_centre(max(aotfFrequencies))
                 orders = [lno_order(nu0_min, 160, 0.0), lno_order(nu0_max, 160, 0.0)]
