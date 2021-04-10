@@ -11,7 +11,7 @@ import os
 import glob
 import posixpath
 
-SEARCH_STRING = 'in steps of'
+SEARCH_STRING = 'relative counts for'
 
 
 from tools.file.paths import paths

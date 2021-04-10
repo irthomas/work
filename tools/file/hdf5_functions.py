@@ -134,12 +134,18 @@ def get_file_from_datastore(file_level, year_in, month_in, day_in, filename_in, 
     future_path = os.path.join(paths["DATA_DIRECTORY"], file_level, year_in, month_in, day_in)
     os.makedirs(future_path, exist_ok=True)
     os.chdir(future_path)
-    with pysftp.Connection(server[0], username=server[1], password=PASSWORD) as sftp:
+    cnopts = pysftp.CnOpts()
+    cnopts.hostkeys = None
+    private_key_path = os.path.join(paths["REFERENCE_DIRECTORY"], "ppk")
+
+    with pysftp.Connection(host=server[0], username=server[1], password=PASSWORD, private_key=private_key_path, cnopts=cnopts) as sftp:
         with sftp.cd(server_directory+"/"+file_level): # temporarily chdir to public
             pathToDatastoreFile = "%s/%s/%s/%s/%s/%s.h5" %(server_directory, file_level, year_in, month_in, day_in, filename_in)
             if not silent: print(pathToDatastoreFile)
             sftp.get(pathToDatastoreFile) # get a remote file
     os.chdir(paths["BASE_DIRECTORY"])
+
+
 
 
 def get_file(obspath, file_level, count, model="INFLIGHT", silent=False, open_files=True):

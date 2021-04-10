@@ -18,35 +18,44 @@ from tools.spice.datetime_functions import utc2et
 
 load_spice_kernels()
 
+
+"""user modifiable"""
+MESHGRID = False
+# MESHGRID = True
+
+channel = "so"
+#channel = "lno"
+"""end"""
+
+
+
 SPICE_ABERRATION_CORRECTION = "None"
 SPICE_OBSERVER = "-143"
 
-
 DETECTOR_CENTRE_LINES = {"so":128, "lno":152}
 
-MESHGRID = True
+
+
 
 linescan_dict = {
         "so":{
 #            "MCO-1":["20161120_231420_0p1a_SO_1", "20161121_012420_0p1a_SO_1"],
-            "MTP001 Old SO boresight":["20180428_023343_0p1a_SO_1", "20180511_084630_0p1a_SO_1"],
-            "MTP005 UVIS-prime":["20180821_193241_0p1a_SO_1", "20180828_223824_0p1a_SO_1"],
-            "MTP009 ":["20181219_091740_0p1a_SO_1", "20181225_025140_0p1a_SO_1"], #not a nomad linescan
-            "MTP010 UVIS-prime":["20190118_183336_0p1a_SO_1", "20190125_061434_0p1a_SO_1"],
-            "MTP020 SO-prime":["20191022_013944_0p1a_SO_1", "20191028_003815_0p1a_SO_1"],
-            "MTP025 SO-prime":["20200226_024225_0p1a_SO_1", "20200227_041530_0p1a_SO_1"],
+            "Old SO boresight (Apr 2018)":["20180428_023343_0p1a_SO_1", "20180511_084630_0p1a_SO_1"],
+            "UVIS-prime (Aug 2018)":["20180821_193241_0p1a_SO_1", "20180828_223824_0p1a_SO_1"],
+            "UVIS-prime (Dec 2018)":["20181219_091740_0p1a_SO_1", "20181225_025140_0p1a_SO_1"], #not a nomad linescan
+            "UVIS-prime (Jan 2019)":["20190118_183336_0p1a_SO_1", "20190125_061434_0p1a_SO_1"],
+            "SO-prime (Oct 2019)":["20191022_013944_0p1a_SO_1", "20191028_003815_0p1a_SO_1"],
+            "SO-prime (Feb 2020)":["20200226_024225_0p1a_SO_1", "20200227_041530_0p1a_SO_1"],
+            "SO-prime (Dec 2020)":["20201224_011635_0p1a_SO_1", "20210102_092937_0p1a_SO_1"],
         },
          "lno":{
             "MCO-1":["20161121_000420_LNO", "20161121_021920_LNO"], \
             "MTP001":["201905", "20190704"],
             "MTP015":["", ""],
-            "MTP030":["", ""],
+            "MTP030":["20200724_125331_LNO", "20200728_144718_LNO"],
 #            "MTP001":["", ""],
         },
 }
-
-channel = "so"
-#channel = "lno"
 
 
 #    referenceFrame = "TGO_NOMAD_UVIS_OCC"
@@ -60,7 +69,7 @@ def get_vector(date_time, reference_frame):
     return -1 * obs2SunUnitVector #-1 is there to switch the directions to be like in cosmographia
 
 
-fig1, axes = plt.subplots(nrows=2, ncols=3, figsize=(FIG_X+5, FIG_Y+2), sharex=True, )
+fig1, axes = plt.subplots(nrows=2, ncols=4, figsize=(FIG_X+5, FIG_Y+2), sharex=True, )
 axes = axes.flatten()
 
 
@@ -126,7 +135,7 @@ for linescan_index, (title, hdf5_filenames) in enumerate(linescan_dict[channel].
         detector_line_mean[detector_line_mean > detector_line_max] = detector_line_max
 
         
-        print("max value = %0.0f, min value = %0.0f" %(np.max(detector_line_mean), np.min(detector_line_mean)))
+        print("%s: max value = %0.0f, min value = %0.0f" %(hdf5_filename, np.max(detector_line_mean), np.min(detector_line_mean)))
         
         unitVectors = np.asfarray([get_vector(datetime,referenceFrame) for datetime in et_line])
 #        marker_colour = np.log(detector_line_mean)
@@ -148,6 +157,7 @@ for linescan_index, (title, hdf5_filenames) in enumerate(linescan_dict[channel].
     ax.set_ylim([-0.004,0.004])
     ax.set_aspect("equal")
     ax.set_title("%s: %s & %s" %(title, hdf5_filenames[0][:8], hdf5_filenames[1][:8]))
+    ax.set_title("%s" %(title))
     ax.grid()
 
         
@@ -175,8 +185,8 @@ for linescan_index, (title, hdf5_filenames) in enumerate(linescan_dict[channel].
         ax.contourf(xi, yi, zi, levels=50, cmap="gnuplot")
 
 
-#fig1.tight_layout()
-#plt.savefig("SO_linescans.png", dpi=300)
+fig1.tight_layout()
+plt.savefig("%s_linescan_boresight.png" %channel, dpi=300)
 #fig1.suptitle("SO Linescans")
 
 

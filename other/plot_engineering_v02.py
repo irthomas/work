@@ -15,7 +15,7 @@ import numpy as np
 #import numpy.linalg as la
 #import gc
 from datetime import datetime
-import re
+# import re
 #import bisect
 #from scipy.optimize import curve_fit,leastsq
 #from mpl_toolkits.basemap import Basemap
@@ -29,20 +29,18 @@ import matplotlib.ticker as mtick
 #from mpl_toolkits.mplot3d import Axes3D
 #import struct
 
-#from hdf5_functions_v04 import BASE_DIRECTORY, FIG_X, FIG_Y, getFile, makeFileList
 from tools.file.hdf5_functions import make_filelist, get_file
 from tools.file.paths import FIG_X, FIG_Y, paths
 #from analysis_functions_v01b import spectralCalibration,write_log,get_filename_list,stop
 #from filename_lists_v01 import getFilenameList
 
-#if not os.path.exists("/bira-iasb/data/SATELLITE/TRACE-GAS-ORBITER/NOMAD"):# and not os.path.exists(os.path.normcase(r"X:\linux\Data")):
-#    print("Running on windows")
-#    import spiceypy as sp
-#    from hdf5_functions_v04 import KERNEL_DIRECTORY
-#    METAKERNEL_NAME = "em16_ops_win.tm"
-#    #load spiceypy kernels
-#    sp.furnsh(KERNEL_DIRECTORY+os.sep+METAKERNEL_NAME)
-#    print(sp.tkvrsn("toolkit"))
+if not os.path.exists("/bira-iasb/data/SATELLITE/TRACE-GAS-ORBITER/NOMAD"):
+    print("Running on windows")
+    import spiceypy as sp
+    
+    from tools.spice.load_spice_kernels import load_spice_kernels
+    
+    load_spice_kernels()
 
 
 #SAVE_FIGS = False
@@ -85,8 +83,8 @@ SAVE_FILES = False
 
 
 """plot relative signal strengths of SO channel bins to check alignment"""
-#fileLevel = "hdf5_level_0p1a"
-#obspaths = ["*201812*_0p1a_SO_1"]
+fileLevel = "hdf5_level_0p1a"
+obspaths = ["*201812*_0p1a_SO_1"]
 
 
 """plot dark current for 5 x darks"""
@@ -101,7 +99,7 @@ SAVE_FILES = False
 #title = "plot dark residual"
 
 """plot diffraction order statistics"""
-fileLevel = "hdf5_level_1p0a"
+# fileLevel = "hdf5_level_1p0a"
 #regex = re.compile("201[89][01][0-9][0-9][0-9]_.*_SO_.*")
 #regex = re.compile("(20191[1-2]|202001)[0-9][0-9]_.*_SO_.*")
 #regex = re.compile("(20191[1-2]|202001)[0-9][0-9]_.*_SO_.*")
@@ -109,8 +107,8 @@ fileLevel = "hdf5_level_1p0a"
 #title = "so order statistics"
 #regex = re.compile("201[89][01][0-9][0-9][0-9]_.*_LNO_.*")
 #regex = re.compile("(20191[1-2]|202001)[0-9][0-9]_.*_LNO_.*")
-regex = re.compile("20200[5-6][0-9][0-9]_.*_LNO_.*")
-title = "lno order statistics"
+# regex = re.compile("20200[5-6][0-9][0-9]_.*_LNO_.*")
+# title = "lno order statistics"
 #regex = re.compile("201[89][01][0-9][0-9][0-9]_.*_UVIS_.*")
 #title = "uvis obs type statistics"
 
@@ -201,7 +199,7 @@ def writeHdf5Temperatures(hdf5Filenames, obspaths, plot_from_file=False):
         lno_temperatures = []
         uvis_temperatures = []
         for file_index, hdf5_filename in enumerate(hdf5Filenames):
-            name, hdf5_file = getFile(hdf5_filename, fileLevel, file_index)
+            name, hdf5_file = get_file(hdf5_filename, fileLevel, file_index)
             
             if "SO" in hdf5_filename:
                 channel = "so"
@@ -294,7 +292,7 @@ def writeHdf5Temperatures(hdf5Filenames, obspaths, plot_from_file=False):
 
 def getNumberOfSpectra(obspaths, fileLevel):
     """print number of spectra in each file"""
-    hdf5Files, hdf5Filenames, titles = makeFileList(obspaths, fileLevel)
+    hdf5Files, hdf5Filenames, titles = make_filelist(obspaths, fileLevel)
     for hdf5File, hdf5Filename in zip(hdf5Files, hdf5Filenames):
         detectorData = hdf5File["Science/Y"][...]
         nSpectra = detectorData.shape[0]
@@ -438,7 +436,7 @@ def plotDarkCurrentResidual(regex, fileLevel, diffractionOrder):
     chosenAotfFrequency = {119:15657, 132:17566, 133:17712, 134:17859, 135:18005, 136:18152, 149:20052, \
                            167:22674, 168:22820, 169:22965, 170:23110, 171:23255, 189:25864, 190:26008, 191:26153}[diffractionOrder]
 
-    hdf5Files, hdf5Filenames, titles = makeFileList(regex, fileLevel)
+    hdf5Files, hdf5Filenames, titles = make_filelist(regex, fileLevel)
     fig, ax1 = plt.subplots()
     ax2 = ax1.twinx()
     for fileIndex, (hdf5_file, hdf5_filename) in enumerate(zip(hdf5Files, hdf5Filenames)):
@@ -547,7 +545,7 @@ def plotDiffractionOrderBarChart(regex, fileLevel, channel):
                 diffractionOrderFilenames[int(diffractionOrder)].append(hdf5_filename)
     #        else:
     #            if hdf5_filename_split[-1] == "S":
-    #                name, hdf5_file = getFile(hdf5_filename, fileLevel, 0, silent=True)
+    #                name, hdf5_file = get_file(hdf5_filename, fileLevel, 0, silent=True)
     #                detectorData = hdf5_file["Science/Y"][...]
     #                nSpectra = detectorData.shape[0]
     #                print("nSpectra=%i, hdf5_filename=%s" %(nSpectra, hdf5_filename))
@@ -600,7 +598,7 @@ def plotDiffractionOrderBarChart(regex, fileLevel, channel):
 
 
                 elif observationType in ["D"]:
-                    name, hdf5_file = getFile(hdf5_filename, fileLevel, 0, silent=True)
+                    name, hdf5_file = get_file(hdf5_filename, fileLevel, 0, silent=True)
                     h_end = hdf5_file["Channel/HEnd"][0]
                     if h_end == 1047:
                         binning = hdf5_file["Channel/HorizontalAndCombinedBinningSize"][0]
@@ -634,7 +632,7 @@ def plotDiffractionOrderBarChart(regex, fileLevel, channel):
 
 
 """plot instrument temperatures"""
-#hdf5Files, hdf5Filenames, titles = makeFileList(obspaths, fileLevel, open_files=False)
+#hdf5Files, hdf5Filenames, titles = make_filelist(obspaths, fileLevel, open_files=False)
 #writeHdf5Temperatures(hdf5Filenames)
 
 #plot from file
@@ -645,7 +643,7 @@ def plotDiffractionOrderBarChart(regex, fileLevel, channel):
 
 
 """plot detector temperature variations"""
-#hdf5Files, hdf5Filenames, titles = makeFileList(obspaths, fileLevel)
+#hdf5Files, hdf5Filenames, titles = make_filelist(obspaths, fileLevel)
 #plotDetectorTemperatures(hdf5Files, hdf5Filenames, channel)
 
 
@@ -664,8 +662,8 @@ def plotDiffractionOrderBarChart(regex, fileLevel, channel):
 
 
 """plot relative signal strengths of SO channel bins to check alignment"""
-#hdf5Files, hdf5Filenames, titles = makeFileList(obspaths, fileLevel)
-#plotBinStrengths(hdf5Files, hdf5Filenames, obspaths)
+hdf5Files, hdf5Filenames, titles = make_filelist(obspaths, fileLevel)
+plotBinStrengths(hdf5Files, hdf5Filenames, obspaths)
 
 
 
@@ -700,7 +698,7 @@ if title == "make pipeline level lists": #run this first
     fileLevels = ["hdf5_level_0p1a", "hdf5_level_0p2a", "hdf5_level_1p0a"]
     
     for fileLevel in fileLevels:
-        hdf5Files, hdf5Filenames, _ = makeFileList(regex, fileLevel, open_files=False, silent=True)
+        hdf5Files, hdf5Filenames, _ = make_filelist(regex, fileLevel, open_files=False, silent=True)
         acceptedFilenames = []
         
         for file_index, (hdf5_filepath, hdf5_filename) in enumerate(zip(hdf5Files, hdf5Filenames)):
