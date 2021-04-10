@@ -12,7 +12,7 @@ import os
 import numpy as np
 from datetime import datetime
 import re
-
+import h5py
 
 #from matplotlib import rcParams
 import matplotlib.pyplot as plt
@@ -38,11 +38,13 @@ SAVE_FIGS = True
 
 
 file_level = "hdf5_level_0p3k"
-regex = re.compile("20.*_0p3k_SO_A_[IE]_134")
+# regex = re.compile("20(18|19|20)[0-9][0-9][0-9][0-9]_.*_0p3k_SO_A_[IE]_134")
+regex = re.compile("20(18|19)[0-9][0-9][0-9][0-9]_.*_0p3k_SO_A_[IE]_(134|136)")
+# regex = re.compile("20180[456][0-9][0-9]_.*_0p3k_SO_A_[IE]_(134|136)")
 
 
 #get files
-hdf5_files, hdf5_filenames, titles = make_filelist(regex, file_level)
+hdf5_files, hdf5_filenames, titles = make_filelist(regex, file_level, open_files=False)
 
 
 #loop through files
@@ -51,25 +53,32 @@ obs_datetimes = []
 relative_signals = []
 
 for file_index, (hdf5_file, hdf5_filename) in enumerate(zip(hdf5_files, hdf5_filenames)):
-    year = int(hdf5_filename[0:4])
-    month = int(hdf5_filename[4:6])
-    day = int(hdf5_filename[6:8])
-    hour = int(hdf5_filename[9:11])  
-    minute = int(hdf5_filename[11:13])  
-    second = int(hdf5_filename[13:15]) 
-    obs_datetime = datetime(year=year, month=month, day=day, hour=hour, minute=minute, second=second)
+    if np.mod(file_index, 100) == 0:
+        print(file_index, hdf5_filename)
+        
+        
+    year = hdf5_filename[0:4]
+    month = hdf5_filename[4:6]
+    day = hdf5_filename[6:8]
+    hour = hdf5_filename[9:11]
+    minute = hdf5_filename[11:13]
+    second = hdf5_filename[13:15]
+    obs_datetime = datetime(year=int(year), month=int(month), day=int(day), hour=int(hour), minute=int(minute), second=int(second))
     
-    y = hdf5_file["Science/Y"][...]
+    file_path = os.path.join(paths["DATA_DIRECTORY"], file_level, year, month, day, hdf5_filename+".h5")
+    
+    with h5py.File(file_path, "r") as f:
+        y = f["Science/Y"][...]
+        sbsf = f["Channel/BackgroundSubtraction"][0]
     y_len = y.shape[0]
-    sbsf = hdf5_file["Channel/BackgroundSubtraction"][0]
 
     if "_I_" in hdf5_filename:
         bin_indices_toa = [np.arange(0, 20, 4), np.arange(1, 20, 4), np.arange(2, 20, 4), np.arange(3, 20, 4)]
     elif "_E_" in hdf5_filename:
         bin_indices_toa = [np.arange(y_len-20, y_len, 4), np.arange(y_len-19, y_len, 4), np.arange(y_len-18, y_len, 4), np.arange(y_len-17, y_len, 4)]
 
-    if sbsf == 0:
-        continue
+    # if sbsf == 0:
+    #     continue
     
 
     bin_means = []
@@ -99,7 +108,7 @@ ax.legend()
 ax.grid(True)
 
 ax.xaxis.set_major_locator(MonthLocator(bymonth=None, interval=1, tz=None))    
-
+fig.tight_layout()
 if SAVE_FIGS:
     plt.savefig("so_relative_counts.png")
    
