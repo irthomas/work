@@ -17,10 +17,14 @@ import os
 from tools.file.paths import paths
 
 
-def load_spice_kernels():
+def load_spice_kernels(planning=False):
     
     os.chdir(paths["KERNEL_DIRECTORY"])
-    sp.furnsh(os.path.join(paths["KERNEL_DIRECTORY"], "em16_ops.tm"))
+    
+    if planning:
+        sp.furnsh(os.path.join(paths["KERNEL_DIRECTORY"], "em16_plan.tm"))
+    else:
+        sp.furnsh(os.path.join(paths["KERNEL_DIRECTORY"], "em16_ops.tm"))
     print(sp.tkvrsn("toolkit"))
     os.chdir(paths["BASE_DIRECTORY"])
 

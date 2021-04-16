@@ -89,18 +89,18 @@ SAVE_FILES=True
 #obspaths = "LNO_MCO_Dark_Integration_Time_Stepping_Corrected_Full_Frame_-19C"
 #fileLevel=""
 
-#title="SO Bad Pixel Map" #derive bad pixel map
-#obspaths = "SO_MCO_Dark_Integration_Time_Stepping_Corrected_Full_Frame_-12C"
-#fileLevel=""
+title="SO Bad Pixel Map" #derive bad pixel map
+obspaths = "SO_MCO_Dark_Integration_Time_Stepping_Corrected_Full_Frame_-12C"
+fileLevel=""
 
 
 #title="LNO Non Linearity Correction"; #build non-linearity file
 #obspaths = "LNO_MCO_Dark_Integration_Time_Stepping_Corrected_Full_Frame_-19C"
 #fileLevel=""
 
-title="SO Non Linearity Correction"; #build non-linearity file
-obspaths = "SO_MCO_Dark_Integration_Time_Stepping_Corrected_Full_Frame_-12C"
-fileLevel=""
+# title="SO Non Linearity Correction"; #build non-linearity file
+# obspaths = "SO_MCO_Dark_Integration_Time_Stepping_Corrected_Full_Frame_-12C"
+# fileLevel=""
 
 
 

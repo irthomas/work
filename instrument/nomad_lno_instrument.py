@@ -152,6 +152,11 @@ A_aotf = {108:14886, 109:15042,
 
 aotf_A = ((v,k) for k,v in A_aotf.items())
 
+"""aotf frequency to nearest order"""
+def m_aotf(value):
+    res_key, res_val = min(A_aotf.items(), key=lambda x: abs(value - x[1]))
+    return res_key
+
 
 #updated for LNO from Liuzzi et al. May not be newest coefficients?
 G0=300.67657

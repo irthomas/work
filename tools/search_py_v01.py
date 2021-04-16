@@ -11,7 +11,7 @@ import os
 import glob
 import posixpath
 
-SEARCH_STRING = 'relative counts for'
+SEARCH_STRING = 'apparent diameter'
 
 
 from tools.file.paths import paths

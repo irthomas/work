@@ -3,7 +3,14 @@
 Created on Tue Apr 14 12:27:50 2015
 
 @author: iant
+
+TOOLS FOR MAKING ANIMATIONS
 """
+
+import os
+from tools.file.paths import paths
+
+
 def make_slice_anim(list_of_slices,y_min,y_max,filename):
     import numpy as np
     from matplotlib import pyplot as plt
@@ -47,7 +54,7 @@ def make_frame_anim(list_of_frames,zmin,zmax,filename,ymax = 256):
     # First set up the figure, the axis, and the plot element we want to animate
     fig = plt.figure()
     plt.axes(xlim=(0, 320), ylim=(0, ymax), xlabel="Spectral Pixel", ylabel="Spatial Pixel")
-    im=plt.imshow(list_of_frames[0], interpolation='none', aspect=int(np.floor(256/ymax)))
+    im=plt.imshow(list_of_frames[0], interpolation='none', aspect=int(np.floor(256/ymax)), origin='upper', cmap=plt.cm.Spectral)
     plt.clim(zmin, zmax)
     plt.colorbar()
         
@@ -65,7 +72,7 @@ def make_frame_anim(list_of_frames,zmin,zmax,filename,ymax = 256):
     
     # call the animator.  blit=True means only re-draw the parts that have changed.
     anim = animation.FuncAnimation(fig, animate, init_func=init,frames=len(list_of_frames), interval=50, blit=True)
-    anim.save(filename+".html", writer=writer)
+    anim.save(os.path.join(paths["ANIMATION_DIRECTORY"], filename+".html"), writer=writer)
     plt.show()
     return 0
 

@@ -20,12 +20,16 @@ import matplotlib.pyplot as plt
 from tools.file.hdf5_functions import make_filelist
 from tools.file.paths import paths, FIG_X, FIG_Y
 from tools.spectra.baseline_als import baseline_als
+from instrument.nomad_so_instrument import m_aotf as m_aotf_so
+from instrument.nomad_lno_instrument import m_aotf as m_aotf_lno
 
 file_level = "hdf5_level_0p1a"
 # regex = re.compile("(20160615_224950|20180428_023343|20180511_084630|20180522_221149|20180821_193241|20180828_223824)_0p1a_SO_1")
-# regex = re.compile("20160615_224950_0p1a_SO_1") #best absorption line avoiding bad pixels
+regex = re.compile("20160615_224950_0p1a_SO_1") #best absorption line avoiding bad pixels
 
-regex = re.compile("(20180619_020651|20190704_121530|20200724_125331|20200728_144718)_0p1a_LNO_1")
+# regex = re.compile("20150403_171047_.*") 
+
+# regex = re.compile("(20180619_020651|20190704_121530|20200724_125331|20200728_144718)_0p1a_LNO_1")
 # regex = re.compile("20160615_233950_0p1a_LNO_1")
 
 
@@ -76,6 +80,15 @@ for hdf5_file, hdf5_filename in zip(hdf5Files, hdf5Filenames):
     binning = hdf5_file["Channel/Binning"][0] + 1
     n_rows = detector_data_all.shape[1]
     frame_indices = range(len(window_top_all))
+    
+    """print diffraction order"""
+    aotf_freq = hdf5_file["Channel/AOTFFrequency"][0]
+    if channel == "so":
+        order = m_aotf_so(aotf_freq)
+    elif channel == "lno":
+        order = m_aotf_lno(aotf_freq)
+    print("Order=%i" %order)
+    
 
     dim = detector_data_all.shape
     nu = len(list(set(window_top_all))) #number of unique window tops
@@ -104,6 +117,7 @@ for hdf5_file, hdf5_filename in zip(hdf5Files, hdf5Filenames):
             "20160615_224950_0p1a_SO_1":[50,75],
             "20180821_193241_0p1a_SO_1":[420, 700]
             }
+        illuminated_rows = [128-8, 128+8]
         
 
 
@@ -117,6 +131,7 @@ for hdf5_file, hdf5_filename in zip(hdf5Files, hdf5Filenames):
             "20160615_233950_0p1a_LNO_1":[100,160],
             # "20180821_193241_0p1a_SO_1":[420, 700]
             }
+        illuminated_rows = [152-72, 152+72]
         
     
     """make animation"""
@@ -168,6 +183,10 @@ for hdf5_file, hdf5_filename in zip(hdf5Files, hdf5Filenames):
     plt.ylabel("Vertial detector row")
     plt.title(channel.upper()+" Detector slant")
     plt.legend()
+    
+    for illuminated_row in illuminated_rows:
+        plt.axhline(y=illuminated_row, linestyle="--")
+    
     plt.savefig(channel+"_detector_slant.png")
     
     

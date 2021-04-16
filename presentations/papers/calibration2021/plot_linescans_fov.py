@@ -23,8 +23,8 @@ load_spice_kernels()
 MESHGRID = False
 # MESHGRID = True
 
-channel = "so"
-#channel = "lno"
+# channel = "so"
+channel = "lno"
 """end"""
 
 
@@ -49,18 +49,18 @@ linescan_dict = {
             "SO-prime (Dec 2020)":["20201224_011635_0p1a_SO_1", "20210102_092937_0p1a_SO_1"],
         },
          "lno":{
-            "MCO-1":["20161121_000420_LNO", "20161121_021920_LNO"], \
-            "MTP001":["201905", "20190704"],
-            "MTP015":["", ""],
-            "MTP030":["20200724_125331_LNO", "20200728_144718_LNO"],
-#            "MTP001":["", ""],
+            # "MCO-1":["20161121_000420_0p1a_LNO_1", "20161121_021920_0p1a_LNO_1"], \
+            # "MTP001":["201905", "20190704"],
+            # "MTP015":["", ""],
+            "SO-prime (Jul 2020)":["20200724_125331_0p1a_LNO_1", "20200728_144718_0p1a_LNO_1"],
         },
 }
 
 
 #    referenceFrame = "TGO_NOMAD_UVIS_OCC"
-referenceFrame = "TGO_NOMAD_SO"
-#    referenceFrame = "TGO_SPACECRAFT"
+# referenceFrame = "TGO_NOMAD_SO"
+referenceFrame = "TGO_NOMAD_LNO_OPS_OCC"
+# referenceFrame = "TGO_SPACECRAFT"
 
 
 def get_vector(date_time, reference_frame):
@@ -69,8 +69,11 @@ def get_vector(date_time, reference_frame):
     return -1 * obs2SunUnitVector #-1 is there to switch the directions to be like in cosmographia
 
 
-fig1, axes = plt.subplots(nrows=2, ncols=4, figsize=(FIG_X+5, FIG_Y+2), sharex=True, )
-axes = axes.flatten()
+if channel == "so":
+    fig1, axes = plt.subplots(nrows=2, ncols=4, figsize=(FIG_X+5, FIG_Y+2), sharex=True, )
+    axes = axes.flatten()
+else:
+    fig1, ax = plt.subplots(nrows=1, ncols=1, figsize=(FIG_X, FIG_Y))
 
 
 fig1.add_subplot(111, frameon=False)
@@ -83,7 +86,8 @@ for linescan_index, (title, hdf5_filenames) in enumerate(linescan_dict[channel].
     ys = []
     zs = []
     
-    ax = axes[linescan_index]
+    if channel == "so":
+        ax = axes[linescan_index]
 
     for scan_index, hdf5_filename in enumerate(hdf5_filenames):
 
