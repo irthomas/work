@@ -4,7 +4,7 @@ Created on Wed May 27 20:53:20 2020
 
 @author: iant
 
-Get LNO reflectance factor mean continuum values; plot lat lon maps and compare the TES albedo
+Get LNO reflectance factor mean continuum values; plot lat lon maps and compare with TES albedo
 
 """
 import matplotlib.pyplot as plt

@@ -7,8 +7,9 @@ Created on Fri Apr 24 22:20:45 2020
 HEATERS_TEMP_DB IS NOW CREATED BY PIPELINE
 TGO TEMPERATURES ARE NOW IN HDF5 FILES. GET FROM FILE INSTEAD OF MAKING DB
 
-python3 tools/sql/obs_db_functions.py lno_nadir hdf5_level_0p3a 2018-03-01 2030-01-01 --regenerate=True
-python3 tools/sql/obs_db_functions.py lno_nadir hdf5_level_1p0a 2018-03-01 2018-04-01 --regenerate=True
+export PYTHONPATH=$PYTHONPATH:/home/iant/linux/Python
+python3 tools/sql/make_obs_db.py lno_nadir hdf5_level_0p3a 2018-03-01 2030-01-01 --regenerate=True
+python3 tools/sql/make_obs_db.py lno_nadir hdf5_level_1p0a 2018-04-21 2030-12-31 --regenerate=True
 
 runfile('C:/Users/iant/Dropbox/NOMAD/Python/tools/sql/make_obs_db.py', args='lno_nadir hdf5_level_1p0a 2018-03-01 2018-07-01 -regenerate --regex=".*LNO.*_134"')
 python3 tools/sql/make_obs_db.py lno_nadir hdf5_level_1p0a 2018-03-01 2021-01-01 -regenerate

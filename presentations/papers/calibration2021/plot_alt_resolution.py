@@ -56,7 +56,7 @@ for ie in ["i","e"]:
             if sbsf == 1:
                 continue
             
-            alt_all = f["Geometry/Point0/TangentAlt"][...]
+            alt_all = f["Geometry/Point0/TangentAltAreoid"][...]
             
             indices = np.where((alt_all[:, 0] > 10) & (alt_all[:, 0] < 100))[0]
             
@@ -114,7 +114,7 @@ for ie in ["i","e"]:
         
         
 
-fig = plt.figure(figsize=(FIG_X, FIG_Y))
+fig = plt.figure(figsize=(FIG_X+3, FIG_Y+4))
 gs = fig.add_gridspec(5, 1)
 ax1 = fig.add_subplot(gs[0, 0])
 ax2 = fig.add_subplot(gs[1:3, 0], sharex=ax1)
@@ -122,12 +122,12 @@ ax3 = fig.add_subplot(gs[3:5, 0], sharex=ax1)
         
 
 # fig, (ax1, ax2, ax3) = plt.subplots(nrows=3, ncols=1, sharex=True, figsize=(FIG_X, FIG_Y))
-fig.suptitle("Solar Occultation Tangent Altitude and Latitudinal Sampling Resolution from 10-100km Altitude")
+# fig.suptitle("Solar Occultation Tangent Altitude and Latitudinal Sampling Resolution from 10-100km Altitude")
 ax3.set_xlabel("Date")
-ax1.set_ylabel("Mean latitude")
+ax1.set_ylabel("Mean latitude of\nTangent Point (deg)")
 ax2.set_ylabel("Change in tangent altitude\nbetween consecutive spectra (m)")
-ax3.set_ylabel("Change in latitude\nbetween consecutive spectra")
-
+ax3.set_ylabel("Change in latitude\nbetween consecutive spectra (deg)")
+ax1.set_title("Solar Occultation Tangent Altitude and Latitudinal Sampling Resolution from 10-100km Altitude")
 ax1.set_ylim((-90,90))
 ax1.set_yticks([-90,-45,0,45,90])
 
@@ -141,7 +141,7 @@ ms = 4
 ie = "i"
 colour = "tab:blue"
 
-ax1.plot_date(d[ie]["dt"], d[ie]["lat_mean"], linestyle=linestyle, ms=ms, color=colour)
+ax1.plot_date(d[ie]["dt"], d[ie]["lat_mean"], linestyle=linestyle, ms=ms, color=colour, label="Ingress")
 ax1.xaxis.set_major_locator(MonthLocator(bymonth=None, interval=1, tz=None))
 
 ax2.fill_between(d[ie]["dt"], y1=d[ie]["alt_min_d"], y2=d[ie]["alt_max_d"], color=colour, alpha=0.7, label="Ingress Altitude Change")
@@ -150,7 +150,7 @@ ax3.fill_between(d[ie]["dt"], y1=d[ie]["lat_min_d"], y2=d[ie]["lat_max_d"], colo
 
 ie = "e"
 colour = "tab:red"
-ax1.plot_date(d[ie]["dt"], d[ie]["lat_mean"], linestyle=linestyle, ms=ms, color=colour)
+ax1.plot_date(d[ie]["dt"], d[ie]["lat_mean"], linestyle=linestyle, ms=ms, color=colour, label="Egress")
 
 ax2.fill_between(d[ie]["dt"], y1=d[ie]["alt_min_d"], y2=d[ie]["alt_max_d"], color=colour, alpha=0.7, label="Egress Altitude Change")
 ax3.fill_between(d[ie]["dt"], y1=d[ie]["lat_min_d"], y2=d[ie]["lat_max_d"], color=colour, alpha=0.7, label="Egress Latitude Change")
@@ -159,6 +159,7 @@ ax3.fill_between(d[ie]["dt"], y1=d[ie]["lat_min_d"], y2=d[ie]["lat_max_d"], colo
 ax1.tick_params(axis="x", labelbottom=False)
 ax2.tick_params(axis="x", labelbottom=False)
 
+ax1.legend(loc="lower right")
 ax2.legend(loc="lower right")
 ax3.legend(loc="lower right")
 # fig.tight_layout()

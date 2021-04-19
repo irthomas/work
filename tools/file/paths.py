@@ -24,7 +24,7 @@ if SYSTEM == "Linux": #linux system
     paths["DATASTORE_ROOT_DIRECTORY"] = os.path.normcase(r"/bira-iasb/data/SATELLITE/TRACE-GAS-ORBITER/NOMAD")
     paths["LOCAL_DIRECTORY"] = os.path.normcase(r"/home/iant/linux/DATA")
     paths["RETRIEVAL_DIRECTORY"] = os.path.normcase(r"/home/iant/linux/input_tools/Tools")
-    paths["DB_DIRECTORY"] = os.path.normcase(r"/home/iant/linux/DATA/db")
+    paths["DB_DIRECTORY"] = os.path.normcase(r"/bira-iasb/projects/work/NOMAD/Science/ian/db")
     paths["ANIMATION_DIRECTORY"] = os.path.normcase(r"/home/iant/linux/DATA/")
     paths["KERNEL_DIRECTORY"] = os.path.normcase(r"/bira-iasb/data/SATELLITE/TRACE-GAS-ORBITER/NOMAD/kernels/mk")
     paths["COP_TABLE_DIRECTORY"] = os.path.normcase(r"/bira-iasb/data/SATELLITE/TRACE-GAS-ORBITER/NOMAD/cop_tables")

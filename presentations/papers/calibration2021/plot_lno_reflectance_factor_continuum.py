@@ -16,19 +16,18 @@ from tools.sql.obs_database import obs_database
 #from tools.plotting.colours import get_colours
 from tools.datasets.tes_albedo import get_TES_albedo_map, get_albedo
 
-#SAVE_FIGS = False
-SAVE_FIGS = True
+SAVE_FIGS = False
+# SAVE_FIGS = True
 
-#diffraction_order = 190
-# diffraction_order = 169
-diffraction_order = 168
+diffraction_orders = [167,168,169,170]
 file_level = "hdf5_level_1p0a"
 
 # degree_binning = 2
-degree_binning = 3
+degree_binning = 1
 
 
-search_query = "SELECT * from %s WHERE diffraction_order == %i " %(file_level, diffraction_order)
+search_query = "SELECT * from %s WHERE " %file_level + " OR ".join(["diffraction_order == %i" %i for i in diffraction_orders])
+
 
 database_name = "lno_nadir_%s" %file_level
 db_obj = obs_database(database_name, silent=True)
@@ -85,7 +84,7 @@ ax2.set_ylabel("Latitude")
 ax2.set_xlim((-180, 180))
 ax2.set_ylim((-90, 90))
 cb2 = fig2.colorbar(plot)
-cb2.set_label("Mean continuum radiance factor", rotation=270, labelpad=10)
+cb2.set_label("Mean continuum reflectance factor", rotation=270, labelpad=10)
 ax2.grid()
 if SAVE_FIGS:
     fig2.savefig("LNO_order_%i_mean_continuum_%ix%i_binning.png" %(diffraction_order, degree_binning, degree_binning), dpi=200)
@@ -102,7 +101,7 @@ ax3.set_ylabel("Latitude")
 ax3.set_xlim((-180, 180))
 ax3.set_ylim((-90, 90))
 cb3 = fig3.colorbar(plot)
-cb3.set_label("Mean continuum radiance factor", rotation=270, labelpad=10)
+cb3.set_label("Mean continuum reflectance factor", rotation=270, labelpad=10)
 ax3.grid()
 if SAVE_FIGS:
     fig3.savefig("TES_and_LNO_order_%i_mean_continuum.png" %(diffraction_order), dpi=200)
