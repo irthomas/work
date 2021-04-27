@@ -33,8 +33,8 @@ t = 0.0
 nu = np.arange(-1., 1, 0.01)
 
 
-
-for i in [100, 120, 180, 240]: 
+plt.figure(figsize=(8,4))
+for i, colour in zip([240, 200, 160, 120], ["yellow", "greenyellow", "aquamarine", "tab:blue"]): 
     a1 = a1s[i]
     a2 = a2s[i]
     a3 = a3s[i]
@@ -48,7 +48,9 @@ for i in [100, 120, 180, 240]:
     
     ils = ils0 + ils1 
 
-    plt.plot(nu, ils, label="Pixel %i" %i)
+    plt.plot(nu, ils, label="Pixel %i" %i, linewidth=3, color=colour)
     
 plt.legend()
-
+plt.axis('off')
+plt.tight_layout()
+plt.savefig('so_ils.png', transparent=True)

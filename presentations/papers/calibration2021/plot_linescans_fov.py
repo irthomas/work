@@ -49,21 +49,22 @@ linescan_dict = {
             "SO-prime (Dec 2020)":["20201224_011635_0p1a_SO_1", "20210102_092937_0p1a_SO_1"],
         },
          "lno":{
-            # "MCO-1":["20161121_000420_0p1a_LNO_1", "20161121_021920_0p1a_LNO_1"], \
+            "SO-prime (June 2016)":["20161121_000420_0p1a_LNO_1", "20161121_021920_0p1a_LNO_1"], \
             # "MTP001":["201905", "20190704"],
             # "MTP015":["", ""],
-            "SO-prime (Jul 2020)":["20200724_125331_0p1a_LNO_1", "20200728_144718_0p1a_LNO_1"],
+            # "SO-prime (Jul 2020)":["20200724_125331_0p1a_LNO_1", "20200728_144718_0p1a_LNO_1"],
         },
 }
 
 
 #    referenceFrame = "TGO_NOMAD_UVIS_OCC"
-# referenceFrame = "TGO_NOMAD_SO"
-referenceFrame = "TGO_NOMAD_LNO_OPS_OCC"
+referenceFrame = "TGO_NOMAD_SO"
+# referenceFrame = "TGO_NOMAD_LNO_OPS_OCC"
 # referenceFrame = "TGO_SPACECRAFT"
 
 
 def get_vector(date_time, reference_frame):
+    # print("SUN", date_time, reference_frame, SPICE_ABERRATION_CORRECTION, SPICE_OBSERVER)
     obs2SunVector = sp.spkpos("SUN", date_time, reference_frame, SPICE_ABERRATION_CORRECTION, SPICE_OBSERVER)[0]
     obs2SunUnitVector = obs2SunVector / sp.vnorm(obs2SunVector)
     return -1 * obs2SunUnitVector #-1 is there to switch the directions to be like in cosmographia

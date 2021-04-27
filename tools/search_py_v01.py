@@ -11,7 +11,7 @@ import os
 import glob
 import posixpath
 
-SEARCH_STRING = 'apparent diameter'
+SEARCH_STRING = 'label="Pixel %i'
 
 
 from tools.file.paths import paths
