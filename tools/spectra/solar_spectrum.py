@@ -4,10 +4,14 @@ Created on Fri Apr 24 09:42:03 2020
 
 @author: iant
 """
+import os
+
+from tools.file.paths import paths
+
+SOLAR_SPECTRUM_FILE = os.path.join(paths["RETRIEVALS"]["SOLAR_DIR"], "Solar_irradiance_ACESOLSPEC_2015.dat")
 
 
-
-def get_solar_hr(nu_hr, solspec_filepath, nu_limit=2.0):
+def get_solar_hr(nu_hr, solspec_filepath=SOLAR_SPECTRUM_FILE, nu_limit=2.0):
     """get high res solar spectrum interpolated to input nu_hr wavenumber grid"""
     import numpy as np
     from scipy import interpolate
@@ -19,6 +23,9 @@ def get_solar_hr(nu_hr, solspec_filepath, nu_limit=2.0):
         nu_solar = []
         I0_solar = []
         for line in f:
+            if line[0] == "%":
+                continue
+            
             nu, I0 = [float(val) for val in line.split()]
             if nu < nu_hr_min - nu_limit:
                 continue

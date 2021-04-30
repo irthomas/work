@@ -16,7 +16,7 @@ from tools.spectra.nu_hr_grid import nu_hr_grid
 def solar_hr_orders(diffraction_order, adj_orders, instrument_temperature, solspec_file):
     """get high res solar spectrum for given diffraction order +- n adjacent orders"""
     nu_hr, dnu = nu_hr_grid(diffraction_order, adj_orders, instrument_temperature)
-    I0_solar_hr = get_solar_hr(nu_hr, solspec_file)
+    I0_solar_hr = get_solar_hr(nu_hr, solspec_filepath=solspec_file)
     
     return nu_hr, I0_solar_hr, dnu
 
@@ -46,7 +46,9 @@ def so_solar_spectrum(diffraction_order, instrument_temperature, solspec_file, a
     I0_hr = W_aotf * I0_solar_hr
     I0_p = np.matmul(W_conv, I0_hr)
     
-    return nu_pm, I0_p
+    nu_pm_centre = nu_mp(diffraction_order, pixels, instrument_temperature)
+    
+    return nu_pm_centre, I0_p
     
 
 

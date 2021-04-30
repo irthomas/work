@@ -8,38 +8,100 @@ TOOLS FOR MAKING ANIMATIONS
 """
 
 import os
+import numpy as np
+from matplotlib import pyplot as plt
+from matplotlib import animation
+
 from tools.file.paths import paths
 
 
-def make_slice_anim(list_of_slices,y_min,y_max,filename):
-    import numpy as np
-    from matplotlib import pyplot as plt
-    from matplotlib import animation
+
+def make_line_anim(d):
+    """
+    pass dictionary to function to make a line plot animation. Keys are:
+    'x':{name:data}, 'y':{name:data}, 'text':[], 'text_position', 'xlabel', 'ylabel', 'xlim', 'ylim', 'filename', 'legend':{}, 'keys':[], 'title'
+    """
+
+    if "format" in d.keys():
+        anim_format = d["format"]
+    else:
+        anim_format = "html"
     
-    # First set up the figure, the axis, and the plot element we want to animate
+    ext = {"ffmpeg":"mp4", "html":"html"}[anim_format]
+    
+    # Set up formatting for the movie files
+    Writer = animation.writers[anim_format]
+    writer = Writer(fps=15, metadata=dict(artist="Me"), bitrate=1800)
+    
+    
+    # # First set up the figure, the axis, and the plot element we want to animate
     fig = plt.figure()
-    ax = plt.axes(xlim=(0, 320), ylim=(y_min, y_max), xlabel="Detector Pixel")
-    line, = ax.plot([], [], lw=2)
+    ax = plt.axes(xlim=d["xlim"], ylim=d["ylim"], xlabel=d["xlabel"], ylabel=d["ylabel"])
     
-    # initialization function: plot the background of each frame
+    if "title" in d.keys():
+        plt.title(d["title"])
+    
+    if "keys" in d.keys():
+        keys = d["keys"]
+    else:
+        keys = list(d["y"].keys())
+    
+    lines = []
+    for key in keys:
+        lines.append(ax.plot([], [], lw=2, label=key)[0]) 
+    text = ax.text(d["text_position"][0], d["text_position"][1], "")
+    
+    if "legend" in d.keys():
+        if "on" in d["legend"].keys():
+            if d["legend"]["on"]:
+                if "loc" in d["legend"].keys():
+                    ax.legend(loc=d["legend"]["loc"])
+                else:
+                    ax.legend()
+    
+    # # initialization function: plot the background of each frame
     def init():
-        line.set_data([], [])
-        return line,
+        for line in lines:
+            line.set_data([], [])
+        text.set_text("")
+            
+        artists = lines + [text]
+        return artists
     
     # animation function.  This is called sequentially
     def animate(i):
-        x = np.arange(0.0,320.0,1.0)
-        y = list_of_slices[i]
-        line.set_data(x, y)
-        return line,
+        if np.mod(i, 100) == 0:
+            print(i)
+        
+        for line, key in zip(lines, keys):
+            line.set_data(d["x"][key][i],d["y"][key][i])
+        text.set_text(d["text"][i])
+        
+        artists = lines + [text]
+        return artists
     
+    n_frames = len(d["y"][list(d["y"].keys())[0]])
     # call the animator.  blit=True means only re-draw the parts that have changed.
-    anim = animation.FuncAnimation(fig, animate, init_func=init,frames=len(list_of_slices), interval=50, blit=True)
+    anim = animation.FuncAnimation(fig, animate, init_func=init, frames=n_frames, interval=50, blit=True)
     
-    anim.save(filename+'.mp4', fps=30)
-#    plt.show()
+    
+    
+    # anim.save(filename+'.mp4', fps=30)
+    try:
+        cwd = os.getcwd()
+        os.chdir(paths["ANIMATION_DIRECTORY"])
+        anim.save("%s.%s" %(d["filename"], ext), writer=writer)
+    except Exception as e:
+        print(e)
+    finally:
+        os.chdir(cwd)
+        plt.show()
+
+
     return 0
     
+
+
     
 def make_frame_anim(list_of_frames,zmin,zmax,filename,ymax = 256):
     import numpy as np
@@ -72,16 +134,14 @@ def make_frame_anim(list_of_frames,zmin,zmax,filename,ymax = 256):
     
     # call the animator.  blit=True means only re-draw the parts that have changed.
     anim = animation.FuncAnimation(fig, animate, init_func=init,frames=len(list_of_frames), interval=50, blit=True)
-    anim.save(os.path.join(paths["ANIMATION_DIRECTORY"], filename+".html"), writer=writer)
+    
+    cwd = os.getcwd()
+    os.chdir(paths["ANIMATION_DIRECTORY"])
+    anim.save(filename+".html", writer=writer)
+    
+    os.chdir(cwd)
     plt.show()
     return 0
-
-#frames = []
-#for loop in range(3):
-#    frames.append(np.random.random((256,320)))
-#    
-#make_frame_anim(frames,0,0,'test2')
-
 
 
 
