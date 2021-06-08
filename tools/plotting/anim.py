@@ -86,16 +86,17 @@ def make_line_anim(d):
     
     
     
-    # anim.save(filename+'.mp4', fps=30)
-    try:
-        cwd = os.getcwd()
-        os.chdir(paths["ANIMATION_DIRECTORY"])
-        anim.save("%s.%s" %(d["filename"], ext), writer=writer)
-    except Exception as e:
-        print(e)
-    finally:
-        os.chdir(cwd)
-        plt.show()
+    if "save" in d.keys():
+        if d["save"]:
+            try:
+                cwd = os.getcwd()
+                os.chdir(paths["ANIMATION_DIRECTORY"])
+                anim.save("%s.%s" %(d["filename"], ext), writer=writer)
+            except Exception as e:
+                print(e)
+            finally:
+                os.chdir(cwd)
+    plt.show()
 
 
     return 0

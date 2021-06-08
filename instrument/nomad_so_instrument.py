@@ -60,6 +60,15 @@ def pixel_mnu(m, nu, t, F0=F0, F1=F1, F2=F2):
     p = (-F1 + np.sqrt(F1**2 - 4*F2*(F0-nu/m))) / (2*F2) - p0
     return p
 
+def t_nu_mp(m, nu, p, F0=F0, F1=F1, F2=F2, Q0=Q0, Q1=Q1):
+    """order, wavenumber and pixel to temperature calibration. Inverse of function from Liuzzi et al. 2018 using same coefficients"""
+    #give single nu and p (e.g. absorption band minimum) to find t
+    # p0 = t_p0(t)
+    p0 = (-F1 + np.sqrt(F1**2 - 4*F2*(F0-nu/m))) / (2*F2) - p
+    t = (p0 - Q0)/Q1
+    return t
+
+
 def order_nu0p(nu0, p, t, F0=F0, F1=F1, F2=F2):
     """pixel number and wavenumber to order calibration. Inverse of Liuzzi et al. 2018"""
     p0 = t_p0(t)
@@ -259,11 +268,14 @@ def F_blaze_goddard21(m, p, t):
     return F
 
 
-def F_aotf_goddard21(m, nu, t, A=None):
+def F_aotf_goddard21(m, nu, t, A=None, wd=None, sl=None, af=None, silent=True):
     """don't set m, use A instead to specify the AOTF frequency"""
 
     if m != 0.0:
-        return None
+        if not A:
+            A = A_aotf[int(m)]
+        else:
+            return None #error if order and AOTF freq supplied
 
     # AOTF shape parameters
     aotfwc  = [1.11085173e-06, -8.88538288e-03,  3.83437870e+01] # Sinc width [cm-1 from AOTF frequency cm-1]
@@ -275,23 +287,46 @@ def F_aotf_goddard21(m, nu, t, A=None):
     aotfts  = -6.5278e-5                                         # AOTF frequency shift due to temperature [relative cm-1 from Celsius]
 
 
+    # def sinc(dx, amp, width, lobe, asym):
+    #  	sinc = amp*(width*np.sin(np.pi*dx/width)/(np.pi*dx))**2
+    #  	ind = (abs(dx)>width).nonzero()[0]
+    #  	if len(ind)>0: sinc[ind] = sinc[ind]*lobe
+    #  	ind = (dx<=-width).nonzero()[0]
+    #  	if len(ind)>0: sinc[ind] = sinc[ind]*asym
+    #  	return sinc
+
+    """reverse AOTF asymmetry"""
     def sinc(dx, amp, width, lobe, asym):
-    	sinc = amp*(width*np.sin(np.pi*dx/width)/(np.pi*dx))**2
-    	ind = (abs(dx)>width).nonzero()[0]
-    	if len(ind)>0: sinc[ind] = sinc[ind]*lobe
-    	ind = (dx<=-width).nonzero()[0]
-    	if len(ind)>0: sinc[ind] = sinc[ind]*asym
-    	return sinc
+        # """asymetry switched 
+     	sinc = amp*(width*np.sin(np.pi*dx/width)/(np.pi*dx))**2
+
+     	ind = (abs(dx)>width).nonzero()[0]
+     	if len(ind)>0: 
+            sinc[ind] = sinc[ind]*lobe
+
+     	ind = (dx>=width).nonzero()[0]
+     	if len(ind)>0: 
+            sinc[ind] = sinc[ind]*asym
+
+     	return sinc
 
     nu0 = np.polyval(cfaotf, A)
     nu0 += aotfts * t * nu0
 
-    wd0 = np.polyval(aotfwc, nu0)
-    sl0 = np.polyval(aotfsc, nu0)
-    af0 = np.polyval(aotfaf, nu0)
+    if not wd:
+        wd = np.polyval(aotfwc, nu0)
+    if not sl:
+        sl = np.polyval(aotfsc, nu0)
+    if not af:
+        af = np.polyval(aotfaf, nu0)
 
+    if not silent:
+        print("nu0:", nu0)
+        print("sinc width:", wd)
+        print("sidelobe factor:", sl)
+        print("asymmetry:", af)
     dx = nu - nu0
-    F = sinc(dx, 1.0, wd0, sl0, af0)
+    F = sinc(dx, 1.0, wd, sl, af)
     
     return F
 

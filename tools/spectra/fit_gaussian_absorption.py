@@ -9,7 +9,7 @@ EXPONENTIAL FIT TO ABSORPTION BAND
 
 
 
-def fit_gaussian_absorption(x_in, y_in, error=False):
+def fit_gaussian_absorption(x_in, y_in, error=False, hr_num=500):
     """fit inverted gaussian to absorption band.
     Normalise continuum to 1 first"""
     import numpy as np
@@ -29,7 +29,7 @@ def fit_gaussian_absorption(x_in, y_in, error=False):
         y_fit = func(x_centred, *popt)
         chi_squared = np.sum(((y_in - y_fit) / y_fit)**2) #divide by yfit to normalise large and small absorption bands
         
-    x_hr = np.linspace(x_in[0], x_in[-1], num=500)
+    x_hr = np.linspace(x_in[0], x_in[-1], num=hr_num)
     y_hr = func(x_hr - x_mean, *popt)
     
     min_index = (np.abs(y_hr - np.min(y_hr))).argmin()

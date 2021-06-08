@@ -11,7 +11,7 @@ import os
 import glob
 import posixpath
 
-SEARCH_STRING = 'label="Pixel %i'
+SEARCH_STRING = 'lspcn'
 
 
 from tools.file.paths import paths

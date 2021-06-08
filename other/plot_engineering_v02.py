@@ -312,7 +312,7 @@ def writeTimeLsToFile():
     
     linesToWrite = []
     datetimeStart = datetime(2018, 3, 1, 0, 0, 0, 0)
-    for hoursToAdd in range(0, 24*31*12*3, 6): #3 years
+    for hoursToAdd in range(0, 24*31*12*10, 12): #10 years
         newDatetime = (datetimeStart + timedelta(hours=hoursToAdd)).strftime(DATETIME_FORMAT)
         ls = sp.lspcn(SPICE_TARGET, sp.utc2et(str(datetimeStart + timedelta(hours=hoursToAdd))), SPICE_ABERRATION_CORRECTION) * sp.dpr()
         linesToWrite.append("%s\t%0.1f" %(newDatetime, ls))
