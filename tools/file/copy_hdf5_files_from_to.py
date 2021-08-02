@@ -35,9 +35,14 @@ OVERWRITE = False
 # _from = "hera"
 # to = "local_hdd"
 
-_from = "datastore_linux"
-to = "nomad_ftp"
+#copy on linux to non-science ftp
+# _from = "datastore_linux"
+# to = "nomad_ftp"
 
+
+#copy on linux to science ftp
+_from = "datastore_linux"
+to = "ftp"
 
 
 #regex = "20180422_.*_SO_.*_134"
@@ -47,11 +52,12 @@ to = "nomad_ftp"
 # regex = "2020050[0-9]_.*_LNO_"
 
 # regex = re.compile("2020.*_LNO_._._189")
-regex = re.compile("20.*_UVIS_[IEG]")
+# regex = re.compile("20.*_UVIS_[IEG]")
+regex = re.compile("20(20|21)[0-1][0-9][0-9][0-9]_.*_(LNO|SO)_[0-9]_C")
 
-# level = "hdf5_l02a"
+level = "hdf5_l02a"
 # level = "hdf5_l03a"
-level = "hdf5_l10a"
+# level = "hdf5_l10a"
 
 
 

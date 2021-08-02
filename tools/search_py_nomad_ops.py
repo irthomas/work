@@ -11,7 +11,7 @@ import os
 import glob
 import posixpath
 
-SEARCH_STRING = "2016"
+SEARCH_STRING = "rescan_reg"
 
 
 #from tools.file.paths import paths
