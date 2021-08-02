@@ -48,8 +48,8 @@ CLOSE_FIGS = True
 # CLOSE_FIGS = False
 
 # TEMPERATURE_GRID_TO_USE = "measurement_temperature"
-TEMPERATURE_GRID_TO_USE = "calculated_temperature"
-# TEMPERATURE_GRID_TO_USE = "mean_temperature"
+# TEMPERATURE_GRID_TO_USE = "calculated_temperature"
+TEMPERATURE_GRID_TO_USE = "mean_temperature"
 
 # regex = re.compile("(20161121_233000|20180702_112352|20181101_213226|20190314_021825|20190609_011514|20191207_051654)_0p1a_LNO_1")
 regex = re.compile("(20161121_233000|20180702_112352|20181101_213226|20190314_021825|20190609_011514|20190921_222413|20191207_051654|20200105_132318|20200324_145739)_0p1a_LNO_1")
@@ -524,8 +524,8 @@ for diffraction_order in ref_fact_orders_dict.keys():
     #write to hdf5 aux file
     if MAKE_AUX_FILE:
         hdf5_file_out["%i" %diffraction_order+"/wavenumber_grid"] = wavenumber_grid
-        hdf5_file_out["%i" %diffraction_order+"/spectra_grid"] = spectra_grid
-        hdf5_file_out["%i" %diffraction_order+"/temperature_grid"] = temperature_grid
+        # hdf5_file_out["%i" %diffraction_order+"/spectra_grid"] = spectra_grid
+        # hdf5_file_out["%i" %diffraction_order+"/temperature_grid"] = temperature_grid
         hdf5_file_out["%i" %diffraction_order+"/coefficients"] = coefficientsAll
         
         if not solar_line:

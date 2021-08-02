@@ -11,7 +11,7 @@ import os
 import glob
 import posixpath
 
-SEARCH_STRING = 'lspcn'
+SEARCH_STRING = 'getExternalTemperatureReadings'
 
 
 from tools.file.paths import paths

@@ -47,9 +47,10 @@ def t_p0(t, Q0=Q0, Q1=Q1, Q2=Q2):
 F0=22.473422
 F1=5.559526e-4
 F2=1.751279e-8
-def nu_mp(m, p, t, F0=F0, F1=F1, F2=F2):
+def nu_mp(m, p, t, p0=None, F0=F0, F1=F1, F2=F2):
     """pixel number and order to wavenumber calibration. Liuzzi et al. 2018"""
-    p0 = t_p0(t)
+    if p0 == None:
+        p0 = t_p0(t)
     f = (F0 + (p+p0)*(F1 + F2*(p+p0)))*m
     return f
 

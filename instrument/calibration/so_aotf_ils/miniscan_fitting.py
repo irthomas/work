@@ -80,7 +80,7 @@ with open("fit_log_%s.tsv" %hdf5_filename, "a") as f:
 #         np.arange(6,1492,256),
 #         ])):
 
-for index in [0]:
+for index in [1]:
 
 
     temperatures = get_sql_temperatures_all_spectra(hdf5_file, channel)
@@ -251,8 +251,8 @@ for index in [0]:
     
     smi_fitted = smi + 50
     sigma = np.ones_like(spectrum)
-    # sigma[smi_fitted-12:smi_fitted+13] = 0.01
-    sigma[np.arange(50, 301, 50)] = 0.001
+    sigma[smi_fitted-12:smi_fitted+13] = 0.01
+    sigma[np.arange(50, 301, 50)] = 0.01
     print("Fitting to miniscan")
     spectrum_norm = spectrum/np.max(spectrum)
     lm_min = lmfit.minimize(aotf_fit_resid, params, args=(spectrum_norm,sigma), method='leastsq')

@@ -21,7 +21,8 @@ from tools.file.paths import paths, FIG_X, FIG_Y
 
 
 file_level = "hdf5_level_0p1a"
-channel = "so"
+# channel = "so"
+channel = "lno"
 
 if channel == "lno":
     regex = re.compile("20161125_(0[6-9]|1[0-3]).*")

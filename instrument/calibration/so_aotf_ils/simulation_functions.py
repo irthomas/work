@@ -82,17 +82,17 @@ def select_data(d, index):
 
 
 
-def get_nu_hr():
+# def get_nu_hr():
     
-    temperature = 0.0
+#     temperature = 0.0
 
-    nu_range = [
-        nu_mp(ORDER_RANGE[0], np.zeros(1), temperature)[0] - 5.0, \
-        nu_mp(ORDER_RANGE[1], np.zeros(1)+319.0, temperature)[0] + 5.0            
-            ]
-    nu_hr = np.arange(nu_range[0], nu_range[1], D_NU)
+#     nu_range = [
+#         nu_mp(ORDER_RANGE[0], np.zeros(1), temperature)[0] - 5.0, \
+#         nu_mp(ORDER_RANGE[1], np.zeros(1)+319.0, temperature)[0] + 5.0            
+#             ]
+#     nu_hr = np.arange(nu_range[0], nu_range[1], D_NU)
     
-    return nu_hr
+#     return nu_hr
 
 
 
@@ -120,12 +120,12 @@ def fit_temperature(d, hdf5_file):
     """code to check absorption lines in solar spectrum"""
 
     index = d["index"]
-    absorption_line_fit_index = get_nearest_index(index, np.arange(0,1492,256)) * 256
+    absorption_line_fit_index = get_nearest_index(index, np.arange(0,1492,256)) * 256 #closest index of first aotf in file to chosen index
     
     aotf_freqs = d["aotf_freqs"]
     spectra = d["spectra"]
     channel = d["channel"]
-    nu_hr = get_nu_hr()
+    nu_hr = d["nu_hr"]
     temperature = spectrum_temperature(hdf5_file, channel, index)
     
     # plt.figure()
@@ -136,11 +136,12 @@ def fit_temperature(d, hdf5_file):
     pixels_nu = nu_mp(order, pixels, temperature)
     # plt.plot(pixels_nu[50:], spectrum_cr, label="Temperature spectral calibration")
     
+    d["centre_order"] = m_aotf_so(aotf_freqs[index])
     
     
     ss_file = os.path.join(paths["RETRIEVALS"]["SOLAR_DIR"], "Solar_irradiance_ACESOLSPEC_2015.dat")
     I0_solar_hr = get_solar_hr(nu_hr, solspec_filepath=ss_file)
-    I0_low_res = savgol_filter(I0_solar_hr, 499, 1)
+    I0_lr = savgol_filter(I0_solar_hr, 99, 1)
     # I0_cont = fit_polynomial(nu_hr, I0_low_res, degree=2)
     # I0_cr = I0_low_res / I0_cont
     # I0_low_res = I0_low_res/np.max(I0_low_res)
@@ -148,15 +149,33 @@ def fit_temperature(d, hdf5_file):
     
     d["I0_solar_hr"] = I0_solar_hr
     
+    #pre-convolute solar spectrum to approximate level
+    d["I0_lr"] = I0_lr
+    
+    I0_lr_slr = np.copy(I0_lr)
+    sl_extent = [14395, 14923]
+    d["sl_extent"] = sl_extent
+    
+    sl_indices = np.arange(sl_extent[0], sl_extent[1]+1)
+    d["sl_indices"] = sl_indices
+    
+    
+    sl_flat = np.polyval(np.polyfit(sl_extent, [I0_lr[sl_extent[0]], I0_lr[sl_extent[1]]], 1), sl_indices)
+    
+    I0_lr_slr[sl_indices] = sl_flat
+    
+    d["I0_lr_slr"] = I0_lr_slr
+   
     
     """code to shift spectral cal to match absorption"""
     #find nu of solar band
-    absorption_min_index = np.argmin(I0_low_res)
+    absorption_min_index = np.argmin(I0_lr)
     absorption_nu = nu_hr[absorption_min_index] #near enough
     smi = np.argmin(spectrum_cr) #spectrum min index
     x_hr, y_hr, min_position_nu = fit_gaussian_absorption(pixels_nu[50:][smi-3:smi+4], spectrum_cr[smi-3:smi+4])
     absorption_depth = np.min(y_hr)
     
+   
     # plt.plot(x_hr, y_hr, linestyle="--", label="Fit to miniscan absorption")
     
     
@@ -168,8 +187,12 @@ def fit_temperature(d, hdf5_file):
     print("delta_t=", delta_t)
     
     d["absorption_depth"] = absorption_depth
+    d["absorption_pixel"] = smi+50
     d["temperature"] = t_calc
     d["nu_hr"] = nu_hr
+    
+    
+    
     
     return d
 
@@ -211,23 +234,6 @@ def calc_blaze(d):
     
     d["W_conv"] = W_conv
     return d
-
-    W_aotf = F_aotf_goddard18b(self.order, self.nu_hr, offset=0.)
-    I0_hr = W_aotf * self.I0_hr       # nhr
-    I_hr = I0_hr[None,:] * self.Trans_hr  # nz x nhr
-
-    I0_p = np.zeros(self.NbP)
-    I_p = np.zeros((self.NbZ,self.NbP))
-    for iord in range(self.NbTotalOrders):
-      for ip in range(self.NbP):
-        inu1 = self.W2_conv_inu1[iord,ip]
-        inu2 = inu1 + self.Nbnu_w
-        I0_p[ip] += np.sum(I0_hr[inu1:inu2]*self.W2_conv[iord,ip,:])
-
-        for iz in range(self.NbZ):
-          I_p[iz,ip] += np.sum(I_hr[iz,inu1:inu2]*self.W2_conv[iord,ip,:])
-        
-    self.Trans_p = I_p / I0_p[None,:]     # nz x np
 
 
 

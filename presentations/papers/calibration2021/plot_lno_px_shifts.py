@@ -33,7 +33,7 @@ from tools.plotting.colours import get_colours
 from tools.spectra.fit_polynomial import fit_polynomial
 from tools.sql.get_sql_spectrum_temperature import get_sql_spectrum_temperature
 
-from presentations.papers.calibration2021.plot_figures_for_cal_paper_2020_functions import getExternalTemperatureReadings, findOrder
+from presentations.papers.calibration2021.plot_functions import getExternalTemperatureReadings, findOrder
 
 
 # DATA_TYPE = "ground"
@@ -73,7 +73,7 @@ order_dicts = {
 
 # 140:{"aotf_inflight":19856.},
 # 141:{"aotf_inflight":20011.},
-# 142:{"aotf_inflight":20166.},
+142:{"aotf_inflight":20166.},
 # 143:{"aotf_frequency":20305.1, "molecule":"c2h2"},
 # 144:{"aotf_frequency":20460.7, "molecule":"c2h2"},
 # 145:{"aotf_frequency":20616.4, "molecule":"c2h2"},
@@ -356,13 +356,15 @@ for diffraction_order, order_dict in order_dicts.items():
             
 
 
-    fig = plt.figure(figsize=(11,3))
+    # fig = plt.figure(figsize=(11,3))
+    fig = plt.figure(figsize=(7, 4))
     ax = fig.add_subplot(111)
     first_line = ax.plot(np.arange(320.0), order_data_dict[diffraction_order]["spectra"][0], linestyle="--")
     lines = ax.plot(np.arange(320.0), np.asfarray(order_data_dict[diffraction_order]["spectra"])[1:, :].T)
     plt.xlabel("Pixel Number")
     plt.ylabel("Normalised transmittance")
-    plt.legend(order_data_dict[diffraction_order]["measurement_temperatures"])
+    plt.legend(["T=%.2fC" %i for i in order_data_dict[diffraction_order]["measurement_temperatures"]])
+    plt.title("Solar calibration spectra diffraction order %i" %diffraction_order)
     plt.tight_layout()
     # plt.savefig("solar_line_temperature_spectra.png", dpi=600)
     # stop()
