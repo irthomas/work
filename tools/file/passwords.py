@@ -9,9 +9,9 @@ GET PASSWORDS FROM EXTERNAL FILE, SAVE TO DICT
 PASSWORD FILE SHOULD BE A TEXT FILE OF THE FORM:
 
 {
-"name1":"password1",
-"name2":"password2",
-"name3":"password3",
+"name1":"encodedpassword1",
+"name2":"encodedpassword2",
+"name3":"encodedpassword3",
 }
 
 WITHOUT ANY HEADERS OR COMMENTS
