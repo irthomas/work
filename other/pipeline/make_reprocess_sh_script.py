@@ -18,18 +18,18 @@ DATES = [
     ]
 
 LEVELS = [
-    # {"in":"inserted",  "out":"raw",       "filter":""},
-    # {"in":"raw",       "out":"hdf5_l01a", "filter":""},
-    # {"in":"hdf5_l01a", "out":"hdf5_l01d", "filter":".*(SO|LNO).*"},
-    # {"in":"hdf5_l01d", "out":"hdf5_l01e", "filter":".*(SO|LNO).*"},
-    # {"in":"hdf5_l01e", "out":"hdf5_l02a", "filter":".*(SO|LNO).*"},
-    # {"in":"hdf5_l01a", "out":"hdf5_l02a", "filter":".*UVIS.*"},
-    # {"in":"hdf5_l02a", "out":"hdf5_l02b", "filter":".*UVIS.*"},
+    {"in":"inserted",  "out":"raw",       "filter":""},
+    {"in":"raw",       "out":"hdf5_l01a", "filter":""},
+    {"in":"hdf5_l01a", "out":"hdf5_l01d", "filter":".*(SO|LNO).*"},
+    {"in":"hdf5_l01d", "out":"hdf5_l01e", "filter":".*(SO|LNO).*"},
+    {"in":"hdf5_l01e", "out":"hdf5_l02a", "filter":".*(SO|LNO).*"},
+    {"in":"hdf5_l01a", "out":"hdf5_l02a", "filter":".*UVIS.*"},
+    {"in":"hdf5_l02a", "out":"hdf5_l02b", "filter":".*UVIS.*"},
     {"in":"hdf5_l02b", "out":"hdf5_l03b", "filter":".*UVIS.*"},
     {"in":"hdf5_l03b", "out":"hdf5_l03c", "filter":".*UVIS.*"},
-    # {"in":"hdf5_l03c", "out":"hdf5_l10a", "filter":".*UVIS.*"},
-    # {"in":"hdf5_l02a", "out":"hdf5_l03a", "filter":".*(SO|LNO).*"},
-    # {"in":"hdf5_l03a", "out":"hdf5_l10a", "filter":".*(SO|LNO).*"},
+    {"in":"hdf5_l03c", "out":"hdf5_l10a", "filter":".*UVIS.*"},
+    {"in":"hdf5_l02a", "out":"hdf5_l03a", "filter":".*(SO|LNO).*"},
+    {"in":"hdf5_l03a", "out":"hdf5_l10a", "filter":".*(SO|LNO).*"},
 
 
     ]
@@ -42,6 +42,9 @@ s += '#./scripts/run_as_nomadr /bin/bash -p\n'
 
 s += '#cd /bira-iasb/data/SATELLITE/TRACE-GAS-ORBITER/NOMAD/db\n'
 s += '#rm -Rf raw\n'
+s += '#or selective delete:\n'
+s += '#cd hdf5_level_1p0a\n'
+s += '#find . -type f -name "*UVIS*.h5" -delete\n'
 
 
 s += '#cd /bira-iasb/data/SATELLITE/TRACE-GAS-ORBITER/NOMAD/hdf5/\n'

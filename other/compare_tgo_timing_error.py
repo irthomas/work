@@ -19,20 +19,25 @@ from datetime import datetime
 import platform
 if platform.system() == "Linux":
     #UVIS timing error
-    HDF5_DIRECTORY_BEFORE = r"/bira-iasb/data/SATELLITE/TRACE-GAS-ORBITER/NOMAD/archive/hdf5/timing_error_210729/hdf5_level_0p2a/"
-    HDF5_DIRECTORY_AFTER = r"/bira-iasb/data/SATELLITE/TRACE-GAS-ORBITER/NOMAD/hdf5/hdf5_level_0p2a/"
+    HDF5_DIRECTORY_BEFORE = r"/bira-iasb/data/SATELLITE/TRACE-GAS-ORBITER/NOMAD/archive/hdf5/timing_error_210729/hdf5_level_0p2a"
+    HDF5_DIRECTORY_AFTER = r"/bira-iasb/data/SATELLITE/TRACE-GAS-ORBITER/NOMAD/hdf5/hdf5_level_0p2a"
+    #make filelists
+    hdf5_filepath_list_before = sorted(glob.glob(HDF5_DIRECTORY_BEFORE+r"/**/*.h5", recursive=True))
+    hdf5_filepath_list_after = sorted(glob.glob(HDF5_DIRECTORY_AFTER+r"/**/*.h5", recursive=True))
+    replace = ["archive/hdf5/timing_error_210729", "hdf5"]
     
 
 else:
     #SO timing error
     HDF5_DIRECTORY_BEFORE = r"D:\DATA\timing_error\before\hdf5_level_0p2a"
     HDF5_DIRECTORY_AFTER = r"D:\DATA\timing_error\after\hdf5_level_0p2a"
+    #make filelists
+    hdf5_filepath_list_before = sorted(glob.glob(HDF5_DIRECTORY_BEFORE+r"\**\*.h5", recursive=True))
+    hdf5_filepath_list_after = sorted(glob.glob(HDF5_DIRECTORY_AFTER+r"\**\*.h5", recursive=True))
+    replace["before", "after"]
 
 # OCCULTATION_CUTOFF_SECONDS = 60*60*24*10
 
-#make filelists
-hdf5_filepath_list_before = sorted(glob.glob(HDF5_DIRECTORY_BEFORE+r"\**\*.h5", recursive=True))
-hdf5_filepath_list_after = sorted(glob.glob(HDF5_DIRECTORY_AFTER+r"\**\*.h5", recursive=True))
 
 field_path = "Geometry/Point0/TangentAltAreoid"
 
@@ -43,7 +48,7 @@ hdf5_min_maxima_e = []
 
 for file_index, hdf5_filepath_before in enumerate(hdf5_filepath_list_before):
     
-    hdf5_filepath_after = hdf5_filepath_before.replace("before", "after")
+    hdf5_filepath_after = hdf5_filepath_before.replace(replace[0], replace[1])
     hdf5_basename = os.path.basename(hdf5_filepath_before)
     
     if not os.path.exists(hdf5_filepath_after):
