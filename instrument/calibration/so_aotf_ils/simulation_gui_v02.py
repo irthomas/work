@@ -34,7 +34,7 @@ def s_str(slider):
     return '{: .2f}'.format(slider.get())
 
 regex = re.compile("20190416_020948_0p2a_SO_1_C")
-index = 30
+index = 50
 
 """spectral grid and blaze functions of all orders"""
 nu_range = [4309.7670539950705, 4444.765043408191]
@@ -110,6 +110,7 @@ root.rowconfigure(1, weight=1)
 root.rowconfigure(2, weight=1)
 root.rowconfigure(3, weight=1)
 root.rowconfigure(4, weight=1)
+root.rowconfigure(5, weight=1)
 
 
 #best, min, max
@@ -120,7 +121,9 @@ param_dict = {
     "aotf_shift":[0.0, -3.0, 3.0],
     "sidelobe":[lobe, 0.05, 20.0],
     "asymmetry":[asym, 0.01, 2.0],
-    "offset":[0.0, 0.0, 0.3],
+    # "offset":[0.0, 0.0, 0.3],
+    "offset_height":[0.0, 0.0, 0.3],
+    "offset_width":[40.0, 10.0, 100.0],
     }
 
 pos_dict = {
@@ -130,7 +133,9 @@ pos_dict = {
     "aotf_shift":[0, 4],
     "sidelobe":[3, 1],
     "asymmetry":[3, 2],
-    "offset":[3, 3],
+    # "offset":[3, 3],
+    "offset_height":[3, 3],
+    "offset_width":[3, 4],
     }
 
 
@@ -194,7 +199,13 @@ def F_aotf(nu_pm, variables):
      	return sinc
 
     dx = nu_pm - A_nu0 - variables["aotf_shift"]
-    F = sinc(dx, 1.0, variables["aotf_width"], variables["sidelobe"], variables["asymmetry"]) + variables["offset"]
+    # print(dx)
+    
+    offset = variables["offset_height"] * np.exp(-dx**2.0/(2.0*variables["offset_width"]**2.0))
+    
+    F = sinc(dx, 1.0, variables["aotf_width"], variables["sidelobe"], variables["asymmetry"]) + offset
+    
+    
     
     return F
     # return F/max(F)
@@ -358,9 +369,9 @@ def button_fit_f():
 
 
 button_update = ttk.Button(root, text="Simulate Response", command=button_simulate_f)
-button_update.grid(column=3, row=4)
+button_update.grid(column=3, row=5)
 button_fit = ttk.Button(root, text="Fit", command=button_fit_f)
-button_fit.grid(column=4, row=4)
+button_fit.grid(column=4, row=5)
 
 
 root.mainloop()
