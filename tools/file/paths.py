@@ -47,6 +47,12 @@ if SYSTEM == "Linux": #linux system
     paths["DATASTORE"]["DATASTORE_SERVER"] = []
     paths["DATASTORE"]["DATASTORE_DIRECTORY"] = ""
 
+    paths["RETRIEVALS"] = {}
+    paths["RETRIEVALS"]["RADTRAN_DIR"] = r"/bira-iasb/projects/NOMAD/Science/Radiative_Transfer" 
+    paths["RETRIEVALS"]["AUXILIARY_DIR"] = os.path.join(paths["RETRIEVALS"]["RADTRAN_DIR"], "Auxiliary_files")
+    paths["RETRIEVALS"]["SOLAR_DIR"] = os.path.join(paths["RETRIEVALS"]["AUXILIARY_DIR"], "Solar")
+
+
 elif os.path.exists(os.path.normcase(r"C:\Users\iant\Dropbox\NOMAD\Python")): #outside BIRA
 
     paths["BASE_DIRECTORY"] = os.path.normcase(r"C:\Users\iant\Dropbox\NOMAD\Python")
