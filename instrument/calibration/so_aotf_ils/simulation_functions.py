@@ -32,12 +32,12 @@ from tools.spectra.fit_polynomial import fit_polynomial
 
 from tools.general.get_nearest_index import get_nearest_index
 
-from instrument.nomad_so_instrument import nu_grid, F_blaze, nu_mp, spec_res_order, F_aotf_goddard18b, t_nu_mp
+from instrument.nomad_so_instrument import nu_mp, spec_res_order, t_nu_mp
 from instrument.nomad_so_instrument import F_blaze_goddard21, F_aotf_goddard21
 
 from instrument.nomad_so_instrument import m_aotf as m_aotf_so
 
-from instrument.calibration.so_aotf_ils.simulation_config import ORDER_RANGE, D_NU, pixels
+from instrument.calibration.so_aotf_ils.simulation_config import ORDER_RANGE, D_NU, pixels, nu_range, AOTF_OFFSET_SHAPE, abs_aotf_range
 
 
 
@@ -73,9 +73,15 @@ def get_data_from_file(hdf5_file, hdf5_filename):
 def select_data(d, index):
     
     d["index"] = index
-    d["aotf_freq"] = d["aotf_freqs"][index]
+    d["A"] = d["aotf_freqs"][index]
     d["spectrum"] = d["spectra"][index]
     d["spectrum_norm"] = d["spectrum"]/np.max(d["spectrum"])
+    d["centre_order"] = m_aotf_so(d["A"])
+    d["pixels"] = pixels
+    d["m_range"] = ORDER_RANGE
+
+    nu_hr = np.arange(nu_range[0], nu_range[1], D_NU)
+    d["nu_hr"] = nu_hr
     
     return d
 
@@ -120,7 +126,12 @@ def fit_temperature(d, hdf5_file):
     """code to check absorption lines in solar spectrum"""
 
     index = d["index"]
-    absorption_line_fit_index = get_nearest_index(index, np.arange(0,1492,256)) * 256 #closest index of first aotf in file to chosen index
+    # absorption_line_fit_index = get_nearest_index(index, np.arange(0,1492,256)) * 256 #closest index of first aotf in file to chosen index
+    
+    #get indices of all spectra where absorption line is present
+    abs_indices = np.where((d["aotf_freqs"] > abs_aotf_range[0]) & (d["aotf_freqs"] < abs_aotf_range[1]))[0]
+    #find index of spectrum w/ absorption closest to desired index
+    absorption_line_fit_index = abs_indices[get_nearest_index(index, abs_indices)]
     
     aotf_freqs = d["aotf_freqs"]
     spectra = d["spectra"]
@@ -136,7 +147,6 @@ def fit_temperature(d, hdf5_file):
     pixels_nu = nu_mp(order, pixels, temperature)
     # plt.plot(pixels_nu[50:], spectrum_cr, label="Temperature spectral calibration")
     
-    d["centre_order"] = m_aotf_so(aotf_freqs[index])
     
     
     ss_file = os.path.join(paths["RETRIEVALS"]["SOLAR_DIR"], "Solar_irradiance_ACESOLSPEC_2015.dat")
@@ -153,7 +163,8 @@ def fit_temperature(d, hdf5_file):
     d["I0_lr"] = I0_lr
     
     I0_lr_slr = np.copy(I0_lr)
-    sl_extent = [14395, 14923]
+    #wavenumber range of solar line 4381.74, 4384.385
+    sl_extent = [np.min(np.where(d["nu_hr"] > 4381.74)), np.max(np.where(d["nu_hr"] < 4384.385))]
     d["sl_extent"] = sl_extent
     
     sl_indices = np.arange(sl_extent[0], sl_extent[1]+1)
@@ -239,10 +250,227 @@ def calc_blaze(d):
 
 def aotf_conv(d, variables):
     W_aotf = F_aotf_goddard21(0., d["nu_hr"], d["temperature"], 
-                              A=d["aotf_freq"] + variables["aotf_shift"], 
+                              A=d["A"] + variables["aotf_shift"], 
                               wd=variables["sinc_width"], 
                               sl=variables["sidelobe"], 
                               af=variables["asymmetry"]) + variables["offset"]
     I0_hr = W_aotf * d["I0_solar_hr"]
     I0_p = np.matmul(d["W_conv"], I0_hr)
     return I0_p/max(I0_p)
+
+
+
+
+
+
+
+
+def get_start_params(d):
+    """compute parameters from fits"""
+
+    """blaze"""
+    #pre-compute delta nu per pixel
+    d["nu_mp_centre"] = nu_mp(d["centre_order"], d["pixels"], d["temperature"], p0=0)
+    d["p_dnu"] = (d["nu_mp_centre"][-1] - d["nu_mp_centre"][0])/320.0
+
+
+    d["p0"] = np.polyval([0.22,150.8], d["centre_order"])
+    d["blaze_shift"] = np.polyval([-0.736363, -6.363908], d["temperature"]) # Blaze frequency shift due to temperature [pixel from Celsius]
+    d["p0"] += d["blaze_shift"]
+    
+    d["p_width"] = 22.473422 / d["p_dnu"]
+    
+    """aotf"""
+    d["A_nu0"] = np.polyval([1.34082e-7, 0.1497089, 305.0604], d["A"]) # Frequency of AOTF [cm-1 from kHz]
+    d["aotf_shift"]  = -6.5278e-5 * d["temperature"] * d["A_nu0"] # AOTF frequency shift due to temperature [relative cm-1 from Celsius]
+    
+    d["A_nu0"] += d["aotf_shift"]
+    
+    # width = np.polyval([1.11085173e-06, -8.88538288e-03,  3.83437870e+01], A_nu0)
+    # lobe  = np.polyval([2.87490586e-06, -1.65141511e-02,  2.49266314e+01], A_nu0)
+    # asym  = np.polyval([-5.47912085e-07, 3.60576934e-03, -4.99837334e+00], A_nu0)
+ 
+    # Email 6th July 2021
+    # Width: [-3.03468322e-07  1.79966624e-03  1.80434587e+01]
+    # Sidelobes: [ 1.96290411e-06 -1.19113254e-02  2.00409867e+01]
+    # Asymmetry: [ 5.64936782e-09 -5.32457230e-06  1.27745735e+00]
+    # Offset: [ 3.05238507e-07 -1.80269235e-03  2.85281370e+00]
+
+    d["width"] = np.polyval([-2.85452723e-07,  1.66652129e-03,  1.83411690e+01], d["A_nu0"]) # Sinc width [cm-1 from AOTF frequency cm-1]
+    d["lobe"]  = np.polyval([ 2.19386777e-06, -1.32919656e-02,  2.18425092e+01], d["A_nu0"]) # sidelobes factor [scaler from AOTF frequency cm-1]
+    d["asym"]  = np.polyval([-3.35834373e-10, -6.10622773e-05,  1.62642005e+00], d["A_nu0"]) # Asymmetry factor [scaler from AOTF frequency cm-1]
+    
+    return d
+
+
+
+def make_param_dict(d):
+    #best, min, max
+    param_dict = {
+        "blaze_centre":[d["p0"], d["p0"]-20.0, d["p0"]+20.],
+        "blaze_width":[d["p_width"], d["p_width"]-20., d["p_width"]+20.],
+        "aotf_width":[d["width"], d["width"]-2., d["width"]+2.],
+        "aotf_shift":[0.0, -3.0, 3.0],
+        "sidelobe":[d["lobe"], 0.05, 20.0],
+        "asymmetry":[d["asym"], 0.01, 2.0],
+        }
+    
+    if AOTF_OFFSET_SHAPE == "Constant":
+        param_dict["offset"] = [0.0, 0.0, 0.3]
+        
+    else:    
+        param_dict["offset_height"] = [0.0, 0.0, 0.3]
+        param_dict["offset_width"] = [40.0, 10.0, 300.0]
+
+    return param_dict
+    
+
+
+
+
+def F_blaze(variables, d):
+    
+    dp = d["pixels"] - variables["blaze_centre"]
+    dp[dp == 0.0] = 1.0e-6
+    F = (variables["blaze_width"]*np.sin(np.pi*dp/variables["blaze_width"])/(np.pi*dp))**2
+    
+    return F
+
+
+"""reverse AOTF asymmetry"""
+def sinc(dx, amp, width, lobe, asym):
+    # """asymetry switched 
+ 	sinc = amp * (width * np.sin(np.pi * dx / width) / (np.pi * dx))**2
+
+ 	ind = (abs(dx)>width).nonzero()[0]
+ 	if len(ind)>0: 
+         sinc[ind] = sinc[ind]*lobe
+
+ 	ind = (dx>=width).nonzero()[0]
+ 	if len(ind)>0: 
+         sinc[ind] = sinc[ind]*asym
+
+ 	return sinc
+
+
+
+
+def F_aotf(nu_pm, variables, d):
+
+    dx = nu_pm - d["A_nu0"] - variables["aotf_shift"]
+    # print(dx)
+    
+    if AOTF_OFFSET_SHAPE == "Constant":
+        offset = variables["offset"]
+    else:
+        offset = variables["offset_height"] * np.exp(-dx**2.0/(2.0*variables["offset_width"]**2.0))
+    
+    F = sinc(dx, 1.0, variables["aotf_width"], variables["sidelobe"], variables["asymmetry"]) + offset
+    
+    
+    
+    return F
+    # return F/max(F)
+
+
+
+
+
+
+def calc_spectrum(variables, d, I0=[0]):
+    """make simulated spectrum"""    
+
+    if I0[0] == 0:
+        I0 = d["I0_lr"]
+    
+    solar = np.zeros(len(d["pixels"]))
+    for order in range(d["m_range"][0], d["m_range"][1]+1):
+        
+        nu_pm = nu_mp(order, d["pixels"], d["temperature"])
+
+        F = F_blaze(variables, d)
+        G = F_aotf(nu_pm, variables, d)
+        I0_lr_p = np.interp(nu_pm, d["nu_hr"], I0)
+        
+        solar += F * G * I0_lr_p
+    
+    return solar#/max(solar)
+
+
+
+
+
+def fit_resid(params, d):
+    """define the fit residual"""
+    variables = {}
+    for key in params.keys():
+        variables[key] = params[key].value
+        
+    fit = calc_spectrum(variables, d)
+
+    return (fit/max(fit) - d["spectrum_norm"]) / d["sigma"]
+
+
+
+
+
+def fit_spectrum(param_dict, variables, d):
+    print("Fitting AOTF and blaze")
+    params = lmfit.Parameters()
+    for key, value in param_dict.items():
+       params.add(key, value[0], min=value[1], max=value[2])
+
+    lm_min = lmfit.minimize(fit_resid, params, args=(d,), method='leastsq')
+    chisq = lm_min.chisqr
+    # print("chisq=", chisq)
+
+    for key in params.keys():
+        variables[key] = lm_min.params[key].value
+
+    return variables, chisq
+
+
+###for fitting final AOTF shape
+
+def F_aotf2(variables, x, y):
+    
+    dx = x - np.mean(x)
+
+    if AOTF_OFFSET_SHAPE == "Constant":
+        offset = variables["offset"]
+    else:
+        offset = variables["offset_height"] * np.exp(-dx**2.0/(2.0*variables["offset_width"]**2.0))
+    
+    F = sinc(dx, 1.0, variables["aotf_width"], variables["sidelobe"], variables["asymmetry"]) + offset
+    return F
+
+
+def aotf_residual(params, x, y):
+    """define the fit residual"""
+    variables = {}
+    for key in params.keys():
+        variables[key] = params[key].value
+        
+    fit = F_aotf2(variables, x, y)
+
+    return (fit/max(fit) - y) #/ sigma
+
+def fit_aotf(param_dict, x, y):
+    print("Fitting AOTF")
+    params = lmfit.Parameters()
+    for key, value in param_dict.items():
+       params.add(key, value[0], min=value[1], max=value[2])
+    
+    lm_min = lmfit.minimize(aotf_residual, params, args=(x, y), method='leastsq')
+    chisq = lm_min.chisqr
+
+    variables = {}
+    for key in params.keys():
+        variables[key] = lm_min.params[key].value
+
+    return variables, chisq
+    
+    
+    
+    
+    

@@ -26,6 +26,9 @@ from instrument.calibration.so_aotf_ils.simulation_functions import get_file, ge
 from instrument.calibration.so_aotf_ils.simulation_config import ORDER_RANGE, pixels
 
 
+AOTF_OFFSET_SHAPE = "Gaussian"
+# AOTF_OFFSET_SHAPE = "Constant"
+
 
 def s_value(slider):
     return slider.get()
@@ -37,7 +40,8 @@ regex = re.compile("20190416_020948_0p2a_SO_1_C")
 index = 50
 
 """spectral grid and blaze functions of all orders"""
-nu_range = [4309.7670539950705, 4444.765043408191]
+# nu_range = [4309.7670539950705, 4444.765043408191]
+nu_range = [4250., 4500.]
 dnu = 0.005
 nu_hr = np.arange(nu_range[0], nu_range[1], dnu)
 
@@ -59,6 +63,7 @@ print("t=", t)
 
 
 """compute parameters from fits"""
+
 """blaze"""
 #pre-compute delta nu per pixel
 nu_mp_centre = nu_mp(m, pixels, t, p0=0)
@@ -121,10 +126,15 @@ param_dict = {
     "aotf_shift":[0.0, -3.0, 3.0],
     "sidelobe":[lobe, 0.05, 20.0],
     "asymmetry":[asym, 0.01, 2.0],
-    # "offset":[0.0, 0.0, 0.3],
-    "offset_height":[0.0, 0.0, 0.3],
-    "offset_width":[40.0, 10.0, 100.0],
     }
+
+if AOTF_OFFSET_SHAPE == "Constant":
+    param_dict["offset"] = [0.0, 0.0, 0.3]
+    
+else:    
+    param_dict["offset_height"] = [0.0, 0.0, 0.3]
+    param_dict["offset_width"] = [40.0, 10.0, 300.0]
+
 
 pos_dict = {
     "blaze_centre":[0, 1],
@@ -133,10 +143,15 @@ pos_dict = {
     "aotf_shift":[0, 4],
     "sidelobe":[3, 1],
     "asymmetry":[3, 2],
-    # "offset":[3, 3],
-    "offset_height":[3, 3],
-    "offset_width":[3, 4],
     }
+
+
+if AOTF_OFFSET_SHAPE == "Constant":
+    pos_dict["offset"] = [3, 3]
+
+else:
+    pos_dict["offset_height"] = [3, 3]
+    pos_dict["offset_width"] = [3, 4]
 
 
 
@@ -201,7 +216,10 @@ def F_aotf(nu_pm, variables):
     dx = nu_pm - A_nu0 - variables["aotf_shift"]
     # print(dx)
     
-    offset = variables["offset_height"] * np.exp(-dx**2.0/(2.0*variables["offset_width"]**2.0))
+    if AOTF_OFFSET_SHAPE == "Constant":
+        offset = variables["offset"]
+    else:
+        offset = variables["offset_height"] * np.exp(-dx**2.0/(2.0*variables["offset_width"]**2.0))
     
     F = sinc(dx, 1.0, variables["aotf_width"], variables["sidelobe"], variables["asymmetry"]) + offset
     

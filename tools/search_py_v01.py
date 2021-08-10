@@ -11,7 +11,7 @@ import os
 import glob
 import posixpath
 
-SEARCH_STRING = 'getExternalTemperatureReadings'
+SEARCH_STRING = 'trapezium'
 
 
 from tools.file.paths import paths

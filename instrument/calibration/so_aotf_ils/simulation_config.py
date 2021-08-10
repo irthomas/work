@@ -9,7 +9,16 @@ SIMULATION CONFIG
 
 import numpy as np
 
-D_NU = 0.001
+AOTF_OFFSET_SHAPE = "Gaussian"
+# AOTF_OFFSET_SHAPE = "Constant"
+
+
+
 ORDER_RANGE = [192, 198]
 pixels = np.arange(320)
 
+# nu_range = [4309.7670539950705, 4444.765043408191]
+nu_range = [4250., 4500.]
+D_NU = 0.005
+
+abs_aotf_range = [26560, 26640]

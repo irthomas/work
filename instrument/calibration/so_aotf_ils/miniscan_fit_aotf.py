@@ -116,7 +116,7 @@ def trapezium_area(y1, y2, dx=1.0):
 def area_under_curve(curve1, curve2, dx):
     area = 0
     for i in range(len(curve1)-1):
-        y1 = curve1[i] - curve1[i]
+        y1 = curve1[i] - curve2[i]
         y2 = curve1[i+1] - curve2[i+1]
     
         area += trapezium_area(y1, y2)
