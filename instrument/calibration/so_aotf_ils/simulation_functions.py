@@ -201,7 +201,7 @@ def fit_temperature(d, hdf5_file):
     d["absorption_pixel"] = smi+50
     d["temperature"] = t_calc
     d["nu_hr"] = nu_hr
-    
+    d["t0"] = temperature
     
     
     
@@ -324,6 +324,24 @@ def make_param_dict(d):
 
     return param_dict
     
+def make_param_dict_aotf(d):
+    #best, min, max
+    param_dict = {
+        "aotf_width":[d["width"], d["width"]-2., d["width"]+2.],
+        "aotf_shift":[0.0, -3.0, 3.0],
+        "sidelobe":[d["lobe"], 0.05, 20.0],
+        "asymmetry":[d["asym"], 0.01, 2.0],
+        "nu_offset":[d["A_nu0"], d["A_nu0"]-150., d["A_nu0"]+150.],
+        }
+    
+    if AOTF_OFFSET_SHAPE == "Constant":
+        param_dict["offset"] = [0.0, 0.0, 0.3]
+        
+    else:    
+        param_dict["offset_height"] = [0.0, 0.0, 0.3]
+        param_dict["offset_width"] = [40.0, 10.0, 300.0]
+
+    return param_dict
 
 
 
@@ -434,7 +452,7 @@ def fit_spectrum(param_dict, variables, d):
 
 def F_aotf2(variables, x, y):
     
-    dx = x - np.mean(x)
+    dx = x - variables["nu_offset"] + 1.0e-6
 
     if AOTF_OFFSET_SHAPE == "Constant":
         offset = variables["offset"]
