@@ -14,22 +14,22 @@ DATES = [
     ["2018-01-01", "2019-01-01"], 
     ["2019-01-01", "2020-01-01"],
     ["2020-01-01", "2021-01-01"],
-    ["2021-01-01", "2021-07-01"],
+    ["2021-01-01", "2021-08-01"],
     ]
 
 LEVELS = [
-    {"in":"inserted",  "out":"raw",       "filter":""},
-    {"in":"raw",       "out":"hdf5_l01a", "filter":""},
-    {"in":"hdf5_l01a", "out":"hdf5_l01d", "filter":".*(SO|LNO).*"},
-    {"in":"hdf5_l01d", "out":"hdf5_l01e", "filter":".*(SO|LNO).*"},
-    {"in":"hdf5_l01e", "out":"hdf5_l02a", "filter":".*(SO|LNO).*"},
-    {"in":"hdf5_l01a", "out":"hdf5_l02a", "filter":".*UVIS.*"},
-    {"in":"hdf5_l02a", "out":"hdf5_l02b", "filter":".*UVIS.*"},
-    {"in":"hdf5_l02b", "out":"hdf5_l03b", "filter":".*UVIS.*"},
-    {"in":"hdf5_l03b", "out":"hdf5_l03c", "filter":".*UVIS.*"},
-    {"in":"hdf5_l03c", "out":"hdf5_l10a", "filter":".*UVIS.*"},
-    {"in":"hdf5_l02a", "out":"hdf5_l03a", "filter":".*(SO|LNO).*"},
-    {"in":"hdf5_l03a", "out":"hdf5_l10a", "filter":".*(SO|LNO).*"},
+    # {"in":"inserted",  "out":"raw",       "filter":""},
+    # {"in":"raw",       "out":"hdf5_l01a", "filter":""},
+    # {"in":"hdf5_l01a", "out":"hdf5_l01d", "filter":".*(SO|LNO).*"},
+    # {"in":"hdf5_l01d", "out":"hdf5_l01e", "filter":".*(SO|LNO).*"},
+    # {"in":"hdf5_l01e", "out":"hdf5_l02a", "filter":".*(SO|LNO).*"},
+    # {"in":"hdf5_l01a", "out":"hdf5_l02a", "filter":".*UVIS.*"},
+    # {"in":"hdf5_l02a", "out":"hdf5_l02b", "filter":".*UVIS.*"},
+    # {"in":"hdf5_l02b", "out":"hdf5_l03b", "filter":".*UVIS.*"},
+    {"in":"hdf5_l03b", "out":"hdf5_l03c", "filter":".*UVIS_D.*"},
+    {"in":"hdf5_l03c", "out":"hdf5_l10a", "filter":".*UVIS_D.*"},
+    # {"in":"hdf5_l02a", "out":"hdf5_l03a", "filter":".*(SO|LNO).*"},
+    # {"in":"hdf5_l03a", "out":"hdf5_l10a", "filter":".*(SO|LNO).*"},
 
 
     ]

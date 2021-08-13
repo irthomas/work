@@ -40,6 +40,8 @@ from instrument.nomad_so_instrument import m_aotf as m_aotf_so
 from instrument.calibration.so_aotf_ils.simulation_config import ORDER_RANGE, D_NU, pixels, nu_range, AOTF_OFFSET_SHAPE, abs_aotf_range
 
 
+# SOLAR_SPECTRUM = "Solar_irradiance_ACESOLSPEC_2015.dat"
+SOLAR_SPECTRUM = "pfsolspec_hr.dat"
 
 
 
@@ -149,7 +151,7 @@ def fit_temperature(d, hdf5_file):
     
     
     
-    ss_file = os.path.join(paths["RETRIEVALS"]["SOLAR_DIR"], "Solar_irradiance_ACESOLSPEC_2015.dat")
+    ss_file = os.path.join(paths["RETRIEVALS"]["SOLAR_DIR"], SOLAR_SPECTRUM)
     I0_solar_hr = get_solar_hr(nu_hr, solspec_filepath=ss_file)
     I0_lr = savgol_filter(I0_solar_hr, 99, 1)
     # I0_cont = fit_polynomial(nu_hr, I0_low_res, degree=2)
@@ -201,7 +203,7 @@ def fit_temperature(d, hdf5_file):
     d["absorption_pixel"] = smi+50
     d["temperature"] = t_calc
     d["nu_hr"] = nu_hr
-    
+    d["t0"] = temperature
     
     
     
@@ -326,8 +328,6 @@ def make_param_dict(d):
     
 
 
-
-
 def F_blaze(variables, d):
     
     dp = d["pixels"] - variables["blaze_centre"]
@@ -430,47 +430,7 @@ def fit_spectrum(param_dict, variables, d):
     return variables, chisq
 
 
-###for fitting final AOTF shape
 
-def F_aotf2(variables, x, y):
-    
-    dx = x - np.mean(x)
-
-    if AOTF_OFFSET_SHAPE == "Constant":
-        offset = variables["offset"]
-    else:
-        offset = variables["offset_height"] * np.exp(-dx**2.0/(2.0*variables["offset_width"]**2.0))
-    
-    F = sinc(dx, 1.0, variables["aotf_width"], variables["sidelobe"], variables["asymmetry"]) + offset
-    return F
-
-
-def aotf_residual(params, x, y):
-    """define the fit residual"""
-    variables = {}
-    for key in params.keys():
-        variables[key] = params[key].value
-        
-    fit = F_aotf2(variables, x, y)
-
-    return (fit/max(fit) - y) #/ sigma
-
-def fit_aotf(param_dict, x, y):
-    print("Fitting AOTF")
-    params = lmfit.Parameters()
-    for key, value in param_dict.items():
-       params.add(key, value[0], min=value[1], max=value[2])
-    
-    lm_min = lmfit.minimize(aotf_residual, params, args=(x, y), method='leastsq')
-    chisq = lm_min.chisqr
-
-    variables = {}
-    for key in params.keys():
-        variables[key] = lm_min.params[key].value
-
-    return variables, chisq
-    
-    
     
     
     
