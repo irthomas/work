@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 from tools.plotting.colours import get_colours
 
 from instrument.calibration.so_aotf_ils.simulation_functions import get_file, get_data_from_file, select_data, fit_temperature
-from instrument.calibration.so_aotf_ils.simulation_functions import get_start_params, make_param_dict, calc_spectrum, fit_spectrum, fit_aotf, F_aotf2, make_param_dict_aotf
+from instrument.calibration.so_aotf_ils.simulation_functions import get_start_params, make_param_dict, calc_spectrum, fit_spectrum
 
 # from instrument.calibration.so_aotf_ils.simulation_config import nu_range, AOTF_OFFSET_SHAPE
 
@@ -60,7 +60,6 @@ for filename in filenames:
     
     
     
-    # indices = range(0, 10, 1)
     indices = range(len(d["aotf_freqs"]))
     # indices = [*range(80,140,1), *range(80+256,140+256,1), *range(80+256*2, 140+256*2, 1), *range(80+256*3, 140+256*3, 1), *range(80+256*4, 140+256*4, 1), *range(80+256*5, 140+256*5, 1)]
     
@@ -107,9 +106,9 @@ for filename in filenames:
         solar_fit_slr = calc_spectrum(variables, d, I0=d["I0_lr_slr"])
         solar_fit_slr_norm = solar_fit_slr * scalar
         
-        # plt.plot(spectrum_norm, color=colours[index])
-        # plt.plot(solar_fit_norm, color=colours[index], linestyle=":")
-        # plt.plot(solar_fit_slr_norm, color=colours[index], linestyle="--")
+        plt.plot(spectrum_norm, color=colours[index])
+        plt.plot(solar_fit_norm, color=colours[index], linestyle=":")
+        plt.plot(solar_fit_slr_norm, color=colours[index], linestyle="--")
         
         
         
