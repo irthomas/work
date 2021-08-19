@@ -244,9 +244,14 @@ for filename in filenames:
     
     for suffix in suffixes:
     
-        file_path = os.path.join("output", "so_miniscan_aotf_fits", "%s_%s_aotf_function.txt" %(filename, suffix))
-    
-        txt_in = np.loadtxt(file_path, skiprows=1, delimiter=",")
+        file_path = os.path.join("output", "so_miniscan_aotf_fits", "%s_%s_%.0f_aotf_function.txt" %(filename, suffix, line))
+        
+        if os.path.exists(file_path):
+            txt_in = np.loadtxt(file_path, skiprows=1, delimiter=",")
+        else:
+            print("Warning: file %s does not exist" %file_path)
+            continue
+            
         d_in = {"A":txt_in[:,0],"A_nu0":txt_in[:,1],"t0":txt_in[:,2],"t_calc":txt_in[:,3], "F_aotf":txt_in[:,4], "error":txt_in[:,5]}
         
         good_indices = np.where(d_in["error"] < np.median(d_in["error"]) * error_n_medians)[0]
@@ -311,11 +316,10 @@ all_points["F_aotf"] = np.array(all_points["F_aotf"])
 
 
 """histogram bin"""
-nbins = 500
-bins_int = np.linspace(4250., 4550., nbins+1)
+bins_int = sim_parameters[line]["histogram_bins"]
 ind = np.digitize(all_points["A_nu0"], bins_int)
 bins = bins_int + (bins_int[1] - bins_int[0])
-F_aotf_binned = np.array([np.mean(all_points["F_aotf"][ind == j]) for j in range(0, nbins+1)])
+F_aotf_binned = np.array([np.mean(all_points["F_aotf"][ind == j]) for j in range(0, len(bins_int))])
 
 
 
@@ -331,15 +335,15 @@ plt.scatter(bins, F_aotf_binned * smooth_scalar, c="k", marker="+", label="Raw b
 plt.plot(bins_smoothed, smoothed_norm, label="Smoothed (Savitsky-Golay filter)")
 plt.xlabel("AOTF Wavenumber")
 plt.ylabel("Area of absorption line")
-plt.title("AOTF from fitting 4383cm-1 solar line")
+plt.title("AOTF from fitting %.0fcm-1 solar line" %line)
 plt.legend()
 plt.grid()
 
 """fit aotf function to centre + main sidelobes"""
-centre_nu_range = [4345., 4420.]
-centre_indices = np.where((bins_smoothed > centre_nu_range[0]) & (bins_smoothed < centre_nu_range[1]))[0]
+# centre_nu_range = [4345., 4420.]
+# centre_indices = np.where((bins_smoothed > centre_nu_range[0]) & (bins_smoothed < centre_nu_range[1]))[0]
 
-param_dict = make_param_dict_aotf()
+# param_dict = make_param_dict_aotf(line)
 # fit_params, chisq = fit_aotf(param_dict, bins_smoothed, smoothed_norm)
 
 """fit aotf function"""
@@ -348,7 +352,8 @@ fit_params = {
     "aotf_amplitude":0.95,
     "sidelobe":4.,
     "asymmetry":1.8,
-    "nu_offset":4385.0,
+    # "nu_offset":4385.0,
+    "nu_offset":4276.1,
     "offset_height":0.05,
     "offset_width":500,
     }
@@ -362,7 +367,7 @@ plt.plot(bins_smoothed, smoothed_norm, label="Smoothed (Savitsky-Golay filter)")
 plt.plot(x_range, F_aotf_fitted, "k--", label="AOTF fit using existing parameters")
 plt.xlabel("AOTF Wavenumber")
 plt.ylabel("Area of absorption line")
-plt.title("AOTF from fitting 4383cm-1 solar line")
+plt.title("AOTF from fitting %.0fcm-1 solar line" %line)
 plt.legend()
 plt.grid()
 
@@ -375,10 +380,10 @@ plt.figure()
 plt.plot(x_range, aotf_interp)
 plt.xlabel("AOTF Wavenumber")
 plt.ylabel("Area of absorption line")
-plt.title("AOTF from fitting 4383cm-1 solar line")
+plt.title("AOTF from fitting %.0fcm-1 solar line" %line)
 plt.grid()
 
-filename = "AOTF_from_fitting_4383cm-1_solar_line"
+filename = "AOTF_from_fitting_%.0fcm-1_solar_line" %line
 plt.savefig("%s.png" %filename)
 
 np.savetxt("%s.txt" %filename, np.array([x_range, aotf_interp]).T, fmt="%.6f", delimiter=",", header="Wavenumber,AOTF function")

@@ -38,7 +38,7 @@ from instrument.nomad_so_instrument import F_blaze_goddard21, F_aotf_goddard21
 
 from instrument.nomad_so_instrument import m_aotf as m_aotf_so
 
-from instrument.calibration.so_aotf_ils.simulation_config import AOTF_OFFSET_SHAPE, sim_parameters
+from instrument.calibration.so_aotf_ils.simulation_config import AOTF_OFFSET_SHAPE, BLAZE_WIDTH_FIT, sim_parameters
 
 
 
@@ -168,29 +168,6 @@ def fit_temperature(d, hdf5_file, plot=False):
     #TODO: fix this
     # order = m_aotf_so(aotf_freqs[absorption_line_fit_index])
 
-    #old code
-    # order = d["centre_order"]
-    
-    
-    # """code to shift spectral cal to match absorption"""
-    # #remove continuum from miniscan spectrum to fit solar line minimum
-    # spectrum_w_absorption = spectra[absorption_line_fit_index]
-    # spectrum_cont = baseline_als(spectrum_w_absorption)
-    # spectrum_cr = spectrum_w_absorption[50:]/spectrum_cont[50:]
-    # smi = np.argmin(spectrum_cr) + 50 #spectrum min index
-    # pixels_nu = nu_mp(order, sim_parameters[d["line"]]["pixels"], temperature)
-    
-    # if np.abs(pixels_nu[smi]-d["line"]) > 2.0: #if not fitting to desired solar line
-    #     print("Warning: solar line at %0.2f and fitting to line at %0.2f" %(d["line"], pixels_nu[smi]))
-    #     approx_smi = get_nearest_index(d["line"], pixels_nu) #320 px
-    #     approx_smi_range = np.arange(max([0, approx_smi-10]), min([319, approx_smi+10]), 1)
-    #     smi = np.argmin(spectrum_cr[approx_smi_range-50]) + approx_smi_range[0]
-    #     print("Desired solar line is at %0.2f and now fitting to line at %0.2f" %(d["line"], pixels_nu[smi]))
-
-    # x_hr, y_hr, min_position_nu = fit_gaussian_absorption(pixels_nu[smi-3:smi+4], spectrum_cr[smi-53:smi-46])
-    # absorption_depth = np.min(y_hr)
-    
-    #new code to search adjacent orders for 
     order = d["centre_order"]
     
     
@@ -374,14 +351,14 @@ def get_start_params(d):
     # asym  = np.polyval([-5.47912085e-07, 3.60576934e-03, -4.99837334e+00], A_nu0)
  
     # Email 6th July 2021
-    # Width: [-3.03468322e-07  1.79966624e-03  1.80434587e+01]
-    # Sidelobes: [ 1.96290411e-06 -1.19113254e-02  2.00409867e+01]
-    # Asymmetry: [ 5.64936782e-09 -5.32457230e-06  1.27745735e+00]
-    # Offset: [ 3.05238507e-07 -1.80269235e-03  2.85281370e+00]
+    d["width"] = np.polyval([-3.03468322e-07, 1.79966624e-03, 1.80434587e+01], d["A_nu0"])
+    d["lobe"]  = np.polyval([ 1.96290411e-06, -1.19113254e-02, 2.00409867e+01], d["A_nu0"])
+    d["asym"]  = np.polyval([ 5.64936782e-09, -5.32457230e-06, 1.27745735e+00], d["A_nu0"])
+    d["offset"]  = np.polyval([ 3.05238507e-07, -1.80269235e-03, 2.85281370e+00], d["A_nu0"]) #not yet implemented
 
-    d["width"] = np.polyval([-2.85452723e-07,  1.66652129e-03,  1.83411690e+01], d["A_nu0"]) # Sinc width [cm-1 from AOTF frequency cm-1]
-    d["lobe"]  = np.polyval([ 2.19386777e-06, -1.32919656e-02,  2.18425092e+01], d["A_nu0"]) # sidelobes factor [scaler from AOTF frequency cm-1]
-    d["asym"]  = np.polyval([-3.35834373e-10, -6.10622773e-05,  1.62642005e+00], d["A_nu0"]) # Asymmetry factor [scaler from AOTF frequency cm-1]
+    # d["width"] = np.polyval([-2.85452723e-07,  1.66652129e-03,  1.83411690e+01], d["A_nu0"]) # Sinc width [cm-1 from AOTF frequency cm-1]
+    # d["lobe"]  = np.polyval([ 2.19386777e-06, -1.32919656e-02,  2.18425092e+01], d["A_nu0"]) # sidelobes factor [scaler from AOTF frequency cm-1]
+    # d["asym"]  = np.polyval([-3.35834373e-10, -6.10622773e-05,  1.62642005e+00], d["A_nu0"]) # Asymmetry factor [scaler from AOTF frequency cm-1]
     
     return d
 
@@ -391,7 +368,6 @@ def make_param_dict(d):
     #best, min, max
     param_dict = {
         "blaze_centre":[d["p0"], d["p0"]-20.0, d["p0"]+20.],
-        "blaze_width":[d["p_width"], d["p_width"]-20., d["p_width"]+20.],
         "aotf_width":[d["width"], d["width"]-2., d["width"]+2.],
         "aotf_shift":[0.0, -3.0, 3.0],
         "sidelobe":[d["lobe"], 0.05, 20.0],
@@ -404,6 +380,9 @@ def make_param_dict(d):
     else:    
         param_dict["offset_height"] = [0.0, 0.0, 0.3]
         param_dict["offset_width"] = [40.0, 10.0, 300.0]
+
+    if BLAZE_WIDTH_FIT:
+        param_dict["blaze_width"] = [d["p_width"], d["p_width"]-20., d["p_width"]+20.]
 
     return param_dict
     
@@ -431,7 +410,10 @@ def F_blaze(variables, d):
     
     dp = d["pixels"] - variables["blaze_centre"]
     dp[dp == 0.0] = 1.0e-6
-    F = (variables["blaze_width"]*np.sin(np.pi*dp/variables["blaze_width"])/(np.pi*dp))**2
+    if BLAZE_WIDTH_FIT:
+        F = (variables["blaze_width"]*np.sin(np.pi*dp/variables["blaze_width"])/(np.pi*dp))**2
+    else:
+        F = (d["p_width"]*np.sin(np.pi*dp/d["p_width"])/(np.pi*dp))**2
     
     return F
 

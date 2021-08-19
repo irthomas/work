@@ -21,8 +21,8 @@ from instrument.calibration.so_aotf_ils.simulation_config import sim_parameters
 
 #AOTF freqs where AOTF is strong: 4380-4390cm-1 = 26560-26640kHz
 
-# line = 4383.5
-line = 4276.1
+line = 4383.5
+# line = 4276.1
 # line = 3787.9
 
 SETUP = False
@@ -57,10 +57,10 @@ parser.add_argument("-si", "--solar_index", help = "Select solar spectrum index 
 args = parser.parse_args()
 
 if args.filename_index:
-    print("Filename index", args.filename_index)
+    print("Filename index:", args.filename_index)
     filenames = [filenames[args.filename_index]]
 if args.solar_index:
-    print("Filename index", args.solar_index)
+    print("Solar spectrum suffix:", args.solar_index)
     solar_spectra = [args.solar_index]
 
 
@@ -184,7 +184,7 @@ for filename in filenames:
         plt.scatter(variables_fit["A_nu0"][good_indices], variables_fit["solar_line_area_norm"][good_indices])
         plt.xlabel("Wavenumber of AOTF peak")
         plt.ylabel("AOTF function (normalised)")
-        plt.savefig("%s_%s_aotf_function.png" %(hdf5_filename, solar_spectrum))
+        plt.savefig("%s_%s_%.0f_aotf_function.png" %(hdf5_filename, solar_spectrum, line))
         plt.close()
         
         
@@ -195,7 +195,7 @@ for filename in filenames:
         t0 = variables_fit["t0"][good_indices]
         chi = variables_fit["chisq"][good_indices]
         
-        np.savetxt("%s_%s_aotf_function.txt" %(hdf5_filename, solar_spectrum), np.array([x2,x,t0,t,y,chi]).T, fmt="%.6f", delimiter=",", header="Frequency,Wavenumber,TGO Temperature,Fitted Temperature,AOTF function,Chi Squared")
+        np.savetxt("%s_%s_%.0f_aotf_function.txt" %(hdf5_filename, solar_spectrum, line), np.array([x2,x,t0,t,y,chi]).T, fmt="%.6f", delimiter=",", header="Frequency,Wavenumber,TGO Temperature,Fitted Temperature,AOTF function,Chi Squared")
         
         
         # param_dict = make_param_dict_aotf(d)

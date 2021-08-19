@@ -23,7 +23,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from instrument.calibration.so_aotf_ils.simulation_functions import (get_file, get_data_from_file, 
      select_data, fit_temperature, get_start_params, make_param_dict, F_blaze, F_aotf, calc_spectrum, fit_spectrum, get_solar_spectrum)
 
-from instrument.calibration.so_aotf_ils.simulation_config import sim_parameters, AOTF_OFFSET_SHAPE
+from instrument.calibration.so_aotf_ils.simulation_config import sim_parameters, AOTF_OFFSET_SHAPE, BLAZE_WIDTH_FIT
 
 
 
@@ -34,8 +34,8 @@ def s_str(slider):
     return '{: .2f}'.format(slider.get())
 
 
-# line = 4383.5
-line = 4276.1
+line = 4383.5
+# line = 4276.1
 # line = 3787.9
 
 
@@ -111,7 +111,6 @@ root.rowconfigure(5, weight=1)
 
 pos_dict = {
     "blaze_centre":[0, 1],
-    "blaze_width":[0, 2],
     "aotf_width":[0, 3],
     "aotf_shift":[0, 4],
     "sidelobe":[3, 1],
@@ -124,7 +123,8 @@ else:
     pos_dict["offset_width"] = [3, 4]
 
 
-
+if BLAZE_WIDTH_FIT:
+    pos_dict["blaze_width"] = [0, 2]
 
 
 
