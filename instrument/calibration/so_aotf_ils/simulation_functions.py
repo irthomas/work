@@ -36,7 +36,7 @@ from tools.general.get_nearest_index import get_nearest_index
 from instrument.nomad_so_instrument import nu_mp, spec_res_order, t_nu_mp
 from instrument.nomad_so_instrument import F_blaze_goddard21, F_aotf_goddard21
 
-from instrument.nomad_so_instrument import m_aotf as m_aotf_so
+# from instrument.nomad_so_instrument import m_aotf as m_aotf_so
 
 from instrument.calibration.so_aotf_ils.simulation_config import AOTF_OFFSET_SHAPE, BLAZE_WIDTH_FIT, sim_parameters
 
@@ -180,11 +180,11 @@ def fit_temperature(d, hdf5_file, plot=False):
     pixels_nu = nu_mp(order, sim_parameters[d["line"]]["pixels"], temperature)
     
     if np.abs(pixels_nu[smi]-d["line"]) > 2.0: #if not fitting to desired solar line
-        print("Warning: solar line at %0.2f and fitting to line at %0.2f" %(d["line"], pixels_nu[smi]))
+        # print("Warning: solar line at %0.2f and fitting to line at %0.2f" %(d["line"], pixels_nu[smi]))
         approx_smi = get_nearest_index(d["line"], pixels_nu) #320 px
         approx_smi_range = np.arange(max([0, approx_smi-10]), min([319, approx_smi+10]), 1)
         smi = np.argmin(spectrum_cr[approx_smi_range-50]) + approx_smi_range[0]
-        print("Desired solar line is at %0.2f and now fitting to line at %0.2f" %(d["line"], pixels_nu[smi]))
+        # print("Desired solar line is at %0.2f and now fitting to line at %0.2f" %(d["line"], pixels_nu[smi]))
 
     x_hr, y_hr, min_position_nu = fit_gaussian_absorption(pixels_nu[smi-3:smi+4], spectrum_cr[smi-53:smi-46])
     absorption_depth = np.min(y_hr)
@@ -195,12 +195,12 @@ def fit_temperature(d, hdf5_file, plot=False):
     ami = np.argmin(d["I0_lr"]) #absorption_min_index
     absorption_nu = nu_hr[ami] #near enough on convolved HR grid
     if np.abs(absorption_nu - d["line"]) > 2.0: #if not fitting to desired solar line
-        print("Warning: desired solar line at %0.2f and fitting to solar line at %0.2f" %(d["line"], absorption_nu))
+        # print("Warning: desired solar line at %0.2f and fitting to solar line at %0.2f" %(d["line"], absorption_nu))
         approx_ami = get_nearest_index(d["line"], nu_hr)
         approx_ami_range = np.arange(approx_ami-1000, approx_ami+1000, 1)
         ami = np.argmin(d["I0_lr"][approx_ami_range]) + approx_ami_range[0]
         absorption_nu = nu_hr[ami] #near enough on convolved HR grid
-        print("Desired solar line is at %0.2f and now fitting to solar line at %0.2f" %(d["line"], absorption_nu))
+        # print("Desired solar line is at %0.2f and now fitting to solar line at %0.2f" %(d["line"], absorption_nu))
         
     
    
@@ -212,11 +212,11 @@ def fit_temperature(d, hdf5_file, plot=False):
     
     
     
-    delta_nu = absorption_nu - min_position_nu
-    print("delta_nu=", delta_nu)
+    # delta_nu = absorption_nu - min_position_nu
+    # print("delta_nu=", delta_nu)
     t_calc = t_nu_mp(order, absorption_nu, smi)
-    delta_t = temperature - t_calc
-    print("delta_t=", delta_t)
+    # delta_t = temperature - t_calc
+    # print("delta_t=", delta_t)
     
     d["absorption_depth"] = absorption_depth
     d["absorption_pixel"] = smi
