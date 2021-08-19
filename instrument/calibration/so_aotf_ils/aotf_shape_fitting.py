@@ -14,21 +14,22 @@ import matplotlib.pyplot as plt
 
 import lmfit
 import os
-from scipy.signal import savgol_filter
+# from scipy.signal import savgol_filter
 
 from tools.plotting.colours import get_colours
 from tools.general.get_nearest_index import get_nearest_index
-
+from tools.spectra.non_uniform_savgol import non_uniform_savgol
 
 from instrument.calibration.so_aotf_ils.simulation_config import AOTF_OFFSET_SHAPE, sim_parameters
 
 
-# line = 4383.5
-line = 4276.1
+line = 4383.5
+# line = 4276.1
 # line = 3787.9
 
 
-
+# SAVE_OUTPUT = True
+SAVE_OUTPUT = False
 
 
 error_n_medians = sim_parameters[line]["error_n_medians"]
@@ -50,7 +51,7 @@ def make_param_dict_aotf(line):
     #best, min, max
     param_dict = {
         "aotf_width":[20., 18., 22.],
-        "aotf_amplitude":[0.8, 0.75, 0.85],
+        "aotf_amplitude":[0.8, 0.5, 1.25],
         "sidelobe":[1., 0.05, 20.0],
         "asymmetry":[1.0, 0.01, 2.0],
         "nu_offset":[line, line-30., line+30],
@@ -83,21 +84,31 @@ def sinc(dx, amp, width, lobe, asym):
  	return sinc
 
 
+def aotf_offset(variables, x):
 
-def F_aotf2(variables, x):
-    
     dx = x - variables["nu_offset"] + 1.0e-6
 
     if AOTF_OFFSET_SHAPE == "Constant":
         offset = variables["offset"]
     else:
         offset = variables["offset_height"] * np.exp(-dx**2.0/(2.0*variables["offset_width"]**2.0))
+
+    return offset    
+
+
+def F_aotf2(variables, x):
+    
+    dx = x - variables["nu_offset"] + 1.0e-6
+    offset = aotf_offset(variables, x)
     
     F = sinc(dx, variables["aotf_amplitude"], variables["aotf_width"], variables["sidelobe"], variables["asymmetry"]) + offset
-    return F
+    
+    #normalise offset
+    variables["offset_height"] = variables["offset_height"] / np.max(F)
+    return F/max(F)
 
 
-def aotf_residual(params, x, y):
+def aotf_residual(params, x, y, sigma):
     """define the fit residual"""
     variables = {}
     for key in params.keys():
@@ -105,15 +116,15 @@ def aotf_residual(params, x, y):
         
     fit = F_aotf2(variables, x)
 
-    return (fit/max(fit) - y) #/ sigma
+    return (fit/max(fit) - y) / sigma
 
-def fit_aotf(param_dict, x, y):
+def fit_aotf(param_dict, x, y, sigma):
     print("Fitting AOTF")
     params = lmfit.Parameters()
     for key, value in param_dict.items():
        params.add(key, value[0], min=value[1], max=value[2])
     
-    lm_min = lmfit.minimize(aotf_residual, params, args=(x, y), method='leastsq')
+    lm_min = lmfit.minimize(aotf_residual, params, args=(x, y, sigma), method='leastsq')
     chisq = lm_min.chisqr
 
     variables = {}
@@ -125,120 +136,10 @@ def fit_aotf(param_dict, x, y):
 
 
 
-def non_uniform_savgol(x, y, window, polynom):
-    """
-    Applies a Savitzky-Golay filter to y with non-uniform spacing
-    as defined in x
-
-    This is based on https://dsp.stackexchange.com/questions/1676/savitzky-golay-smoothing-filter-for-not-equally-spaced-data
-    The borders are interpolated like scipy.signal.savgol_filter would do
-
-    Parameters
-    ----------
-    x : array_like
-        List of floats representing the x values of the data
-    y : array_like
-        List of floats representing the y values. Must have same length
-        as x
-    window : int (odd)
-        Window length of datapoints. Must be odd and smaller than x
-    polynom : int
-        The order of polynom used. Must be smaller than the window size
-
-    Returns
-    -------
-    np.array of float
-        The smoothed y values
-    """
-    if len(x) != len(y):
-        raise ValueError('"x" and "y" must be of the same size')
-
-    if len(x) < window:
-        raise ValueError('The data size must be larger than the window size')
-
-    if type(window) is not int:
-        raise TypeError('"window" must be an integer')
-
-    if window % 2 == 0:
-        raise ValueError('The "window" must be an odd integer')
-
-    if type(polynom) is not int:
-        raise TypeError('"polynom" must be an integer')
-
-    if polynom >= window:
-        raise ValueError('"polynom" must be less than "window"')
-
-    half_window = window // 2
-    polynom += 1
-
-    # Initialize variables
-    A = np.empty((window, polynom))     # Matrix
-    tA = np.empty((polynom, window))    # Transposed matrix
-    t = np.empty(window)                # Local x variables
-    y_smoothed = np.full(len(y), np.nan)
-
-    # Start smoothing
-    for i in range(half_window, len(x) - half_window, 1):
-        # Center a window of x values on x[i]
-        for j in range(0, window, 1):
-            t[j] = x[i + j - half_window] - x[i]
-
-        # Create the initial matrix A and its transposed form tA
-        for j in range(0, window, 1):
-            r = 1.0
-            for k in range(0, polynom, 1):
-                A[j, k] = r
-                tA[k, j] = r
-                r *= t[j]
-
-        # Multiply the two matrices
-        tAA = np.matmul(tA, A)
-
-        # Invert the product of the matrices
-        tAA = np.linalg.inv(tAA)
-
-        # Calculate the pseudoinverse of the design matrix
-        coeffs = np.matmul(tAA, tA)
-
-        # Calculate c0 which is also the y value for y[i]
-        y_smoothed[i] = 0
-        for j in range(0, window, 1):
-            y_smoothed[i] += coeffs[0, j] * y[i + j - half_window]
-
-        # If at the end or beginning, store all coefficients for the polynom
-        if i == half_window:
-            first_coeffs = np.zeros(polynom)
-            for j in range(0, window, 1):
-                for k in range(polynom):
-                    first_coeffs[k] += coeffs[k, j] * y[j]
-        elif i == len(x) - half_window - 1:
-            last_coeffs = np.zeros(polynom)
-            for j in range(0, window, 1):
-                for k in range(polynom):
-                    last_coeffs[k] += coeffs[k, j] * y[len(y) - window + j]
-
-    # Interpolate the result at the left border
-    for i in range(0, half_window, 1):
-        y_smoothed[i] = 0
-        x_i = 1
-        for j in range(0, polynom, 1):
-            y_smoothed[i] += first_coeffs[j] * x_i
-            x_i *= x[i] - x[half_window]
-
-    # Interpolate the result at the right border
-    for i in range(len(x) - half_window, len(x), 1):
-        y_smoothed[i] = 0
-        x_i = 1
-        for j in range(0, polynom, 1):
-            y_smoothed[i] += last_coeffs[j] * x_i
-            x_i *= x[i] - x[-half_window - 1]
-
-    return y_smoothed
-
 
     
 all_points = {"A_nu0":[], "F_aotf":[]}
-plt.figure(figsize=(15, 8))
+# plt.figure(figsize=(15, 8))
 
 for filename in filenames:
     
@@ -275,7 +176,7 @@ for filename in filenames:
         all_points["F_aotf"].extend(d_good["F_aotf"])
 
         
-        plt.scatter(d_good["A_nu0"], d_good["F_aotf"], c=c)
+        # plt.scatter(d_good["A_nu0"], d_good["F_aotf"], c=c)
         
         
         
@@ -330,52 +231,72 @@ bins_smoothed = bins[~np.isnan(F_aotf_binned)]
 smooth_scalar = 1. / max(smooth)
 smoothed_norm = smooth * smooth_scalar
 
-plt.figure()
-plt.scatter(bins, F_aotf_binned * smooth_scalar, c="k", marker="+", label="Raw binned data")
-plt.plot(bins_smoothed, smoothed_norm, label="Smoothed (Savitsky-Golay filter)")
-plt.xlabel("AOTF Wavenumber")
-plt.ylabel("Area of absorption line")
-plt.title("AOTF from fitting %.0fcm-1 solar line" %line)
-plt.legend()
-plt.grid()
+# plt.figure()
+# plt.scatter(bins, F_aotf_binned * smooth_scalar, c="k", marker="+", label="Raw binned data")
+# plt.plot(bins_smoothed, smoothed_norm, label="Smoothed (Savitsky-Golay filter)")
+# plt.xlabel("AOTF Wavenumber")
+# plt.ylabel("Area of absorption line")
+# plt.title("AOTF from fitting %.0fcm-1 solar line" %line)
+# plt.legend()
+# plt.grid()
 
 """fit aotf function to centre + main sidelobes"""
-# centre_nu_range = [4345., 4420.]
-# centre_indices = np.where((bins_smoothed > centre_nu_range[0]) & (bins_smoothed < centre_nu_range[1]))[0]
 
-# param_dict = make_param_dict_aotf(line)
-# fit_params, chisq = fit_aotf(param_dict, bins_smoothed, smoothed_norm)
+if line == 4383.5:
+    # centre_nu_range = [4000., 5000.]
+    # centre_nu_range = [4345., 4420.]
+    centre_nu_range = [4331., 4444.]
+    # centre_nu_range = [4320., 4480.]
 
+if line == 4276.1:
+    centre_nu_range = [4000., 5000.]
+    # centre_nu_range = [4239., 4317.]
+    # centre_nu_range = [4265., 4288.]
+centre_indices = np.where((bins_smoothed > centre_nu_range[0]) & (bins_smoothed < centre_nu_range[1]))[0]
+
+param_dict = make_param_dict_aotf(line)
+sigma = np.ones_like(smoothed_norm[centre_indices])
+fit_params, chisq = fit_aotf(param_dict, bins_smoothed[centre_indices], smoothed_norm[centre_indices], sigma)
+
+print("chisq=", chisq)
 """fit aotf function"""
-fit_params = {
-    "aotf_width":19.5,
-    "aotf_amplitude":0.95,
-    "sidelobe":4.,
-    "asymmetry":1.8,
-    # "nu_offset":4385.0,
-    "nu_offset":4276.1,
-    "offset_height":0.05,
-    "offset_width":500,
-    }
+# fit_params = {
+#     "aotf_width":19.455,
+#     "aotf_amplitude":0.79,
+#     "sidelobe":5.968,
+#     "asymmetry":1.267,
+#     "nu_offset":4384.799,
+#     # "nu_offset":4276.1,
+#     "offset_height":0.137,
+#     "offset_width":37.193,
+#     }
 
+filename = "AOTF_from_fitting_%.0fcm-1_solar_line" %line
 
 
 x_range = np.arange(min(bins_smoothed), max(bins_smoothed), 0.01)
 F_aotf_fitted = F_aotf2(fit_params, x_range)
-plt.figure()
+plt.figure(figsize=(7,5))
 plt.plot(bins_smoothed, smoothed_norm, label="Smoothed (Savitsky-Golay filter)")
 plt.plot(x_range, F_aotf_fitted, "k--", label="AOTF fit using existing parameters")
+plt.plot(x_range, aotf_offset(fit_params, x_range), "g:", label="Gaussian offset")
+
+text = "\n".join(["%s: %0.3f" %(key, value) for key, value in fit_params.items() if key != "nu_offset"])
+plt.text(min(x_range), 0.4, text)
 plt.xlabel("AOTF Wavenumber")
 plt.ylabel("Area of absorption line")
 plt.title("AOTF from fitting %.0fcm-1 solar line" %line)
 plt.legend()
 plt.grid()
 
+if SAVE_OUTPUT:
+    plt.savefig("%s_fit2.png" %filename)
+
+
 """interpolate smoothed onto regular grid"""
 aotf_interp = np.interp(x_range, bins_smoothed, smoothed_norm)
 x_range = x_range - x_range[np.where(aotf_interp == max(aotf_interp))[0][0]]
-# aotf_function = 
-
+x_range = x_range[::-1]
 plt.figure()
 plt.plot(x_range, aotf_interp)
 plt.xlabel("AOTF Wavenumber")
@@ -383,7 +304,7 @@ plt.ylabel("Area of absorption line")
 plt.title("AOTF from fitting %.0fcm-1 solar line" %line)
 plt.grid()
 
-filename = "AOTF_from_fitting_%.0fcm-1_solar_line" %line
-plt.savefig("%s.png" %filename)
+if SAVE_OUTPUT:
+    plt.savefig("%s.png" %filename)
 
-np.savetxt("%s.txt" %filename, np.array([x_range, aotf_interp]).T, fmt="%.6f", delimiter=",", header="Wavenumber,AOTF function")
+    np.savetxt("%s.txt" %filename, np.array([x_range, aotf_interp]).T, fmt="%.6f", delimiter=",", header="Wavenumber,AOTF function")

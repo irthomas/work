@@ -136,9 +136,9 @@ for filename in filenames:
                 ax2.plot(solar_fit_slr_norm - solar_fit_norm, color=colours[index])
             
             
+            pixels_solar_line_area = sim_parameters[line]["pixels_solar_line_area"]
             
-            
-            area = area_under_curve(solar_fit_slr_norm, solar_fit_norm)
+            area = area_under_curve(solar_fit_slr_norm[pixels_solar_line_area], solar_fit_norm[pixels_solar_line_area])
         
             variables_fit["A"].append(d["A"])
             variables_fit["A_nu0"].append(d["A_nu0"])

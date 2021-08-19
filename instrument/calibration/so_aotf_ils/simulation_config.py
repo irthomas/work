@@ -12,7 +12,8 @@ import numpy as np
 AOTF_OFFSET_SHAPE = "Gaussian"
 # AOTF_OFFSET_SHAPE = "Constant"
 
-BLAZE_WIDTH_FIT = True
+BLAZE_WIDTH_FIT = False
+# BLAZE_WIDTH_FIT = True
 
 
 sim_parameters = {
@@ -21,6 +22,7 @@ sim_parameters = {
         "order_range":[185, 205], 
         "nu_range":[4150., 4650.], 
         "pixels":np.arange(320), 
+        "pixels_solar_line_area":np.arange(320),
         "d_nu":0.005, 
         "solar_line_aotf_range":[26560, 26640],
         "solar_line_nu_range":[4381.74, 4384.385],
@@ -47,7 +49,8 @@ sim_parameters = {
         "centre_order":189, 
         "order_range":[180, 200], 
         "nu_range":[4040., 4535.], 
-        "pixels":np.arange(320), 
+        "pixels":np.arange(320),
+        "pixels_solar_line_area":np.arange(160, 320, 1), #only find area for solar line on right of detector
         "d_nu":0.005, 
         "solar_line_aotf_range":[25923-40, 25923+40],
         "solar_line_nu_range":[4275.6, 4276.8],
