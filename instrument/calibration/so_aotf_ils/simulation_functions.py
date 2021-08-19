@@ -10,7 +10,8 @@ MINISCAN FITTING FUNCTIONS
 
 import numpy as np
 import os
-import re
+import sys
+# import re
 #from scipy.optimize import curve_fit
 # from scipy.optimize import least_squares
 from scipy.signal import savgol_filter
@@ -28,7 +29,7 @@ from tools.sql.get_sql_spectrum_temperature import get_sql_temperatures_all_spec
 from tools.spectra.solar_spectrum import get_solar_hr
 from tools.spectra.baseline_als import baseline_als
 from tools.spectra.fit_gaussian_absorption import fit_gaussian_absorption
-from tools.spectra.fit_polynomial import fit_polynomial
+# from tools.spectra.fit_polynomial import fit_polynomial
 
 from tools.general.get_nearest_index import get_nearest_index
 
@@ -37,16 +38,13 @@ from instrument.nomad_so_instrument import F_blaze_goddard21, F_aotf_goddard21
 
 from instrument.nomad_so_instrument import m_aotf as m_aotf_so
 
-from instrument.calibration.so_aotf_ils.simulation_config import ORDER_RANGE, D_NU, pixels, nu_range, AOTF_OFFSET_SHAPE, abs_aotf_range
+from instrument.calibration.so_aotf_ils.simulation_config import AOTF_OFFSET_SHAPE, sim_parameters
 
 
-# SOLAR_SPECTRUM = "Solar_irradiance_ACESOLSPEC_2015.dat"
-SOLAR_SPECTRUM = "pfsolspec_hr.dat"
 
 
 
 def get_file(regex, file_level="hdf5_level_0p2a"):
-    
 
     hdf5Files, hdf5Filenames, _ = make_filelist(regex, file_level)
     hdf5_file = hdf5Files[0]
@@ -58,7 +56,6 @@ def get_file(regex, file_level="hdf5_level_0p2a"):
 
 
 def get_data_from_file(hdf5_file, hdf5_filename):
-
 
     channel = hdf5_filename.split("_")[3].lower()
     aotf_freq = hdf5_file["Channel/AOTFFrequency"][...]
@@ -78,35 +75,21 @@ def select_data(d, index):
     d["A"] = d["aotf_freqs"][index]
     d["spectrum"] = d["spectra"][index]
     d["spectrum_norm"] = d["spectrum"]/np.max(d["spectrum"])
-    d["centre_order"] = m_aotf_so(d["A"])
-    d["pixels"] = pixels
-    d["m_range"] = ORDER_RANGE
+    # d["centre_order"] = m_aotf_so(d["A"])
+    d["centre_order"] = sim_parameters[d["line"]]["centre_order"]
+    d["pixels"] = sim_parameters[d["line"]]["pixels"]
+    d["m_range"] = sim_parameters[d["line"]]["order_range"]
 
-    nu_hr = np.arange(nu_range[0], nu_range[1], D_NU)
-    d["nu_hr"] = nu_hr
     
     return d
 
 
 
 
-# def get_nu_hr():
-    
-#     temperature = 0.0
-
-#     nu_range = [
-#         nu_mp(ORDER_RANGE[0], np.zeros(1), temperature)[0] - 5.0, \
-#         nu_mp(ORDER_RANGE[1], np.zeros(1)+319.0, temperature)[0] + 5.0            
-#             ]
-#     nu_hr = np.arange(nu_range[0], nu_range[1], D_NU)
-    
-#     return nu_hr
-
-
 
 
 def spectrum_temperature(hdf5_file, channel, index):
-    
+    """get temperature of a specific spectrum (by index)"""
     
     temperatures = get_sql_temperatures_all_spectra(hdf5_file, channel)
     # temperature = np.mean(temperatures)
@@ -116,48 +99,21 @@ def spectrum_temperature(hdf5_file, channel, index):
     
 
 
-def get_spec_res():
+def get_solar_spectrum(d, plot=False):
     
-    c_order = int(np.mean(ORDER_RANGE))
-    spec_res = spec_res_order(c_order)
+    nu_hr = np.arange(sim_parameters[d["line"]]["nu_range"][0], sim_parameters[d["line"]]["nu_range"][1], sim_parameters[d["line"]]["d_nu"])
+    d["nu_hr"] = nu_hr
     
-    return spec_res
-
-
-def fit_temperature(d, hdf5_file):
-    """code to check absorption lines in solar spectrum"""
-
-    index = d["index"]
-    # absorption_line_fit_index = get_nearest_index(index, np.arange(0,1492,256)) * 256 #closest index of first aotf in file to chosen index
+    solar_spectrum_filename = sim_parameters[d["line"]]["solar_spectra"][d["solar_spectrum"]]
     
-    #get indices of all spectra where absorption line is present
-    abs_indices = np.where((d["aotf_freqs"] > abs_aotf_range[0]) & (d["aotf_freqs"] < abs_aotf_range[1]))[0]
-    #find index of spectrum w/ absorption closest to desired index
-    absorption_line_fit_index = abs_indices[get_nearest_index(index, abs_indices)]
-    
-    aotf_freqs = d["aotf_freqs"]
-    spectra = d["spectra"]
-    channel = d["channel"]
-    nu_hr = d["nu_hr"]
-    temperature = spectrum_temperature(hdf5_file, channel, index)
-    
-    # plt.figure()
-    order = m_aotf_so(aotf_freqs[absorption_line_fit_index])
-    spectrum_w_absorption = spectra[absorption_line_fit_index]
-    spectrum_cont = baseline_als(spectrum_w_absorption)
-    spectrum_cr = spectrum_w_absorption[50:]/spectrum_cont[50:]
-    pixels_nu = nu_mp(order, pixels, temperature)
-    # plt.plot(pixels_nu[50:], spectrum_cr, label="Temperature spectral calibration")
-    
-    
-    
-    ss_file = os.path.join(paths["RETRIEVALS"]["SOLAR_DIR"], SOLAR_SPECTRUM)
-    I0_solar_hr = get_solar_hr(nu_hr, solspec_filepath=ss_file)
-    I0_lr = savgol_filter(I0_solar_hr, 99, 1)
+    ss_file = os.path.join(paths["RETRIEVALS"]["SOLAR_DIR"], solar_spectrum_filename)
+    I0_solar_hr = get_solar_hr(d["nu_hr"], solspec_filepath=ss_file)
+    I0_lr = savgol_filter(I0_solar_hr, sim_parameters[d["line"]]["filter_smoothing"], 1)
     # I0_cont = fit_polynomial(nu_hr, I0_low_res, degree=2)
     # I0_cr = I0_low_res / I0_cont
     # I0_low_res = I0_low_res/np.max(I0_low_res)
     # plt.plot(nu_hr, I0_cr, label="Convolved solar line")
+    
     
     d["I0_solar_hr"] = I0_solar_hr
     
@@ -165,8 +121,10 @@ def fit_temperature(d, hdf5_file):
     d["I0_lr"] = I0_lr
     
     I0_lr_slr = np.copy(I0_lr)
-    #wavenumber range of solar line 4381.74, 4384.385
-    sl_extent = [np.min(np.where(d["nu_hr"] > 4381.74)), np.max(np.where(d["nu_hr"] < 4384.385))]
+    sl_extent = [
+        np.min(np.where(d["nu_hr"] > sim_parameters[d["line"]]["solar_line_nu_range"][0])), 
+        np.max(np.where(d["nu_hr"] < sim_parameters[d["line"]]["solar_line_nu_range"][1]))
+    ]
     d["sl_extent"] = sl_extent
     
     sl_indices = np.arange(sl_extent[0], sl_extent[1]+1)
@@ -178,29 +136,113 @@ def fit_temperature(d, hdf5_file):
     I0_lr_slr[sl_indices] = sl_flat
     
     d["I0_lr_slr"] = I0_lr_slr
-   
+
+    if plot:
+        plt.figure()
+        plt.plot(nu_hr, I0_lr)
+        plt.plot(nu_hr, I0_lr_slr)
+        sys.exit()
+
+    return d
+
+
+def fit_temperature(d, hdf5_file, plot=False):
+    """code to check absorption lines in solar spectrum"""
+
+    index = d["index"]
+    
+    #get indices of all spectra where absorption line is present
+    abs_indices = np.where(
+        (d["aotf_freqs"] > sim_parameters[d["line"]]["solar_line_aotf_range"][0]) & 
+        (d["aotf_freqs"] < sim_parameters[d["line"]]["solar_line_aotf_range"][1]))[0]
+    #find index of spectrum w/ absorption closest to desired index
+    absorption_line_fit_index = abs_indices[get_nearest_index(index, abs_indices)]
+    
+    # aotf_freqs = d["aotf_freqs"]
+    spectra = d["spectra"]
+    channel = d["channel"]
+    nu_hr = d["nu_hr"]
+    temperature = spectrum_temperature(hdf5_file, channel, index)
+    
+    
+    #TODO: fix this
+    # order = m_aotf_so(aotf_freqs[absorption_line_fit_index])
+
+    #old code
+    # order = d["centre_order"]
+    
+    
+    # """code to shift spectral cal to match absorption"""
+    # #remove continuum from miniscan spectrum to fit solar line minimum
+    # spectrum_w_absorption = spectra[absorption_line_fit_index]
+    # spectrum_cont = baseline_als(spectrum_w_absorption)
+    # spectrum_cr = spectrum_w_absorption[50:]/spectrum_cont[50:]
+    # smi = np.argmin(spectrum_cr) + 50 #spectrum min index
+    # pixels_nu = nu_mp(order, sim_parameters[d["line"]]["pixels"], temperature)
+    
+    # if np.abs(pixels_nu[smi]-d["line"]) > 2.0: #if not fitting to desired solar line
+    #     print("Warning: solar line at %0.2f and fitting to line at %0.2f" %(d["line"], pixels_nu[smi]))
+    #     approx_smi = get_nearest_index(d["line"], pixels_nu) #320 px
+    #     approx_smi_range = np.arange(max([0, approx_smi-10]), min([319, approx_smi+10]), 1)
+    #     smi = np.argmin(spectrum_cr[approx_smi_range-50]) + approx_smi_range[0]
+    #     print("Desired solar line is at %0.2f and now fitting to line at %0.2f" %(d["line"], pixels_nu[smi]))
+
+    # x_hr, y_hr, min_position_nu = fit_gaussian_absorption(pixels_nu[smi-3:smi+4], spectrum_cr[smi-53:smi-46])
+    # absorption_depth = np.min(y_hr)
+    
+    #new code to search adjacent orders for 
+    order = d["centre_order"]
+    
     
     """code to shift spectral cal to match absorption"""
-    #find nu of solar band
-    absorption_min_index = np.argmin(I0_lr)
-    absorption_nu = nu_hr[absorption_min_index] #near enough
-    smi = np.argmin(spectrum_cr) #spectrum min index
-    x_hr, y_hr, min_position_nu = fit_gaussian_absorption(pixels_nu[50:][smi-3:smi+4], spectrum_cr[smi-3:smi+4])
+    #remove continuum from miniscan spectrum to fit solar line minimum
+    spectrum_w_absorption = spectra[absorption_line_fit_index]
+    spectrum_cont = baseline_als(spectrum_w_absorption)
+    spectrum_cr = spectrum_w_absorption[50:]/spectrum_cont[50:]
+    smi = np.argmin(spectrum_cr) + 50 #spectrum min index
+    pixels_nu = nu_mp(order, sim_parameters[d["line"]]["pixels"], temperature)
+    
+    if np.abs(pixels_nu[smi]-d["line"]) > 2.0: #if not fitting to desired solar line
+        print("Warning: solar line at %0.2f and fitting to line at %0.2f" %(d["line"], pixels_nu[smi]))
+        approx_smi = get_nearest_index(d["line"], pixels_nu) #320 px
+        approx_smi_range = np.arange(max([0, approx_smi-10]), min([319, approx_smi+10]), 1)
+        smi = np.argmin(spectrum_cr[approx_smi_range-50]) + approx_smi_range[0]
+        print("Desired solar line is at %0.2f and now fitting to line at %0.2f" %(d["line"], pixels_nu[smi]))
+
+    x_hr, y_hr, min_position_nu = fit_gaussian_absorption(pixels_nu[smi-3:smi+4], spectrum_cr[smi-53:smi-46])
     absorption_depth = np.min(y_hr)
+        
+    
+    
+    #find nu of solar band
+    ami = np.argmin(d["I0_lr"]) #absorption_min_index
+    absorption_nu = nu_hr[ami] #near enough on convolved HR grid
+    if np.abs(absorption_nu - d["line"]) > 2.0: #if not fitting to desired solar line
+        print("Warning: desired solar line at %0.2f and fitting to solar line at %0.2f" %(d["line"], absorption_nu))
+        approx_ami = get_nearest_index(d["line"], nu_hr)
+        approx_ami_range = np.arange(approx_ami-1000, approx_ami+1000, 1)
+        ami = np.argmin(d["I0_lr"][approx_ami_range]) + approx_ami_range[0]
+        absorption_nu = nu_hr[ami] #near enough on convolved HR grid
+        print("Desired solar line is at %0.2f and now fitting to solar line at %0.2f" %(d["line"], absorption_nu))
+        
     
    
-    # plt.plot(x_hr, y_hr, linestyle="--", label="Fit to miniscan absorption")
+    if plot:
+        plt.figure()
+        plt.plot(pixels_nu[50:], spectrum_cr, label="Temperature spectral calibration")
+        plt.plot(x_hr, y_hr, linestyle="--", label="Fit to miniscan absorption")
+        sys.exit()
     
     
     
     delta_nu = absorption_nu - min_position_nu
     print("delta_nu=", delta_nu)
-    t_calc = t_nu_mp(order, absorption_nu, smi+50)
+    t_calc = t_nu_mp(order, absorption_nu, smi)
     delta_t = temperature - t_calc
     print("delta_t=", delta_t)
     
     d["absorption_depth"] = absorption_depth
-    d["absorption_pixel"] = smi+50
+    d["absorption_pixel"] = smi
     d["temperature"] = t_calc
     d["nu_hr"] = nu_hr
     d["t0"] = temperature
@@ -211,16 +253,43 @@ def fit_temperature(d, hdf5_file):
 
 
 
+
+
+
+def trapezium_area(y1, y2, dx=1.0):
+    return 0.5 * (y1 + y2) * dx
+    
+
+def area_under_curve(curve1, curve2, dx=1.0):
+    area = 0
+    for i in range(len(curve1)-1):
+        y1 = curve1[i] - curve2[i]
+        y2 = curve1[i+1] - curve2[i+1]
+    
+        area += trapezium_area(y1, y2, dx=dx)
+    return area
+
+
+
+
+def get_spec_res(d):
+    
+    c_order = int(np.mean(sim_parameters[d["line"]]["order_range"]))
+    spec_res = spec_res_order(c_order)
+    
+    return spec_res
+
+
 def calc_blaze(d):
 
-    spec_res = get_spec_res()
+    spec_res = get_spec_res(d)
     
     nu_hr = d["nu_hr"]
     hdf5_filename = d["hdf5_filename"]
     temperature = d["temperature"]
     
     #if convolution already saved to file
-    h5_conv_filename = "conv_%s_order%i-%i_dnu%f_temp%.2f" %(hdf5_filename, ORDER_RANGE[0], ORDER_RANGE[1], D_NU, temperature)
+    h5_conv_filename = "conv_%s_order%i-%i_dnu%f_temp%.2f" %(hdf5_filename, sim_parameters[d["line"]]["order_range"][0], sim_parameters[d["line"]]["order"][1], sim_parameters[d["line"]]["d_nu"], temperature)
     if os.path.exists(os.path.join(paths["SIMULATION_DIRECTORY"], h5_conv_filename+".h5")):
         print("Reading W_conv from existing file")
         W_conv = read_hdf5_to_dict(os.path.join(paths["SIMULATION_DIRECTORY"], h5_conv_filename))[0]["W_conv"]
@@ -229,17 +298,17 @@ def calc_blaze(d):
     else:
         print("Making file", h5_conv_filename)
         Nbnu_hr = len(nu_hr)
-        NbP = len(pixels)
+        NbP = len(sim_parameters[d["line"]]["pixels"])
         
         #old and new blaze functions are functional identical - use 2021 function only
         sconv = spec_res/2.355
         W_conv = np.zeros((NbP,Nbnu_hr))
-        for iord in range(ORDER_RANGE[0], ORDER_RANGE[1]+1):
+        for iord in range(sim_parameters[d["line"]]["order_range"][0], sim_parameters[d["line"]]["order_range"][1]+1):
             print("Blaze order %i" %iord)
-            nu_pm = nu_mp(iord, pixels, temperature)
-            W_blaze = F_blaze_goddard21(iord, pixels, temperature)
-            for ip in pixels:
-                W_conv[ip,:] += (W_blaze[ip]*D_NU)/(np.sqrt(2.*np.pi)*sconv)*np.exp(-(nu_hr-nu_pm[ip])**2/(2.*sconv**2))
+            nu_pm = nu_mp(iord, sim_parameters[d["line"]]["pixels"], temperature)
+            W_blaze = F_blaze_goddard21(iord, sim_parameters[d["line"]]["pixels"], temperature)
+            for ip in sim_parameters[d["line"]]["pixels"]:
+                W_conv[ip,:] += (W_blaze[ip]*sim_parameters[d["line"]]["d_nu"])/(np.sqrt(2.*np.pi)*sconv)*np.exp(-(nu_hr-nu_pm[ip])**2/(2.*sconv**2))
                 
         W_conv[W_conv < 1.0e-5] = 0.0 #remove small numbers
                 
@@ -288,6 +357,18 @@ def get_start_params(d):
     
     d["A_nu0"] += d["aotf_shift"]
     
+    
+    """code to find line in AOTF kHz"""
+    # A = np.arange(13000., 30000., 1.)
+    # A_nu = np.polyval([1.34082e-7, 0.1497089, 305.0604], A)
+    # coeffs = np.polyfit(A_nu, A, 2)
+    # A_line = np.polyval(coeffs, d["line"])
+    # print("nu_line=", d["line"], "A_line=", A_line)
+    # A_nus = np.polyval([1.34082e-7, 0.1497089, 305.0604], d["aotf_freqs"][0:256])
+    # for i, (A, nu) in enumerate(zip(d["aotf_freqs"][0:256], A_nus)): print(i, A, nu)
+
+
+    """set up initial fits"""
     # width = np.polyval([1.11085173e-06, -8.88538288e-03,  3.83437870e+01], A_nu0)
     # lobe  = np.polyval([2.87490586e-06, -1.65141511e-02,  2.49266314e+01], A_nu0)
     # asym  = np.polyval([-5.47912085e-07, 3.60576934e-03, -4.99837334e+00], A_nu0)
@@ -433,7 +514,7 @@ def fit_resid(params, d):
 
 
 def fit_spectrum(param_dict, variables, d):
-    print("Fitting AOTF and blaze")
+    # print("Fitting AOTF and blaze")
     params = lmfit.Parameters()
     for key, value in param_dict.items():
        params.add(key, value[0], min=value[1], max=value[2])

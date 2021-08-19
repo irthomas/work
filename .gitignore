@@ -6,11 +6,9 @@ analysis/retrievals/
 analysis/simulations/
 analysis/so/
 analysis/lno/
-analysis/Exomars/
 old_scripts
 output
 reference_files
-severine
-shohei
 
 web_dev/
+repos/

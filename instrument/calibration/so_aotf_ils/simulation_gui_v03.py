@@ -20,10 +20,10 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 # from instrument.nomad_so_instrument import nu_mp
 
 
-from instrument.calibration.so_aotf_ils.simulation_functions import get_file, get_data_from_file, select_data, fit_temperature
-from instrument.calibration.so_aotf_ils.simulation_functions import get_start_params, make_param_dict, F_blaze, F_aotf, calc_spectrum, fit_spectrum
+from instrument.calibration.so_aotf_ils.simulation_functions import (get_file, get_data_from_file, 
+     select_data, fit_temperature, get_start_params, make_param_dict, F_blaze, F_aotf, calc_spectrum, fit_spectrum, get_solar_spectrum)
 
-from instrument.calibration.so_aotf_ils.simulation_config import nu_range, AOTF_OFFSET_SHAPE
+from instrument.calibration.so_aotf_ils.simulation_config import sim_parameters, AOTF_OFFSET_SHAPE
 
 
 
@@ -34,19 +34,39 @@ def s_str(slider):
     return '{: .2f}'.format(slider.get())
 
 
+# line = 4383.5
+line = 4276.1
+# line = 3787.9
 
-regex = re.compile("20190416_020948_0p2a_SO_1_C")
-index = 0
+
+if line == 4383.5:
+    regex = re.compile("20190416_020948_0p2a_SO_1_C")
+    index = 0
+
+if line == 4276.1:
+    regex = re.compile("20180716_000706_0p2a_SO_1_C")
+    index = 72
+
+
+
 
 """spectral grid and blaze functions of all orders"""
 
 #get data, fit temperature and get starting function parameters
 hdf5_file, hdf5_filename = get_file(regex)
 d = get_data_from_file(hdf5_file, hdf5_filename)
+
+solar_spectrum = "ACE"
+d["line"] = line
+d["solar_spectrum"] = solar_spectrum
+d = get_solar_spectrum(d, plot=False)
+
+
 d = select_data(d, index)
 d = fit_temperature(d, hdf5_file)
 d = get_start_params(d)
 param_dict = make_param_dict(d)
+
 
 
 #sigma for preferentially fitting of certain pixels
@@ -149,7 +169,7 @@ for key, value in param_dict.items():
 
 
 # for plotting
-aotf_nu_range = np.arange(nu_range[0], nu_range[1], 0.1) #only for plotting
+aotf_nu_range = np.arange(sim_parameters[line]["nu_range"][0], sim_parameters[line]["nu_range"][1], 0.1) #only for plotting
 
 W_aotf = F_aotf(aotf_nu_range, variables, d)
 line1a, = ax1.plot(aotf_nu_range, W_aotf)
