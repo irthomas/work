@@ -10,6 +10,7 @@ MINISCAN FITTING
 import re
 import numpy as np
 import matplotlib.pyplot as plt
+import argparse
 
 from tools.plotting.colours import get_colours
 
@@ -45,6 +46,25 @@ if PLOT_RAW:
 
 
 filenames = sim_parameters[line]["filenames"]
+solar_spectra = sim_parameters[line]["solar_spectra"].keys()
+
+print("There are %i filenames and %i solar spectra" %(len(filenames), len(solar_spectra)))
+
+parser = argparse.ArgumentParser(description = "Select filename and solar spectrum indices")
+parser.add_argument("-fi", "--filename_index", help = "Select filename index", required = False, type=int)
+parser.add_argument("-si", "--solar_index", help = "Select solar spectrum index ACE or PFS", required = False, type=str)
+
+args = parser.parse_args()
+
+if args.filename_index:
+    print("Filename index", args.filename_index)
+    filenames = [filenames[args.filename_index]]
+if args.solar_index:
+    print("Filename index", args.solar_index)
+    solar_spectra = [args.solar_index]
+
+
+
 for filename in filenames:
     regex = re.compile(filename) #(approx. orders 188-202) in steps of 8kHz
 
@@ -54,7 +74,7 @@ for filename in filenames:
     d = get_data_from_file(hdf5_file, hdf5_filename)
     
     
-    solar_spectra = sim_parameters[line]["solar_spectra"].keys()
+    
     for solar_spectrum in solar_spectra:
         d["line"] = line
         d["solar_spectrum"] = solar_spectrum

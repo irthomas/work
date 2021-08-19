@@ -60,6 +60,8 @@ sim_parameters = {
             "20200606_205016_0p2a_SO_1_C", #23981-26020kHz (approx. orders 176-190) in steps of 8kHz
             "20200606_205016_0p2a_SO_2_C", #24851-26890kHz (approx. orders 182-196) in steps of 8kHz
             "20210201_111011_0p2a_SO_2_C", #25719-27758kHz (approx. orders 188-202) in steps of 8kHz
+            "20210226_085144_0p2a_SO_1_C", #25285-26304kHz (approx. orders 185-192) in steps of 4kHz
+            "20210226_085144_0p2a_SO_2_C", #25719-26738kHz (approx. orders 188-195) in steps of 4kHz
         ],
         "solar_spectra":{
             "ACE":"Solar_irradiance_ACESOLSPEC_2015.dat", 
