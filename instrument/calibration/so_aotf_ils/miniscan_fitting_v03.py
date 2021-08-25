@@ -21,8 +21,8 @@ from instrument.calibration.so_aotf_ils.simulation_config import sim_parameters
 
 #AOTF freqs where AOTF is strong: 4380-4390cm-1 = 26560-26640kHz
 
-line = 4383.5
-# line = 4276.1
+# line = 4383.5
+line = 4276.1
 # line = 3787.9
 
 SETUP = False

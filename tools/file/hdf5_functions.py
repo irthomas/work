@@ -219,7 +219,7 @@ def open_hdf5_file(hdf5_filename):
     return hdf5_file
 
 
-def make_filelist(obs_paths, file_level, model="INFLIGHT", silent=False, open_files=True, path=None):
+def make_filelist(obs_paths, file_level, model="INFLIGHT", silent=False, open_files=True, path=None, full_path=False):
     """make list of filenames containing matching attributes and datasets"""
     """new version uses regex"""
     if path:
@@ -262,7 +262,11 @@ def make_filelist(obs_paths, file_level, model="INFLIGHT", silent=False, open_fi
             filename, hdf5_file = get_file(obspath, file_level, fileIndex, model=model, silent=silent, open_files=open_files)
             hdf5_files_out.append(hdf5_file) #add open file to list
             hdf5_filenames_out.append(obspath) #add open file to list
-            titles.append(title)
+            
+            if full_path:
+                titles.append(filename)
+            else:
+                titles.append(title)
             
     
 

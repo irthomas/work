@@ -11,7 +11,7 @@ import os
 import glob
 import posixpath
 
-SEARCH_STRING = 'trapezium'
+SEARCH_STRING = ' %i accumulations'
 
 
 from tools.file.paths import paths

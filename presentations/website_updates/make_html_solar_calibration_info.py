@@ -44,10 +44,12 @@ copDirsDatetime = [datetime.datetime.strptime(dirname, HDF5_FILENAME_FORMAT) for
 copDirsDatetime.append(datetime.datetime(2050, 1, 1))
 
 h = "<html><head></head><body>\n"
-h += "<table border=2><tr><th>Filename</th><th>Observation Type</th><th>Description</th><th>COP Table Version</th></tr>\n"
+h += "<table border=2><tr><th>Filename</th><th>Observation Type</th><th>Description</th><th>Mean Channel Temperature (C)</th><th>COP Table Version</th></tr>\n"
 
 #for calFilename, calFilepath in zip(calFilenameList[0:1], calFilepathList[0:1]):
 for calFilename, calFilepath in zip(calFilenameList, calFilepathList):
+    
+    print(calFilename)
     
     calDatetime = datetime.datetime.strptime(calFilename[:15], HDF5_FILENAME_FORMAT)
     
@@ -62,6 +64,7 @@ for calFilename, calFilepath in zip(calFilenameList, calFilepathList):
         binning = hdf5_file["Channel/Binning"][...]
         windowTop = hdf5_file["Channel/WindowTop"][...]
         naccs = hdf5_file["Channel/NumberOfAccumulations"][...]
+        temperatures = hdf5_file["Channel/MeasurementTemperature"][0]
         
     channel = calFilename.split("_")[3]
     obsType = "%s " %channel
@@ -106,11 +109,12 @@ for calFilename, calFilepath in zip(calFilenameList, calFilepathList):
     description += ". %i accumulations" %naccs[0]
         
     copVersionString = "%s-%s-%s" %(copVersion[0:4], copVersion[4:6], copVersion[6:8])
-    h += "<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>\n" %(calFilename, obsType, description, copVersionString)
+    h += "<tr><td>%s</td><td>%s</td><td>%s</td><td>%0.2f</td><td>%s</td></tr>\n" %(calFilename, obsType, description, temperatures[0], copVersionString)
 #    print(calFilename, description)
     
 h += "</table></body></html>"
 
+h += "<br><br><i>Table created with make_html_solar_calibration_info.py</i>"
 print("Writing output")
 with open(os.path.join(paths["BASE_DIRECTORY"], "calibration_log.html"), "w") as f:
     f.write(h)

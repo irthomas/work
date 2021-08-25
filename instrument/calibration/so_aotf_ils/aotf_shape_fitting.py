@@ -145,7 +145,7 @@ for filename in filenames:
     
     for suffix in suffixes:
     
-        file_path = os.path.join("output", "so_miniscan_aotf_fits", "%s_%s_%.0f_aotf_function.txt" %(filename, suffix, line))
+        file_path = os.path.join("output", "so_miniscan_aotf_fits", "no_blaze_width_fit", "%s_%s_%.0f_aotf_function.txt" %(filename, suffix, line))
         
         if os.path.exists(file_path):
             txt_in = np.loadtxt(file_path, skiprows=1, delimiter=",")
@@ -245,12 +245,12 @@ smoothed_norm = smooth * smooth_scalar
 if line == 4383.5:
     # centre_nu_range = [4000., 5000.]
     # centre_nu_range = [4345., 4420.]
-    centre_nu_range = [4331., 4444.]
-    # centre_nu_range = [4320., 4480.]
+    # centre_nu_range = [4331., 4444.]
+    centre_nu_range = [4320., 4480.]
 
 if line == 4276.1:
-    centre_nu_range = [4000., 5000.]
-    # centre_nu_range = [4239., 4317.]
+    # centre_nu_range = [4000., 5000.]
+    centre_nu_range = [4239., 4317.]
     # centre_nu_range = [4265., 4288.]
 centre_indices = np.where((bins_smoothed > centre_nu_range[0]) & (bins_smoothed < centre_nu_range[1]))[0]
 
@@ -290,7 +290,7 @@ plt.legend()
 plt.grid()
 
 if SAVE_OUTPUT:
-    plt.savefig("%s_fit2.png" %filename)
+    plt.savefig("%s_fit.png" %filename)
 
 
 """interpolate smoothed onto regular grid"""

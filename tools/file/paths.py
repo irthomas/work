@@ -71,14 +71,17 @@ elif os.path.exists(os.path.normcase(r"C:\Users\iant\Dropbox\NOMAD\Python")): #o
     # paths["DATASTORE_ROOT_DIRECTORY"] = os.path.normcase(r"C:\Users\iant\Documents\DATA")
     # paths["DATASTORE_ROOT_DIRECTORY"] = os.path.normcase(r"D:\DATA")
     
-    paths["RETRIEVAL_DIRECTORY"] = os.path.normcase(r"C:\Users\iant\Documents\DATA\retrievals_copy")
+    paths["RETRIEVAL_DIRECTORY"] = os.path.normcase(r"C:\Users\iant\Documents\DATA\retrievals")
 #    paths["RETRIEVAL_DIRECTORY"] = os.path.normcase(r"X:\linux\input_tools\Tools")
 
     paths["DB_DIRECTORY"] = os.path.normcase(r"C:\Users\iant\Documents\DATA\db")
     paths["ANIMATION_DIRECTORY"] = os.path.normcase(r"C:\Users\iant\Documents\DATA\animations")
     paths["SIMULATION_DIRECTORY"] = os.path.normcase(r"C:\Users\iant\Documents\DATA\simulations")
     paths["KERNEL_DIRECTORY"] = os.path.normcase(r"C:\Users\iant\Documents\DATA\local_spice_kernels\kernels\mk")
+
     paths["COP_TABLE_DIRECTORY"] = os.path.normcase(r"C:\Users\iant\Documents\DATA\cop_tables")
+    # paths["COP_TABLE_DIRECTORY"] = os.path.normcase(r"W:\data\SATELLITE\TRACE-GAS-ORBITER\NOMAD\cop_tables")
+
     paths["REFERENCE_DIRECTORY"] = os.path.normcase(r"C:\Users\iant\Dropbox\NOMAD\Python\reference_files")
     paths["PFM_AUXILIARY_FILES"] = os.path.normcase(r"C:\Users\iant\Documents\DATA\pfm_auxiliary_files")
 #    paths["PFM_AUXILIARY_FILES"] = os.path.normcase(r"X:\projects\NOMAD\data\pfm_auxiliary_files")
