@@ -37,14 +37,28 @@ from tools.file.read_write_hdf5 import read_hdf5_to_dict, write_hdf5_from_dict
 
 
 spectral_lines_dict = {
-    189:[4248.318, 4252.302, 4256.217, 4263.837, 4267.542, 4271.177, 4274.741, 4278.235]}
+    188:[4227.354, 4231.685, 4235.947, 4240.140, 4244.264, 4248.318, 4252.302, 4256.217],
+    189:[4248.318, 4252.302, 4256.217, 4263.837, 4267.542, 4271.177, 4274.741, 4278.235],
+    190:[4271.176, 4274.741, 4278.234, 4281.657, 4285.009, 4288.290, 4291.499, 4294.638, 4297.705, 4300.700, 4303.623],
+}
 
+
+
+def order_delta_nu(m, m2, p, t):
+    """pixel number and order to wavenumber calibration. Liuzzi et al. 2018"""
+    F0=22.473422
+    F1=5.559526e-4
+    F2=1.751279e-8
+    delta_nu = (F0 + p*(F1 + F2*p))*(m-m2)
+    return delta_nu
 
 
 #read in h5 file
 regex = re.compile("20180930_113957_1p0a_SO_A_I_189") #(approx. orders 188-202) in steps of 8kHz
 chosen_alt = 30.0
 order = int(regex.pattern.split("_")[-1])
+
+px_range = [20, 320]
 
 file_level="hdf5_level_1p0a"
 
@@ -57,29 +71,44 @@ for hdf5_file, hdf5_filename, hdf5_path in zip(hdf5_files, hdf5_filenames, hdf5_
     
     alts = hdf5_file["Geometry/Point0/TangentAltAreoid"][:, 0]
     y_all = hdf5_file["Science/Y"][:, :]
-    x = hdf5_file["Science/X"][0, 50:]
+    x = hdf5_file["Science/X"][0, px_range[0]:]
+    
     hdf5_file.close()
 
-    pixels = np.arange(50, 320, 1)
+    pixels = np.arange(px_range[0], px_range[1], 1)
     n_spectra = y_all.shape[0]
 
+    #shift by 0.22cm-1 at start
+    x_shifted = x + 0.22
 
     
     frame_index = get_nearest_index(chosen_alt, alts)
-    frame_indices = np.arange(frame_index-5, frame_index+6)
+    frame_indices = np.arange(frame_index-15, frame_index+16)
     
-    y = np.mean(y_all[frame_indices, 50:], axis=0)
+    y = np.mean(y_all[frame_indices, px_range[0]:], axis=0)
     y_cont = baseline_als(y)
     y_cr = y / y_cont
     
-    ax.plot(x, y_cr, label="X and Y from HDF5 file, mean of indices %i to %i" %(min(frame_indices), max(frame_indices)))
+    # ax.plot(x, y_cr, label="X and Y from HDF5 file, mean of indices %i to %i" %(min(frame_indices), max(frame_indices)))
+    ax.plot(x_shifted, y_cr, label="X+0.22cm-1 and Y from HDF5 file, mean of indices %i to %i" %(min(frame_indices), max(frame_indices)))
     ax.set_xlabel("Wavenumber cm-1")
     ax.set_ylabel("Transmittance")
     ax.set_title(hdf5_filename)
     
+    spectral_lines_nu = spectral_lines_dict[order-1]
+    order_delta = order_delta_nu(order, order-1, 0, 0.0)
+    for spectral_line_nu in spectral_lines_nu:
+        ax.axvline(spectral_line_nu + order_delta, c="b", linestyle="--")
+
+    spectral_lines_nu = spectral_lines_dict[order+1]
+    order_delta = order_delta_nu(order, order+1, 0, 0.0)
+    for spectral_line_nu in spectral_lines_nu:
+        ax.axvline(spectral_line_nu + order_delta, c="r", linestyle="--")
+
     spectral_lines_nu = spectral_lines_dict[order]
     for spectral_line_nu in spectral_lines_nu:
         ax.axvline(spectral_line_nu, c="k", linestyle="--")
+
     
     absorption_points = np.where(y_cr < 0.985)[0]
     all_local_minima = get_local_minima(y_cr)
@@ -95,7 +124,7 @@ for hdf5_file, hdf5_filename, hdf5_path in zip(hdf5_files, hdf5_filenames, hdf5_
         
         local_minimum_indices = np.arange(local_minimum-2, local_minimum+3, 1)
         
-        x_hr, y_hr, x_min_position, chisq = fit_gaussian_absorption(x[local_minimum_indices], y_cr[local_minimum_indices], error=True)
+        x_hr, y_hr, x_min_position, chisq = fit_gaussian_absorption(x_shifted[local_minimum_indices], y_cr[local_minimum_indices], error=True)
         
         if i == 0:
             label = "Gaussian fit to absorption bands"
@@ -122,13 +151,7 @@ for hdf5_file, hdf5_filename, hdf5_path in zip(hdf5_files, hdf5_filenames, hdf5_
     valid_pixel_minima = [v for i,v in enumerate(pixel_minima) if i in valid_indices]
     valid_nu_minima = [v for i,v in enumerate(nu_minima) if i in valid_indices]
     
-    
-    # nu_shift = np.mean([v for i,v in enumerate(delta_nus) if i in valid_indices])
-
-    # x_new = x - nu_shift
-    
-    # ax.plot(x_hr - nu_shift, y_hr, "g")
-    
+   
     
     polyfit = np.polyfit(valid_pixel_minima, valid_nu_minima, 3)
         
@@ -163,4 +186,15 @@ for hdf5_file, hdf5_filename, hdf5_path in zip(hdf5_files, hdf5_filenames, hdf5_
     spectral_lines_nu = spectral_lines_dict[order]
     for spectral_line_nu in spectral_lines_nu:
         ax2.axvline(spectral_line_nu, c="k", linestyle="--")
+    spectral_lines_nu = spectral_lines_dict[order-1]
+    order_delta = order_delta_nu(order, order-1, 0, 0.0)
+    for spectral_line_nu in spectral_lines_nu:
+        ax2.axvline(spectral_line_nu + order_delta, c="b", linestyle="--")
+
+    spectral_lines_nu = spectral_lines_dict[order+1]
+    order_delta = order_delta_nu(order, order+1, 0, 0.0)
+    for spectral_line_nu in spectral_lines_nu:
+        ax2.axvline(spectral_line_nu + order_delta, c="r", linestyle="--")
+
+
     fig2.savefig("%s_corrected_x.png" %hdf5_filename)

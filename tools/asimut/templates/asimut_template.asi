@@ -1,0 +1,25 @@
+[Run]
+verbose        = 3
+save           = transmittance, atmosphere, radiance, FullRetrieval
+saveOUTformat  = hdf5
+UseMatlab      = no
+plotvisible    = no
+
+[Directories]
+dirSpectra=    %hdf5_dir
+dirAtmosphere= %atm_dir
+dirHitran=     /bira-iasb/projects/NOMAD/Science/Radiative_Transfer/Auxiliary_files/Spectroscopy
+dirLP=         /bira-iasb/projects/NOMAD/Science/Radiative_Transfer/Auxiliary_files/Spectroscopy
+dirInput=      %input_dir
+dirSolar=      /bira-iasb/projects/NOMAD/Science/Radiative_Transfer/Auxiliary_files/Solar
+dirLidort=     /bira-iasb/projects/NOMAD/Science/Radiative_Transfer/Auxiliary_files/Lidort
+dirAerosol=    /bira-iasb/projects/NOMAD/Science/Radiative_Transfer/Auxiliary_files/Aerosols
+dirPlanet=     /bira-iasb/projects/NOMAD/Science/Radiative_Transfer/Auxiliary_files/Surface
+dirSave=       %save_dir
+dirResults=    %out_dir
+
+[List]
+%inp
+
+[RadiativeCode]
+Code= Asimut

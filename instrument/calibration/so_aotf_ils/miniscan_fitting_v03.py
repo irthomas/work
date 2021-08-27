@@ -21,8 +21,8 @@ from instrument.calibration.so_aotf_ils.simulation_config import sim_parameters
 
 #AOTF freqs where AOTF is strong: 4380-4390cm-1 = 26560-26640kHz
 
-# line = 4383.5
-line = 4276.1
+line = 4383.5
+# line = 4276.1
 # line = 3787.9
 
 SETUP = False
@@ -81,8 +81,8 @@ for filename in filenames:
         d = get_solar_spectrum(d, plot=SETUP)
     
     
-        indices = range(len(d["aotf_freqs"]))
-        # indices = range(45,55,2)
+        # indices = range(len(d["aotf_freqs"]))
+        indices = range(0, 101, 20)
         # indices = range(72,73)
         # indices = [*range(80,140,1), *range(80+256,140+256,1), *range(80+256*2, 140+256*2, 1), *range(80+256*3, 140+256*3, 1), *range(80+256*4, 140+256*4, 1), *range(80+256*5, 140+256*5, 1)]
         

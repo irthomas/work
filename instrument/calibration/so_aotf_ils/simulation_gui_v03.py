@@ -20,10 +20,10 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 # from instrument.nomad_so_instrument import nu_mp
 
 
-from instrument.calibration.so_aotf_ils.simulation_functions import (get_file, get_data_from_file, 
+from instrument.calibration.so_aotf_ils.simulation_functions import (get_file, get_data_from_file, load_aotf_from_file,
      select_data, fit_temperature, get_start_params, make_param_dict, F_blaze, F_aotf, calc_spectrum, fit_spectrum, get_solar_spectrum)
 
-from instrument.calibration.so_aotf_ils.simulation_config import sim_parameters, AOTF_OFFSET_SHAPE, BLAZE_WIDTH_FIT
+from instrument.calibration.so_aotf_ils.simulation_config import sim_parameters, AOTF_OFFSET_SHAPE, BLAZE_WIDTH_FIT, AOTF_FROM_FILE
 
 
 
@@ -42,6 +42,7 @@ line = 4383.5
 if line == 4383.5:
     regex = re.compile("20190416_020948_0p2a_SO_1_C")
     index = 0
+    index = 80
 
 if line == 4276.1:
     regex = re.compile("20180716_000706_0p2a_SO_1_C")
@@ -78,6 +79,7 @@ d["sigma"][smi-18:smi+19] = 0.01
 
 
 
+
 print("m=", d["centre_order"])
 print("t=", d["temperature"])
 print("A= %0.1f kHz" %d["A"])
@@ -109,18 +111,23 @@ root.rowconfigure(3, weight=1)
 root.rowconfigure(4, weight=1)
 root.rowconfigure(5, weight=1)
 
-pos_dict = {
-    "blaze_centre":[0, 1],
-    "aotf_width":[0, 3],
-    "aotf_shift":[0, 4],
-    "sidelobe":[3, 1],
-    "asymmetry":[3, 2],
-    }
-if AOTF_OFFSET_SHAPE == "Constant":
-    pos_dict["offset"] = [3, 3]
-else:
-    pos_dict["offset_height"] = [3, 3]
-    pos_dict["offset_width"] = [3, 4]
+pos_dict = {}
+
+
+pos_dict["blaze_centre"] = [0, 1]
+pos_dict["aotf_shift"] = [0, 4]
+
+if not AOTF_FROM_FILE:
+    pos_dict["aotf_width"] = [0, 3]
+    pos_dict["sidelobe"] = [3, 1]
+    pos_dict["asymmetry"] = [3, 2]
+
+         
+    if AOTF_OFFSET_SHAPE == "Constant":
+        pos_dict["offset"] = [3, 3]
+    else:
+        pos_dict["offset_height"] = [3, 3]
+        pos_dict["offset_width"] = [3, 4]
 
 
 if BLAZE_WIDTH_FIT:

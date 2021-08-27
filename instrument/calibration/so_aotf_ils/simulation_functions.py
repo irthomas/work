@@ -38,7 +38,7 @@ from instrument.nomad_so_instrument import F_blaze_goddard21, F_aotf_goddard21
 
 # from instrument.nomad_so_instrument import m_aotf as m_aotf_so
 
-from instrument.calibration.so_aotf_ils.simulation_config import AOTF_OFFSET_SHAPE, BLAZE_WIDTH_FIT, sim_parameters
+from instrument.calibration.so_aotf_ils.simulation_config import AOTF_OFFSET_SHAPE, BLAZE_WIDTH_FIT, AOTF_FROM_FILE, sim_parameters
 
 
 
@@ -79,6 +79,9 @@ def select_data(d, index):
     d["centre_order"] = sim_parameters[d["line"]]["centre_order"]
     d["pixels"] = sim_parameters[d["line"]]["pixels"]
     d["m_range"] = sim_parameters[d["line"]]["order_range"]
+
+    if AOTF_FROM_FILE:
+        load_aotf_from_file(d)
 
     
     return d
@@ -366,20 +369,21 @@ def get_start_params(d):
 
 def make_param_dict(d):
     #best, min, max
-    param_dict = {
-        "blaze_centre":[d["p0"], d["p0"]-20.0, d["p0"]+20.],
-        "aotf_width":[d["width"], d["width"]-2., d["width"]+2.],
-        "aotf_shift":[0.0, -3.0, 3.0],
-        "sidelobe":[d["lobe"], 0.05, 20.0],
-        "asymmetry":[d["asym"], 0.01, 2.0],
-        }
+    param_dict = {}
+    param_dict["blaze_centre"] = [d["p0"], d["p0"]-40.0, d["p0"]+40.]
+    param_dict["aotf_shift"] = [0.0, -3.0, 3.0]
+
+    if not AOTF_FROM_FILE:
+        param_dict["aotf_width"] = [d["width"], d["width"]-2., d["width"]+2.]
+        param_dict["sidelobe"] = [d["lobe"], 0.05, 20.0]
+        param_dict["asymmetry"] = [d["asym"], 0.01, 2.0]
     
-    if AOTF_OFFSET_SHAPE == "Constant":
-        param_dict["offset"] = [0.0, 0.0, 0.3]
-        
-    else:    
-        param_dict["offset_height"] = [0.0, 0.0, 0.3]
-        param_dict["offset_width"] = [40.0, 10.0, 300.0]
+        if AOTF_OFFSET_SHAPE == "Constant":
+            param_dict["offset"] = [0.0, 0.0, 0.3]
+            
+        else:    
+            param_dict["offset_height"] = [0.0, 0.0, 0.3]
+            param_dict["offset_width"] = [40.0, 10.0, 300.0]
 
     if BLAZE_WIDTH_FIT:
         param_dict["blaze_width"] = [d["p_width"], d["p_width"]-20., d["p_width"]+20.]
@@ -435,18 +439,31 @@ def sinc(dx, amp, width, lobe, asym):
 
 
 
+def load_aotf_from_file(d):
+
+    aotf_filepath = os.path.join(paths["BASE_DIRECTORY"], "output", "so_miniscan_aotf_fits", "no_blaze_width_fit", "AOTF_from_fitting_%.0fcm-1_solar_line_smoothed.txt" %d["line"])
+    aotf_data = np.loadtxt(aotf_filepath, skiprows=1, delimiter=",")
+      
+    d["aotf_nu"] = aotf_data[:, 0]
+    d["aotf_fn"] = aotf_data[:, 1]
+
 
 def F_aotf(nu_pm, variables, d):
 
     dx = nu_pm - d["A_nu0"] - variables["aotf_shift"]
     # print(dx)
     
-    if AOTF_OFFSET_SHAPE == "Constant":
-        offset = variables["offset"]
+    if AOTF_FROM_FILE:
+        F = np.interp(dx, d["aotf_nu"], d["aotf_fn"])
+   
     else:
-        offset = variables["offset_height"] * np.exp(-dx**2.0/(2.0*variables["offset_width"]**2.0))
-    
-    F = sinc(dx, 1.0, variables["aotf_width"], variables["sidelobe"], variables["asymmetry"]) + offset
+        
+        if AOTF_OFFSET_SHAPE == "Constant":
+            offset = variables["offset"]
+        else:
+            offset = variables["offset_height"] * np.exp(-dx**2.0/(2.0*variables["offset_width"]**2.0))
+        
+        F = sinc(dx, 1.0, variables["aotf_width"], variables["sidelobe"], variables["asymmetry"]) + offset
     
     
     

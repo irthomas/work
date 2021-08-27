@@ -1,0 +1,84 @@
+[Set]
+zType                    = range
+zScale                   = [0.0, 150.0, 1.0]
+nbSpectra                = 1
+
+[Planet]
+Planet                   = mars
+PlanetRadius             = 3389.5
+RefractiveIndex          = mars
+
+[SP1]
+FenList                  = [1]
+InstrumentType           = aotf
+ConsiderBlaze            = yes
+source                   = sun
+Refraction               = no
+NeglectThermalSource     = no
+NeglectThermalReflection = no
+FileType                 = Hdf5_generic
+Filename                 = %hdf5
+DataType                 = Transmittance
+list                     = yes
+SpectraID_List           = val[ %vals]
+NumberOrders             = 9
+AOTFFunction             = File
+FileAotfFilter           = %aotf_filepath
+DataYErrorSelect         = YErrorNorm
+aotfCentralWnb           = %A_nu0
+AltitudeTypeSelect       = areoid
+RedoSpectralCalibration  = yes
+Ils                      = nomad6param
+IlsConstant              = 0
+FileIlsParam             = %ils_filepath
+UsePreviousFit           = 1
+ReverseOrder             = 1
+
+[SP1_FEN1]
+pass                     = 1
+noise                    = fromSpectrumFile
+FitBaseline                = 1.5
+FitBaselineOrderPolynomial = 4
+rayleigh                 = yes
+Emissivity               = 0.85
+molecules                = [CO2 CO]
+FitMolecules             = [0 -1000.]
+aPrioriMolecules         = [model model]
+
+
+[AtmosphericModels]
+model                    = 0
+atmFile                  = %atm_list
+atmFileType              = col
+atmFileIsList            = yes
+zptType                  = std
+density                  = nowater
+
+[Solar]
+FileSolar                = Solar_irradiance_ACESOLSPEC_2015.dat
+
+[Continua]
+Rayleigh                 = shdom
+
+[Molecules]
+fileHitran               = HITRAN2012.par
+
+[CO2LP]
+ATMname                  = CO2
+File                     = 02_hit16_2000-5000_CO2broadened.par
+isotope                  = 999
+type                     = Hitran
+
+[H2OLP]
+ATMname                  = H2O
+File                     = 01_hit16_2000-5000_CO2broadened.par
+isotope                  = 999
+type                     = Hitran
+atmfile                  = H2O_atm_uniform_1ppm.dat
+
+[COLP]
+ATMname                  = CO
+File                     = 05_hit16_2000-5000_CO2broadened.par
+isotope                  = 999
+type                     = Hitran
+atmfile                  = H2O_atm_uniform_1ppm.dat

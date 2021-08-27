@@ -11,7 +11,7 @@ import os
 import glob
 import posixpath
 
-SEARCH_STRING = ' %i accumulations'
+SEARCH_STRING = '.pdf'
 
 
 from tools.file.paths import paths
