@@ -12,11 +12,16 @@ import numpy as np
 AOTF_OFFSET_SHAPE = "Gaussian"
 # AOTF_OFFSET_SHAPE = "Constant"
 
-# BLAZE_WIDTH_FIT = False
-BLAZE_WIDTH_FIT = True
+BLAZE_WIDTH_FIT = False
+# BLAZE_WIDTH_FIT = True
 
 AOTF_FROM_FILE = True
 # AOTF_FROM_FILE = False
+
+
+# RESULTS_SUB_DIRECTORY = "no_blaze_width_fit"
+RESULTS_SUB_DIRECTORY = "aotf_file_iter1"
+
 
 
 sim_parameters = {

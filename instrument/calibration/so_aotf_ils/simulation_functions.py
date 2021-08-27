@@ -38,7 +38,7 @@ from instrument.nomad_so_instrument import F_blaze_goddard21, F_aotf_goddard21
 
 # from instrument.nomad_so_instrument import m_aotf as m_aotf_so
 
-from instrument.calibration.so_aotf_ils.simulation_config import AOTF_OFFSET_SHAPE, BLAZE_WIDTH_FIT, AOTF_FROM_FILE, sim_parameters
+from instrument.calibration.so_aotf_ils.simulation_config import AOTF_OFFSET_SHAPE, BLAZE_WIDTH_FIT, AOTF_FROM_FILE, RESULTS_SUB_DIRECTORY, sim_parameters
 
 
 
@@ -441,7 +441,7 @@ def sinc(dx, amp, width, lobe, asym):
 
 def load_aotf_from_file(d):
 
-    aotf_filepath = os.path.join(paths["BASE_DIRECTORY"], "output", "so_miniscan_aotf_fits", "no_blaze_width_fit", "AOTF_from_fitting_%.0fcm-1_solar_line_smoothed.txt" %d["line"])
+    aotf_filepath = os.path.join(paths["BASE_DIRECTORY"], "output", "so_miniscan_aotf_fits", RESULTS_SUB_DIRECTORY, "AOTF_from_fitting_%.0fcm-1_solar_line_smoothed.txt" %d["line"])
     aotf_data = np.loadtxt(aotf_filepath, skiprows=1, delimiter=",")
       
     d["aotf_nu"] = aotf_data[:, 0]

@@ -50,15 +50,17 @@ solar_spectra = sim_parameters[line]["solar_spectra"].keys()
 
 print("There are %i filenames and %i solar spectra" %(len(filenames), len(solar_spectra)))
 
+
 parser = argparse.ArgumentParser(description = "Select filename and solar spectrum indices")
-parser.add_argument("-fi", "--filename_index", help = "Select filename index", required = False, type=int)
+parser.add_argument("-fi", "--filename_index", help = "Select filename index", required = False, type=str)
 parser.add_argument("-si", "--solar_index", help = "Select solar spectrum index ACE or PFS", required = False, type=str)
+#must be string, otherwise int(0) is same as no argument supplied
 
 args = parser.parse_args()
 
 if args.filename_index:
     print("Filename index:", args.filename_index)
-    filenames = [filenames[args.filename_index]]
+    filenames = [filenames[int(args.filename_index)]]
 if args.solar_index:
     print("Solar spectrum suffix:", args.solar_index)
     solar_spectra = [args.solar_index]
@@ -81,8 +83,8 @@ for filename in filenames:
         d = get_solar_spectrum(d, plot=SETUP)
     
     
-        # indices = range(len(d["aotf_freqs"]))
-        indices = range(0, 101, 20)
+        indices = range(len(d["aotf_freqs"]))
+        # indices = range(0, 101, 20)
         # indices = range(72,73)
         # indices = [*range(80,140,1), *range(80+256,140+256,1), *range(80+256*2, 140+256*2, 1), *range(80+256*3, 140+256*3, 1), *range(80+256*4, 140+256*4, 1), *range(80+256*5, 140+256*5, 1)]
         
