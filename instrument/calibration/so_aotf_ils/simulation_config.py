@@ -15,14 +15,14 @@ AOTF_OFFSET_SHAPE = "Gaussian"
 BLAZE_WIDTH_FIT = False
 # BLAZE_WIDTH_FIT = True
 
-AOTF_FROM_FILE = True
-# AOTF_FROM_FILE = False
+# AOTF_FROM_FILE =  #for iteration; load AOTF and shift only centre and blaze 
+AOTF_FROM_FILE = False
 
 
-# RESULTS_SUB_DIRECTORY = "no_blaze_width_fit"
+# RESULTS_SUB_DIRECTORY = "no_blaze_width_fit" #only for iteration
 # RESULTS_SUB_DIRECTORY = "aotf_file_iter1"
-RESULTS_SUB_DIRECTORY = "aotf_file_iter2"
-
+# RESULTS_SUB_DIRECTORY = "aotf_file_iter2"
+RESULTS_SUB_DIRECTORY = ""
 
 
 sim_parameters = {
@@ -40,16 +40,16 @@ sim_parameters = {
         "filter_smoothing":99,
         "filenames":[
             "20180716_000706_0p2a_SO_1_C", #(approx. orders 188-195) in steps of 4kHz
-            "20181010_084333_0p2a_SO_2_C", #(approx. orders 194-201) in steps of 4kHz
-            "20181129_002850_0p2a_SO_2_C", #(approx. orders 194-197) in steps of 2kHz
-            "20181206_171850_0p2a_SO_2_C", #(approx. orders 191-198) in steps of 4kHz
-            "20190416_020948_0p2a_SO_1_C", #(approx. orders 194-195) in steps of 1kHz
-            "20190416_024455_0p2a_SO_1_C", #(approx. orders 194-201) in steps of 4kHz
-            "20210201_111011_0p2a_SO_2_C", #(approx. orders 188-202) in steps of 8kHz
-            "20210226_085144_0p2a_SO_2_C", #(approx. orders 188-195) in steps of 4kHz
+            # "20181010_084333_0p2a_SO_2_C", #(approx. orders 194-201) in steps of 4kHz
+            # "20181129_002850_0p2a_SO_2_C", #(approx. orders 194-197) in steps of 2kHz
+            # "20181206_171850_0p2a_SO_2_C", #(approx. orders 191-198) in steps of 4kHz
+            # "20190416_020948_0p2a_SO_1_C", #(approx. orders 194-195) in steps of 1kHz
+            # "20190416_024455_0p2a_SO_1_C", #(approx. orders 194-201) in steps of 4kHz
+            # "20210201_111011_0p2a_SO_2_C", #(approx. orders 188-202) in steps of 8kHz
+            # "20210226_085144_0p2a_SO_2_C", #(approx. orders 188-195) in steps of 4kHz
         ],
         "solar_spectra":{
-            "ACE":"Solar_irradiance_ACESOLSPEC_2015.dat", 
+            # "ACE":"Solar_irradiance_ACESOLSPEC_2015.dat", 
             "PFS":"pfsolspec_hr.dat",
         },
 

@@ -29,8 +29,12 @@ line = 4383.5
 
 
 
-SAVE_OUTPUT = True
-# SAVE_OUTPUT = False
+# SAVE_OUTPUT = True
+SAVE_OUTPUT = False
+
+# VARIABLE_TO_PLOT = "solar_line_area"
+VARIABLE_TO_PLOT = "solar_line_area_c"
+
 
 
 error_n_medians = sim_parameters[line]["error_n_medians"]
@@ -139,7 +143,7 @@ def fit_aotf(param_dict, x, y, sigma):
 
 
     
-all_points = {"A_nu0":[], "F_aotf":[]}
+all_points = {"A_nu0":[], VARIABLE_TO_PLOT:[]}
 plt.figure(figsize=(15, 8))
 
 for filename in filenames:
@@ -149,15 +153,18 @@ for filename in filenames:
         file_path = os.path.join("output", "so_miniscan_aotf_fits", RESULTS_SUB_DIRECTORY, "%s_%s_%.0f_aotf_function.txt" %(filename, suffix, line))
         
         if os.path.exists(file_path):
+            with open(file_path, "r") as f:
+                headers_in = f.readline().strip("# ").split(",")[:-1]
             txt_in = np.loadtxt(file_path, skiprows=1, delimiter=",")
         else:
             print("Warning: file %s does not exist" %file_path)
             continue
             
-        d_in = {"A":txt_in[:,0],"A_nu0":txt_in[:,1],"t0":txt_in[:,2],"t_calc":txt_in[:,3], "F_aotf":txt_in[:,4], "error":txt_in[:,5]}
+        # d_in = {"A":txt_in[:,0],"A_nu0":txt_in[:,1],"t0":txt_in[:,2],"t_calc":txt_in[:,3], "F_aotf":txt_in[:,4], "error":txt_in[:,5]}
+        d_in = {key:txt_in[:,i] for i,key in enumerate(headers_in)}
         
         # print(d_in["error"], np.median(d_in["error"]), np.median(d_in["error"]) * error_n_medians)
-        good_indices = np.where(d_in["error"] < np.median(d_in["error"]) * error_n_medians)[0]
+        good_indices = np.where(d_in["chisq"] < np.median(d_in["chisq"]) * error_n_medians)[0]
         
     
         #remove bad points where chisq too high    
@@ -175,10 +182,10 @@ for filename in filenames:
             
 
         all_points["A_nu0"].extend(d_good["A_nu0"])
-        all_points["F_aotf"].extend(d_good["F_aotf"])
+        all_points[VARIABLE_TO_PLOT].extend(d_good[VARIABLE_TO_PLOT])
 
         
-        plt.scatter(d_good["A_nu0"], d_good["F_aotf"], c=c)
+        plt.scatter(d_good["A_nu0"], d_good[VARIABLE_TO_PLOT], c=c)
         
         
         
@@ -215,14 +222,14 @@ for filename in filenames:
 
 
 all_points["A_nu0"] = np.array(all_points["A_nu0"])
-all_points["F_aotf"] = np.array(all_points["F_aotf"])
+all_points[VARIABLE_TO_PLOT] = np.array(all_points[VARIABLE_TO_PLOT])
 
 
 """histogram bin"""
 bins_int = sim_parameters[line]["histogram_bins"]
 ind = np.digitize(all_points["A_nu0"], bins_int)
 bins = bins_int + (bins_int[1] - bins_int[0])
-F_aotf_binned = np.array([np.mean(all_points["F_aotf"][ind == j]) for j in range(0, len(bins_int))])
+F_aotf_binned = np.array([np.mean(all_points[VARIABLE_TO_PLOT][ind == j]) for j in range(0, len(bins_int))])
 
 
 

@@ -75,7 +75,6 @@ def select_data(d, index):
     d["A"] = d["aotf_freqs"][index]
     d["spectrum"] = d["spectra"][index]
     d["spectrum_norm"] = d["spectrum"]/np.max(d["spectrum"])
-    # d["centre_order"] = m_aotf_so(d["A"])
     d["centre_order"] = sim_parameters[d["line"]]["centre_order"]
     d["pixels"] = sim_parameters[d["line"]]["pixels"]
     d["m_range"] = sim_parameters[d["line"]]["order_range"]
@@ -149,15 +148,21 @@ def get_solar_spectrum(d, plot=False):
     return d
 
 
+def get_absorption_line_indices(d):
+    #get indices of all spectra where absorption line is present
+    abs_indices = np.where(
+        (d["aotf_freqs"] > sim_parameters[d["line"]]["solar_line_aotf_range"][0]) & 
+        (d["aotf_freqs"] < sim_parameters[d["line"]]["solar_line_aotf_range"][1]))[0]
+
+    return abs_indices
+
 def fit_temperature(d, hdf5_file, plot=False):
     """code to check absorption lines in solar spectrum"""
 
     index = d["index"]
     
-    #get indices of all spectra where absorption line is present
-    abs_indices = np.where(
-        (d["aotf_freqs"] > sim_parameters[d["line"]]["solar_line_aotf_range"][0]) & 
-        (d["aotf_freqs"] < sim_parameters[d["line"]]["solar_line_aotf_range"][1]))[0]
+    abs_indices = get_absorption_line_indices(d)
+    
     #find index of spectrum w/ absorption closest to desired index
     absorption_line_fit_index = abs_indices[get_nearest_index(index, abs_indices)]
     
@@ -475,14 +480,17 @@ def F_aotf(nu_pm, variables, d):
 
 
 
-def calc_spectrum(variables, d, I0=[0]):
+def calc_spectrum(variables, d, I0=[0], order_range=[0]):
     """make simulated spectrum"""    
 
     if I0[0] == 0:
         I0 = d["I0_lr"]
+        
+    if order_range[0] == 0:
+        order_range = range(d["m_range"][0], d["m_range"][1]+1)
     
     solar = np.zeros(len(d["pixels"]))
-    for order in range(d["m_range"][0], d["m_range"][1]+1):
+    for order in order_range:
         
         nu_pm = nu_mp(order, d["pixels"], d["temperature"])
 
@@ -492,7 +500,7 @@ def calc_spectrum(variables, d, I0=[0]):
         
         solar += F * G * I0_lr_p
     
-    return solar#/max(solar)
+    return solar
 
 
 

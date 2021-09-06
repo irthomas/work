@@ -8,6 +8,7 @@ MINISCAN FITTING
 """
 
 import re
+import sys
 import numpy as np
 import matplotlib.pyplot as plt
 import argparse
@@ -18,6 +19,7 @@ from instrument.calibration.so_aotf_ils.simulation_functions import (get_file, g
 get_start_params, make_param_dict, calc_spectrum, fit_spectrum, area_under_curve, get_solar_spectrum)
 from instrument.calibration.so_aotf_ils.simulation_config import sim_parameters
 
+from instrument.calibration.so_aotf_ils.simulation_functions import get_absorption_line_indices
 
 #AOTF freqs where AOTF is strong: 4380-4390cm-1 = 26560-26640kHz
 
@@ -33,6 +35,8 @@ PLOT_RAW = False
 # PLOT_RAW = True
 
 
+PLOT_CENTRE_VS_ADJACENT_ORDERS = False
+# PLOT_CENTRE_VS_ADJACENT_ORDERS = True
 
 
 if PLOT_RAW:
@@ -83,14 +87,17 @@ for filename in filenames:
         d = get_solar_spectrum(d, plot=SETUP)
     
     
-        indices = range(len(d["aotf_freqs"]))
+        # indices = range(len(d["aotf_freqs"]))
+        # indices = range(0, len(d["aotf_freqs"]), 50)
+        indices = range(0,255,1)
+        # indices = get_absorption_line_indices(d)
         # indices = range(0, 101, 20)
         # indices = range(72,73)
         # indices = [*range(80,140,1), *range(80+256,140+256,1), *range(80+256*2, 140+256*2, 1), *range(80+256*3, 140+256*3, 1), *range(80+256*4, 140+256*4, 1), *range(80+256*5, 140+256*5, 1)]
         
         colours = get_colours(len(indices))
         
-        variables_fit = {"A":[], "A_nu0":[], "solar_line_area":[], "chisq":[], "temperature":[], "t0":[]}
+        variables_fit = {"A":[], "A_nu0":[], "solar_line_area":[], "solar_line_area_c":[], "chisq":[], "temperature":[], "t0":[]}
         
         for index, frame_index in enumerate(indices):
             print("frame_index=%i (%i/%i)" %(frame_index, index, len(indices)))
@@ -116,45 +123,90 @@ for filename in filenames:
             variables = {}
             for key, value in param_dict.items():
                 variables[key] = value[0]
-            
-            
+
             variables, chisq = fit_spectrum(param_dict, variables, d)
             print("chisq=", chisq)
-        
-            spectrum_norm = d["spectrum_norm"]
-            
-            solar_fit = calc_spectrum(variables, d)
-            scalar = 1.0 / max(solar_fit)
-            
-            solar_fit_norm = solar_fit * scalar
-            
-            solar_fit_slr = calc_spectrum(variables, d, I0=d["I0_lr_slr"])
-            solar_fit_slr_norm = solar_fit_slr * scalar
-            
-            if PLOT_RAW:
-                ax1.plot(spectrum_norm, color=colours[index])
-                ax1.plot(solar_fit_norm, color=colours[index], linestyle=":")
-                ax1.plot(solar_fit_slr_norm, color=colours[index], linestyle="--")
-                ax2.plot(solar_fit_slr_norm - solar_fit_norm, color=colours[index])
-            
-            
-            pixels_solar_line_area = sim_parameters[line]["pixels_solar_line_area"]
-            
-            area = area_under_curve(solar_fit_slr_norm[pixels_solar_line_area], solar_fit_norm[pixels_solar_line_area])
-        
-            variables_fit["A"].append(d["A"])
-            variables_fit["A_nu0"].append(d["A_nu0"])
-            variables_fit["solar_line_area"].append(area)
-            variables_fit["chisq"].append(chisq)
-            variables_fit["t0"].append(d["t0"])
-            variables_fit["temperature"].append(d["temperature"])
+
             for key in variables.keys():
                 if key not in variables_fit.keys():
                     variables_fit[key] = []
                 variables_fit[key].append(variables[key])
+
+        
+            
+            solar_fit = calc_spectrum(variables, d)
+            # scalar = 1.0 / max(solar_fit)
+            # solar_fit_norm = solar_fit * scalar
+            
+            solar_fit_slr = calc_spectrum(variables, d, I0=d["I0_lr_slr"])
+            # solar_fit_slr_norm = solar_fit_slr * scalar
+
+            pixels_solar_line_area = sim_parameters[line]["pixels_solar_line_area"] #select pixel range i.e. to avoid adjacent order solar lines
+            # area = area_under_curve(solar_fit_slr_norm[pixels_solar_line_area], solar_fit_norm[pixels_solar_line_area])
+            area = area_under_curve(solar_fit_slr[pixels_solar_line_area], solar_fit[pixels_solar_line_area])
+            
+            #calculate relative contributions from main order and all adjacent orders
+            centre_order_contribution = calc_spectrum(variables, d, order_range=[d["centre_order"]])
+            centre_order_contribution_slr = calc_spectrum(variables, d, I0=d["I0_lr_slr"], order_range=[d["centre_order"]])
+            order_range = list(range(d["m_range"][0], d["m_range"][1]+1))
+            order_range.remove(d["centre_order"])
+            non_centre_order_contribution = calc_spectrum(variables, d, order_range=order_range)
+            
+            if PLOT_CENTRE_VS_ADJACENT_ORDERS:
+                    
+                plt.plot(d["spectrum_norm"]*max(centre_order_contribution + non_centre_order_contribution), label="Raw")
+                plt.plot(centre_order_contribution, label="Centre order contribution")
+                plt.plot(non_centre_order_contribution, label="Other order contribution")
+                plt.plot(centre_order_contribution + non_centre_order_contribution, label="Total")
+                plt.axvline(smi)
+                plt.legend(loc="lower right")
+                sys.exit()
+            
+            #now do solar line calc but only for main order - doesn't work
+            solar_fit_c = calc_spectrum(variables, d, order_range=[d["centre_order"]])
+            # scalar_c = 1.0 / max(solar_fit_c)
+            # solar_fit_norm_c = solar_fit_c * scalar_c
+            
+            solar_fit_slr_c = calc_spectrum(variables, d, I0=d["I0_lr_slr"], order_range=range(d["centre_order"],d["centre_order"]+1))
+            # solar_fit_slr_norm_c = solar_fit_slr_c * scalar_c
+            
+            ratio_centre = centre_order_contribution_slr[smi] / non_centre_order_contribution[smi]
+
+            # area_c = area_under_curve(solar_fit_slr_norm_c[pixels_solar_line_area], solar_fit_norm_c[pixels_solar_line_area]) * ratio_centre
+            area_c = area_under_curve(solar_fit_slr_c[pixels_solar_line_area], solar_fit_c[pixels_solar_line_area]) * ratio_centre
+            
+            
+            
+            if PLOT_RAW:
+                ax1.plot(d["spectrum_norm"] * max(solar_fit_slr), color=colours[index])
+                # ax1.plot(solar_fit_norm, color=colours[index], linestyle=":")
+                # ax1.plot(solar_fit_slr_norm, color=colours[index], linestyle="--")
+                # ax2.plot(solar_fit_slr_norm - solar_fit_norm, color=colours[index])
+                # ax1.plot(solar_fit_norm_c, color=colours[index], linestyle=":")
+                # ax1.plot(solar_fit_slr_norm_c, color=colours[index], linestyle="--")
+                # ax2.plot(solar_fit_slr_norm_c - solar_fit_norm_c, color=colours[index])
+
+                ax1.plot(solar_fit, color=colours[index], linestyle=":")
+                ax1.plot(solar_fit_slr, color=colours[index], linestyle="--")
+                ax2.plot(solar_fit_slr - solar_fit, color=colours[index])
+                # ax1.plot(solar_fit_c, color=colours[index], linestyle="-")
+                # ax1.plot(solar_fit_slr_c, color=colours[index], linestyle="-.")
+                # ax2.plot(solar_fit_slr_c - solar_fit_c, color=colours[index])
+                sys.exit()
+            
+            
+        
+            variables_fit["A"].append(d["A"])
+            variables_fit["A_nu0"].append(d["A_nu0"])
+            variables_fit["solar_line_area"].append(area)
+            variables_fit["solar_line_area_c"].append(area_c)
+            variables_fit["chisq"].append(chisq)
+            variables_fit["t0"].append(d["t0"])
+            variables_fit["temperature"].append(d["temperature"])
         
         
         variables_fit["solar_line_area"] = np.array(variables_fit["solar_line_area"])  
+        variables_fit["solar_line_area_c"] = np.array(variables_fit["solar_line_area_c"])  
         variables_fit["chisq"] = np.array(variables_fit["chisq"])
         variables_fit["A_nu0"] = np.array(variables_fit["A_nu0"])
         variables_fit["A"] = np.array(variables_fit["A"])
@@ -162,42 +214,38 @@ for filename in filenames:
         variables_fit["temperature"] = np.array(variables_fit["temperature"])
         
         #remove really bad points 
-        variables_fit["error"] = variables_fit["chisq"]/1000.
-        good_indices = np.where(variables_fit["error"] < 10)[0]
+        variables_fit["chisq"] = variables_fit["chisq"]/variables_fit["solar_line_area"]
         
-        variables_fit["solar_line_area_norm"] = variables_fit["solar_line_area"]/np.max(variables_fit["solar_line_area"][good_indices])
+        error_scaler = 10000.0
         
-        
-        # plt.figure()
-        # # plt.plot(variables_fit["A_nu0"], variables_fit["solar_line_area_norm"], label="AOTF")
-        # for key in variables.keys():
-        #     plt.plot(variables_fit["A_nu0"], variables_fit[key] / max(variables_fit[key]), label=key)
-        # plt.legend()
-        
-        # plt.figure()
-        # plt.errorbar(variables_fit["A_nu0"], variables_fit["solar_line_area_norm"], yerr=variables_fit["error"], linestyle="")
-        
-        
-        # plt.figure()
-        # plt.scatter(range(len(variables_fit["error"])), variables_fit["error"])
-        
-        plt.figure()
+        plt.figure(constrained_layout=True)
         plt.title("%s:\nAOTF shape from solar line simulation" %hdf5_filename)
-        plt.scatter(variables_fit["A_nu0"][good_indices], variables_fit["solar_line_area_norm"][good_indices])
+        # plt.scatter(variables_fit["A_nu0"], variables_fit["solar_line_area"])
+        plt.errorbar(variables_fit["A_nu0"], variables_fit["solar_line_area"], yerr=variables_fit["chisq"]/error_scaler, ls="none", marker=".")
+        plt.errorbar(variables_fit["A_nu0"], variables_fit["solar_line_area_c"], yerr=variables_fit["chisq"]/error_scaler, ls="none", marker=".")
         plt.xlabel("Wavenumber of AOTF peak")
         plt.ylabel("AOTF function (normalised)")
+        plt.ylim([-0.1, max([max(variables_fit["solar_line_area"]), max(variables_fit["solar_line_area_c"])])+0.1])
         plt.savefig("%s_%s_%.0f_aotf_function.png" %(hdf5_filename, solar_spectrum, line))
         plt.close()
         
         
-        x = variables_fit["A_nu0"][good_indices] #aotf wavenumber
-        x2 = variables_fit["A"][good_indices] #aotf freq
-        y = variables_fit["solar_line_area_norm"][good_indices]
-        t = variables_fit["temperature"][good_indices]
-        t0 = variables_fit["t0"][good_indices]
-        chi = variables_fit["chisq"][good_indices]
+        header = ""
+        data_out = []
+        for name in ["A_nu0", "A", "temperature", "t0", "solar_line_area", "solar_line_area_c", "chisq"]:
+            header += "%s," %name
+            data_out.append(variables_fit[name])
+
+
+        for key in param_dict.keys():
+            header += "%s," %key
+            data_out.append(variables_fit[key])
+
+
+        np.savetxt("%s_%s_%.0f_aotf_function.txt" %(hdf5_filename, solar_spectrum, line), np.array(data_out).T, fmt="%.6f", delimiter=",", header=header)
+
         
-        np.savetxt("%s_%s_%.0f_aotf_function.txt" %(hdf5_filename, solar_spectrum, line), np.array([x2,x,t0,t,y,chi]).T, fmt="%.6f", delimiter=",", header="Frequency,Wavenumber,TGO Temperature,Fitted Temperature,AOTF function,Chi Squared")
+        # np.savetxt("%s_%s_%.0f_aotf_function.txt" %(hdf5_filename, solar_spectrum, line), np.array([x2,x,t0,t,y,y2,chi]).T, fmt="%.6f", delimiter=",", header="Frequency,Wavenumber,TGO Temperature,Fitted Temperature,AOTF function,AOTF function centre order,Chi Squared")
         
         
         # param_dict = make_param_dict_aotf(d)
