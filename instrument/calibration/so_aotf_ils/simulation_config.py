@@ -20,7 +20,8 @@ AOTF_FROM_FILE = True
 
 
 # RESULTS_SUB_DIRECTORY = "no_blaze_width_fit"
-RESULTS_SUB_DIRECTORY = "aotf_file_iter1"
+# RESULTS_SUB_DIRECTORY = "aotf_file_iter1"
+RESULTS_SUB_DIRECTORY = "aotf_file_iter2"
 
 
 

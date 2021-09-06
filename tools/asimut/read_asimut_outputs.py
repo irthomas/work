@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 """
-Created on Fri Aug 20 15:22:09 2021
+Created on Thu Sep  2 13:12:39 2021
 
 @author: iant
 
-PLOT ASIMUT OUTPUT WITH ILS AND AOTF FIT
+
+PLOT ASIMUT OUTPUT COMPARING DIFFERENT FILES
 
 """
 
@@ -40,11 +41,15 @@ spectral_lines_dict = {
 order = int(hdf5_filename[-3:])
 spectral_lines_nu = spectral_lines_dict[order]
 
+asi_info_dicts = {}
+asi_data_dicts = {}
+
 for suffix in suffixes:
     
-    asi_info = {
-        "asi_dir":os.path.join(paths["RETRIEVAL_DIRECTORY"], *sub_dirs, "Retrievals", "Input")
-    }
+    asi_info = asi_info_dicts[suffix] = {}
+    asi_data = asi_data_dicts[suffix] = {}
+    
+    asi_info["asi_dir"] = os.path.join(paths["RETRIEVAL_DIRECTORY"], *sub_dirs, "Retrievals", "Input")
     asi_info["asi"] = os.path.join(asi_info["asi_dir"], "%s%s.asi" %(hdf5_filename, suffix))
     
     asi_config = configparser.ConfigParser(allow_no_value=True)
@@ -75,6 +80,7 @@ for suffix in suffixes:
     inp_config.read(asi_info["inp"])
     inp_config_dict = inp_config._sections
     
+    asi_info["FileAotfFilter"] = os.path.basename(inp_config_dict["SP1"]["FileAotfFilter".lower()])
     
     for asi_name, dict_name in {"fileaotffilter":"aotf", "fileilsparam":"ils"}.items():
         dir_linux = inp_config_dict["SP1"][asi_name]
@@ -92,7 +98,10 @@ for suffix in suffixes:
     
     asi_info["out"] = os.path.join(asi_info["out_dir"], "%s%s_out.h5" %(hdf5_filename, suffix))
     # plt.figure()
+
+
     #get data from output file
+
     with h5py.File(asi_info["out"], "r") as f:
         
         n = len(f.keys())
@@ -113,6 +122,9 @@ for suffix in suffixes:
             y_all[n - ix, :] = y
             yr_all[n - ix, :] = yr
     
+    asi_data["y_all"] = y_all
+    asi_data["yr_all"] = yr_all
+    
     
     with h5py.File(asi_info["hdf5"], "r") as f2:
         
@@ -120,52 +132,72 @@ for suffix in suffixes:
         y_error_all = f2["Science/%s" %asi_info["YError"]][...]
         alts = np.mean(f2["Geometry/Point0/TangentAltAreoid"][...], axis=1)
     
+    asi_data["x"] = x
+    asi_data["y_error_all"] = y_error_all
+    asi_data["alts"] = alts
     
     
+
+
     
-    with PdfPages("%s%s_retrieval.pdf" %(hdf5_filename, suffix)) as pdf: #open pdf
-        for i in range(n):
+with PdfPages("%s%s_retrieval.pdf" %(hdf5_filename, "")) as pdf: #open pdf
+    for i in range(n):
+        
+        if np.mod(i, 10) == 0:
+            print("%i/%i" %(i, n))
+
+        fig = plt.figure(figsize=(16, 12), constrained_layout=True)
+        gs = fig.add_gridspec(4, 2)
+        ax1a = fig.add_subplot(gs[0, 0])
+        ax1b = fig.add_subplot(gs[1, 0], sharex=ax1a)
+        ax2a = fig.add_subplot(gs[0, 1])
+        ax2b = fig.add_subplot(gs[1, 1], sharex=ax1a)
+        ax3a = fig.add_subplot(gs[2, 0])
+        ax3b = fig.add_subplot(gs[3, 0], sharex=ax1a)
+        ax4a = fig.add_subplot(gs[2, 1])
+        ax4b = fig.add_subplot(gs[3, 1], sharex=ax1a)
+        
+        axes = [[ax1a, ax1b], [ax2a, ax2b], [ax3a, ax3b], [ax4a, ax4b]]
+        ax4b.set_xlabel("Wavenumber cm-1")
+        ax2b.set_xlabel("Wavenumber cm-1")
+        
+        i_l1 = asi_info["indices"][i] #get index in l1.0a file
+        
+        for j, (suffix, ax_grp) in enumerate(zip(suffixes, axes)):
+            for ax in ax_grp:
+                ax.grid()
+                for spectral_line_nu in spectral_lines_nu:
+                    ax.axvline(spectral_line_nu, c="k", linestyle="--", alpha=0.5)
+        
+            asi_info = asi_info_dicts[suffix]
+            asi_data = asi_data_dicts[suffix]
+
+            if j == 0:
+                fig.suptitle("%s%s: i=%i, %0.1fkm" %(hdf5_filename, suffix, i_l1, asi_data["alts"][i_l1]))
+                
+        
+        
+            ax_grp[0].plot(x, asi_data["y_all"][i, :], label="Y")
+            ax_grp[0].plot(x, asi_data["yr_all"][i, :], label="Y retrieved")
             
-            if np.mod(i, 10) == 0:
-                print("%i/%i" %(i, n))
-            fig = plt.figure(figsize=(10,8), constrained_layout=True)
-            gs = fig.add_gridspec(2, 1)
-            ax1 = fig.add_subplot(gs[0, 0])
-            ax2 = fig.add_subplot(gs[1, 0], sharex=ax1)
-            
-            ax1.grid()
-            ax2.grid()
-            
-            for spectral_line_nu in spectral_lines_nu:
-                ax1.axvline(spectral_line_nu, c="k", linestyle="--", alpha=0.5)
-                ax2.axvline(spectral_line_nu, c="k", linestyle="--", alpha=0.5)
-    
-    
-            i_l1 = asi_info["indices"][i]
-            
-            ax1.plot(x, y_all[i, :], label="Y")
-            ax1.plot(x, yr_all[i, :], label="Y retrieved")
-            
-            residual = y_all[i, :] - yr_all[i, :]
+            residual = asi_data["y_all"][i, :] - asi_data["yr_all"][i, :]
             if len(residual) == 320: #if all pixels
-                chi_squared = np.sum(((yr_all[i, 50:300] - y_all[i, 50:300])**2) / y_all[i, 50:300])
+                chi_squared = np.sum(((asi_data["yr_all"][i, 50:300] - asi_data["y_all"][i, 50:300])**2) / asi_data["y_all"][i, 50:300])
             
-            ax2.plot(x, residual, color="k", label="Residual")
-            ax2.fill_between(x, y_error_all[i_l1, :], -y_error_all[i_l1, :], color="g", label=asi_info["YError"], alpha=0.3)
+            ax_grp[1].plot(x, residual, color="k", label="Residual")
+            ax_grp[1].fill_between(x, asi_data["y_error_all"][i_l1, :], -asi_data["y_error_all"][i_l1, :], color="g", label=asi_info["YError"], alpha=0.3)
             
-            ax2.set_xlabel("Pixel")
-            ax1.set_ylabel("Transmittance")
-            ax2.set_ylabel("Residual")
-            ax1.set_title("%s%s: i=%i, %0.1fkm" %(hdf5_filename, suffix, i_l1, alts[i_l1]))
+            ax_grp[0].set_title("%s" %asi_info["FileAotfFilter"])
+            ax_grp[0].set_ylabel("Transmittance")
+            ax_grp[1].set_ylabel("Residual")
             
-            ax1.set_ylim((min(y_all[i, 20:])-0.01, max(y_all[i, 20:])+0.01))
-            # ax2.set_ylim((min(residual[20:])-0.003, max(residual[20:])+0.003))
-            ax2.set_ylim((-0.015, 0.015))
+            ax_grp[0].set_ylim((min(asi_data["y_all"][i, 20:])-0.01, max(asi_data["y_all"][i, 20:])+0.01))
+            ax_grp[1].set_ylim((-0.015, 0.015))
             if len(residual) == 320: #if all pixels
-                ax2.text(0.65, 0.028, "Chi-squared (pixels 50-300): %0.2e" %chi_squared, transform=ax2.transAxes, bbox=dict(ec='None', fc='white', alpha=0.8))
+                ax_grp[1].text(0.5, 0.05, "Chi-squared (pixels 50-300): %0.2e" %chi_squared, transform=ax_grp[1].transAxes, bbox=dict(ec='None', fc='white', alpha=0.8))
             
-            ax1.legend()
-            ax2.legend()
-            pdf.savefig()
-            plt.close()
-    
+            ax_grp[0].legend(loc="upper right")
+            ax_grp[1].legend(loc="upper right")
+        pdf.savefig()
+        plt.close()
+

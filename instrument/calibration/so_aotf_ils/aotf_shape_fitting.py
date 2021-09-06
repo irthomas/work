@@ -20,12 +20,13 @@ from tools.plotting.colours import get_colours
 from tools.general.get_nearest_index import get_nearest_index
 from tools.spectra.non_uniform_savgol import non_uniform_savgol
 
-from instrument.calibration.so_aotf_ils.simulation_config import AOTF_OFFSET_SHAPE, sim_parameters
+from instrument.calibration.so_aotf_ils.simulation_config import AOTF_OFFSET_SHAPE, RESULTS_SUB_DIRECTORY, sim_parameters
 
 
 line = 4383.5
 # line = 4276.1
 # line = 3787.9
+
 
 
 SAVE_OUTPUT = True
@@ -145,7 +146,7 @@ for filename in filenames:
     
     for suffix in suffixes:
     
-        file_path = os.path.join("output", "so_miniscan_aotf_fits", "no_blaze_width_fit", "%s_%s_%.0f_aotf_function.txt" %(filename, suffix, line))
+        file_path = os.path.join("output", "so_miniscan_aotf_fits", RESULTS_SUB_DIRECTORY, "%s_%s_%.0f_aotf_function.txt" %(filename, suffix, line))
         
         if os.path.exists(file_path):
             txt_in = np.loadtxt(file_path, skiprows=1, delimiter=",")

@@ -44,13 +44,24 @@ spectral_lines_dict = {
 
 
 
-def order_delta_nu(m, m2, p, t):
+F0=22.473422
+F1=5.559526e-4
+F2=1.751279e-8
+def order_delta_nu(m, m2, p, t, F0=F0, F1=F1, F2=F2):
     """pixel number and order to wavenumber calibration. Liuzzi et al. 2018"""
-    F0=22.473422
-    F1=5.559526e-4
-    F2=1.751279e-8
     delta_nu = (F0 + p*(F1 + F2*p))*(m-m2)
     return delta_nu
+
+def p0_nu_mp(m, nu, p, F0=F0, F1=F1, F2=F2):
+    """order, wavenumber and pixel to first pixel calibration. Inverse of function from Liuzzi et al. 2018 using same coefficients"""
+    #give single nu and p (e.g. absorption band minimum) to find p0
+    p0 = (-F1 + np.sqrt(F1**2 - 4*F2*(F0-nu/m))) / (2*F2) - p
+    return p0
+
+def nu_mp(m, p, p0, F0=F0, F1=F1, F2=F2):
+    """pixel number and order to wavenumber calibration. Liuzzi et al. 2018"""
+    f = (F0 + (p+p0)*(F1 + F2*(p+p0)))*m
+    return f
 
 
 #read in h5 file
@@ -71,7 +82,7 @@ for hdf5_file, hdf5_filename, hdf5_path in zip(hdf5_files, hdf5_filenames, hdf5_
     
     alts = hdf5_file["Geometry/Point0/TangentAltAreoid"][:, 0]
     y_all = hdf5_file["Science/Y"][:, :]
-    x = hdf5_file["Science/X"][0, px_range[0]:]
+    x_old = hdf5_file["Science/X"][0, px_range[0]:]
     
     hdf5_file.close()
 
@@ -79,7 +90,7 @@ for hdf5_file, hdf5_filename, hdf5_path in zip(hdf5_files, hdf5_filenames, hdf5_
     n_spectra = y_all.shape[0]
 
     #shift by 0.22cm-1 at start
-    x_shifted = x + 0.22
+    x_shifted = x_old + 0.32
 
     
     frame_index = get_nearest_index(chosen_alt, alts)
@@ -90,24 +101,29 @@ for hdf5_file, hdf5_filename, hdf5_path in zip(hdf5_files, hdf5_filenames, hdf5_
     y_cr = y / y_cont
     
     # ax.plot(x, y_cr, label="X and Y from HDF5 file, mean of indices %i to %i" %(min(frame_indices), max(frame_indices)))
-    ax.plot(x_shifted, y_cr, label="X+0.22cm-1 and Y from HDF5 file, mean of indices %i to %i" %(min(frame_indices), max(frame_indices)))
+    # ax.plot(x_shifted, y_cr, label="X+0.22cm-1 and Y from HDF5 file, mean of indices %i to %i" %(min(frame_indices), max(frame_indices)))
+    ax.plot(x_shifted, y_cr, label="CO spectrum at 30km")
     ax.set_xlabel("Wavenumber cm-1")
-    ax.set_ylabel("Transmittance")
+    ax.set_ylabel("Normalised Transmittance")
     ax.set_title(hdf5_filename)
     
-    spectral_lines_nu = spectral_lines_dict[order-1]
-    order_delta = order_delta_nu(order, order-1, 0, 0.0)
-    for spectral_line_nu in spectral_lines_nu:
-        ax.axvline(spectral_line_nu + order_delta, c="b", linestyle="--")
+    # spectral_lines_nu = spectral_lines_dict[order-1]
+    # order_delta = order_delta_nu(order, order-1, 0, 0.0)
+    # for spectral_line_nu in spectral_lines_nu:
+    #     ax.axvline(spectral_line_nu + order_delta, c="b", linestyle="--")
 
-    spectral_lines_nu = spectral_lines_dict[order+1]
-    order_delta = order_delta_nu(order, order+1, 0, 0.0)
-    for spectral_line_nu in spectral_lines_nu:
-        ax.axvline(spectral_line_nu + order_delta, c="r", linestyle="--")
+    # spectral_lines_nu = spectral_lines_dict[order+1]
+    # order_delta = order_delta_nu(order, order+1, 0, 0.0)
+    # for spectral_line_nu in spectral_lines_nu:
+    #     ax.axvline(spectral_line_nu + order_delta, c="r", linestyle="--")
 
     spectral_lines_nu = spectral_lines_dict[order]
-    for spectral_line_nu in spectral_lines_nu:
-        ax.axvline(spectral_line_nu, c="k", linestyle="--")
+    for i, spectral_line_nu in enumerate(spectral_lines_nu):
+        if i == 0:
+            label = "Order 189 CO lines"
+        else:
+            label = ""
+        ax.axvline(spectral_line_nu, c="k", linestyle="--", label=label)
 
     
     absorption_points = np.where(y_cr < 0.985)[0]
@@ -130,7 +146,7 @@ for hdf5_file, hdf5_filename, hdf5_path in zip(hdf5_files, hdf5_filenames, hdf5_
             label = "Gaussian fit to absorption bands"
         else:
             label = ""
-        ax.plot(x_hr, y_hr, "r", label=label)
+        # ax.plot(x_hr, y_hr, "r", label=label)
 
         closest_spectral_line = get_nearest_index(x_min_position, spectral_lines_nu)
         delta_nu = x_min_position - spectral_lines_nu[closest_spectral_line]
@@ -157,10 +173,19 @@ for hdf5_file, hdf5_filename, hdf5_path in zip(hdf5_files, hdf5_filenames, hdf5_
         
     x_new = np.polyval(polyfit, pixels)
     x_new_all_px = np.polyval(polyfit, np.arange(320))
+    
+    
+    first_pixels = p0_nu_mp(order, x_new, pixels)
+    mean_first_pixel = np.mean(first_pixels)
+    
     # ax.plot(x_new, y_cr, "g")
 
     #write spectra to new file
-    replace_datasets = {"Science/X":np.tile(x_new_all_px, (n_spectra,1))}
+    replace_datasets = {
+        "Science/X":np.tile(x_new_all_px, (n_spectra,1)),
+        "Channel/FirstPixel":np.tile(mean_first_pixel, (n_spectra,1)),
+    }
+    
     replace_attributes = {}
     hdf5_datasets, hdf5_attributes = read_hdf5_to_dict(hdf5_path[:-3])
     write_hdf5_from_dict(hdf5_filename+"_corr", hdf5_datasets, hdf5_attributes, replace_datasets, replace_attributes)
@@ -173,28 +198,43 @@ for hdf5_file, hdf5_filename, hdf5_path in zip(hdf5_files, hdf5_filenames, hdf5_
     
         x = f["Science/X"][0, :]
         y_all = f["Science/Y"][:, :]
+        mean_first_px = f["Channel/FirstPixel"][0]
         y = np.mean(y_all[frame_indices, :], axis=0)
         y_cont = baseline_als(y)
         y_cr = y / y_cont
     
     fig2, ax2 = plt.subplots(figsize=(10,5))
-    ax2.plot(x, y_cr, label="X and Y from HDF5 file, mean of indices %i to %i" %(min(frame_indices), max(frame_indices)))
+    # ax2.plot(x, y_cr, label="X and Y from HDF5 file, mean of indices %i to %i" %(min(frame_indices), max(frame_indices)))
+    ax2.plot(x, y_cr, label="CO spectrum at 30km")
     ax2.set_xlabel("Wavenumber cm-1")
-    ax2.set_ylabel("Transmittance")
+    ax2.set_ylabel("Normalised Transmittance")
     ax2.set_title(hdf5_filename+"_corr")
-    
-    spectral_lines_nu = spectral_lines_dict[order]
-    for spectral_line_nu in spectral_lines_nu:
-        ax2.axvline(spectral_line_nu, c="k", linestyle="--")
-    spectral_lines_nu = spectral_lines_dict[order-1]
-    order_delta = order_delta_nu(order, order-1, 0, 0.0)
-    for spectral_line_nu in spectral_lines_nu:
-        ax2.axvline(spectral_line_nu + order_delta, c="b", linestyle="--")
 
-    spectral_lines_nu = spectral_lines_dict[order+1]
-    order_delta = order_delta_nu(order, order+1, 0, 0.0)
-    for spectral_line_nu in spectral_lines_nu:
-        ax2.axvline(spectral_line_nu + order_delta, c="r", linestyle="--")
+    """find first pixel, then calculate px positions for adjacent orders"""
+    for i, spectral_line_nu in enumerate(spectral_lines_nu):
+        if i == 0:
+            label = "Order 189 CO lines"
+        else:
+            label = ""
+        ax2.axvline(spectral_line_nu, c="k", linestyle="--", label=label)
+
+    for c, m in zip(["b", "r"], [188, 190]):
+        spectral_lines_nu = spectral_lines_dict[m]
+        nu_p = nu_mp(m, np.arange(320), mean_first_px)
+        #find which pixel it lies on
+        for i, spectral_line_nu in enumerate(spectral_lines_nu):
+            spectral_line_px = np.interp(spectral_line_nu, nu_p, np.arange(320))
+            spectral_line_nu_centre_order = np.interp(spectral_line_px, np.arange(320), x)
+
+            if i == 0:
+                label = "Order %i CO lines" %m
+            else:
+                label = ""
+            
+            ax2.axvline(spectral_line_nu_centre_order, c=c, linestyle="--", label=label)
+        
+    ax2.legend()
+
 
 
     fig2.savefig("%s_corrected_x.png" %hdf5_filename)

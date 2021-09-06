@@ -190,8 +190,8 @@ for filename in filenames:
         plt.close()
         
         
-        x = variables_fit["A_nu0"][good_indices]
-        x2 = variables_fit["A"][good_indices]
+        x = variables_fit["A_nu0"][good_indices] #aotf wavenumber
+        x2 = variables_fit["A"][good_indices] #aotf freq
         y = variables_fit["solar_line_area_norm"][good_indices]
         t = variables_fit["temperature"][good_indices]
         t0 = variables_fit["t0"][good_indices]
