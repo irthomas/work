@@ -34,8 +34,8 @@ line = 4383.5
 SAVE_OUTPUT = False
 
 VARIABLE_TO_PLOT = "solar_line_area"
-# VARIABLE_TO_PLOT = "solar_line_area_c"
 # VARIABLE_TO_PLOT = "solar_line_depth"
+# VARIABLE_TO_PLOT = "solar_line_rel_depth"
 
 
 
@@ -167,7 +167,7 @@ for filename in filenames:
         
         # print(d_in["error"], np.median(d_in["error"]), np.median(d_in["error"]) * error_n_medians)
         good_indices = np.where(d_in["chisq"] < np.median(d_in["chisq"]) * error_n_medians)[0]
-        
+        print("%0.1f%% of values have been retained" %(len(good_indices)/len(d_in["chisq"]) * 100.))
     
         #remove bad points where chisq too high    
         d_good = {}
