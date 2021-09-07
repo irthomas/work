@@ -110,14 +110,22 @@ def get_solar_spectrum(d, plot=False):
     
     ss_file = os.path.join(paths["RETRIEVALS"]["SOLAR_DIR"], solar_spectrum_filename)
     I0_solar_hr = get_solar_hr(d["nu_hr"], solspec_filepath=ss_file)
+
+    #scale ACE to same level as PFS solar spectrum
+    if d["solar_spectrum"] == "ACE":
+        I0_solar_hr *= (4.266009 / 1.4507183e-006)
+
     I0_lr = savgol_filter(I0_solar_hr, sim_parameters[d["line"]]["filter_smoothing"], 1)
     # I0_cont = fit_polynomial(nu_hr, I0_low_res, degree=2)
     # I0_cr = I0_low_res / I0_cont
     # I0_low_res = I0_low_res/np.max(I0_low_res)
     # plt.plot(nu_hr, I0_cr, label="Convolved solar line")
+
+    
     
     
     d["I0_solar_hr"] = I0_solar_hr
+    
     
     #pre-convolute solar spectrum to approximate level
     d["I0_lr"] = I0_lr

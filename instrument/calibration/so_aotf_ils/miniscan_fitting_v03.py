@@ -87,17 +87,20 @@ for filename in filenames:
         d = get_solar_spectrum(d, plot=SETUP)
     
     
-        # indices = range(len(d["aotf_freqs"]))
+        indices = range(len(d["aotf_freqs"]))
         # indices = range(0, len(d["aotf_freqs"]), 50)
-        indices = range(0,255,1)
+
+        # indices = range(0,255,1)
+
+        # indices = range(216,217,1) #20180716_000706_0p2a_SO_1_C centre of order 194
+        # indices = range(200, 255, 1)
+
         # indices = get_absorption_line_indices(d)
-        # indices = range(0, 101, 20)
-        # indices = range(72,73)
         # indices = [*range(80,140,1), *range(80+256,140+256,1), *range(80+256*2, 140+256*2, 1), *range(80+256*3, 140+256*3, 1), *range(80+256*4, 140+256*4, 1), *range(80+256*5, 140+256*5, 1)]
         
         colours = get_colours(len(indices))
         
-        variables_fit = {"A":[], "A_nu0":[], "solar_line_area":[], "solar_line_area_c":[], "chisq":[], "temperature":[], "t0":[]}
+        variables_fit = {"A":[], "A_nu0":[], "solar_line_area":[], "solar_line_depth":[], "chisq":[], "temperature":[], "t0":[]}
         
         for index, frame_index in enumerate(indices):
             print("frame_index=%i (%i/%i)" %(frame_index, index, len(indices)))
@@ -152,15 +155,6 @@ for filename in filenames:
             order_range.remove(d["centre_order"])
             non_centre_order_contribution = calc_spectrum(variables, d, order_range=order_range)
             
-            if PLOT_CENTRE_VS_ADJACENT_ORDERS:
-                    
-                plt.plot(d["spectrum_norm"]*max(centre_order_contribution + non_centre_order_contribution), label="Raw")
-                plt.plot(centre_order_contribution, label="Centre order contribution")
-                plt.plot(non_centre_order_contribution, label="Other order contribution")
-                plt.plot(centre_order_contribution + non_centre_order_contribution, label="Total")
-                plt.axvline(smi)
-                plt.legend(loc="lower right")
-                sys.exit()
             
             #now do solar line calc but only for main order - doesn't work
             solar_fit_c = calc_spectrum(variables, d, order_range=[d["centre_order"]])
@@ -170,10 +164,28 @@ for filename in filenames:
             solar_fit_slr_c = calc_spectrum(variables, d, I0=d["I0_lr_slr"], order_range=range(d["centre_order"],d["centre_order"]+1))
             # solar_fit_slr_norm_c = solar_fit_slr_c * scalar_c
             
-            ratio_centre = centre_order_contribution_slr[smi] / non_centre_order_contribution[smi]
+            #scale by ratio of main order vs other order contributions - this is wrong
+            # ratio_centre = centre_order_contribution_slr[smi] / non_centre_order_contribution[smi]
+            
+            solar_line_depth = centre_order_contribution_slr[smi]**2 / centre_order_contribution[smi]
+            
 
             # area_c = area_under_curve(solar_fit_slr_norm_c[pixels_solar_line_area], solar_fit_norm_c[pixels_solar_line_area]) * ratio_centre
-            area_c = area_under_curve(solar_fit_slr_c[pixels_solar_line_area], solar_fit_c[pixels_solar_line_area]) * ratio_centre
+            # area_c = area_under_curve(solar_fit_slr_c[pixels_solar_line_area], solar_fit_c[pixels_solar_line_area]) * ratio_centre
+
+            if PLOT_CENTRE_VS_ADJACENT_ORDERS:
+                plt.figure(constrained_layout=True)
+                plt.plot(d["spectrum_norm"]*max(centre_order_contribution + non_centre_order_contribution), label="Raw")
+                plt.plot(solar_fit_slr_c, label="Centre order contribution (no solar line)", linestyle="--")
+                plt.plot(centre_order_contribution, label="Centre order contribution")
+                plt.plot(non_centre_order_contribution, label="Other order contribution")
+                plt.plot(centre_order_contribution + non_centre_order_contribution, label="Total")
+                plt.axvline(smi)
+                plt.legend(loc="upper left")
+                plt.xlabel("Pixel number")
+                plt.ylabel("Relative contribution of order")
+                plt.title("Best fit parameters to match shape of solar line and continuum")
+                sys.exit()
             
             
             
@@ -199,14 +211,16 @@ for filename in filenames:
             variables_fit["A"].append(d["A"])
             variables_fit["A_nu0"].append(d["A_nu0"])
             variables_fit["solar_line_area"].append(area)
-            variables_fit["solar_line_area_c"].append(area_c)
+            variables_fit["solar_line_depth"].append(solar_line_depth)
+            # variables_fit["solar_line_area_c"].append(area_c)
             variables_fit["chisq"].append(chisq)
             variables_fit["t0"].append(d["t0"])
             variables_fit["temperature"].append(d["temperature"])
         
         
         variables_fit["solar_line_area"] = np.array(variables_fit["solar_line_area"])  
-        variables_fit["solar_line_area_c"] = np.array(variables_fit["solar_line_area_c"])  
+        variables_fit["solar_line_depth"] = np.array(variables_fit["solar_line_depth"])  
+        # variables_fit["solar_line_area_c"] = np.array(variables_fit["solar_line_area_c"])  
         variables_fit["chisq"] = np.array(variables_fit["chisq"])
         variables_fit["A_nu0"] = np.array(variables_fit["A_nu0"])
         variables_fit["A"] = np.array(variables_fit["A"])
@@ -222,17 +236,19 @@ for filename in filenames:
         plt.title("%s:\nAOTF shape from solar line simulation" %hdf5_filename)
         # plt.scatter(variables_fit["A_nu0"], variables_fit["solar_line_area"])
         plt.errorbar(variables_fit["A_nu0"], variables_fit["solar_line_area"], yerr=variables_fit["chisq"]/error_scaler, ls="none", marker=".")
-        plt.errorbar(variables_fit["A_nu0"], variables_fit["solar_line_area_c"], yerr=variables_fit["chisq"]/error_scaler, ls="none", marker=".")
+        # plt.errorbar(variables_fit["A_nu0"], variables_fit["solar_line_area_c"], yerr=variables_fit["chisq"]/error_scaler, ls="none", marker=".")
         plt.xlabel("Wavenumber of AOTF peak")
         plt.ylabel("AOTF function (normalised)")
-        plt.ylim([-0.1, max([max(variables_fit["solar_line_area"]), max(variables_fit["solar_line_area_c"])])+0.1])
+        plt.ylim([-0.1, max(variables_fit["solar_line_area"])+0.1])
+        # plt.ylim([-0.1, max([max(variables_fit["solar_line_area"]), max(variables_fit["solar_line_area_c"])])+0.1])
         plt.savefig("%s_%s_%.0f_aotf_function.png" %(hdf5_filename, solar_spectrum, line))
         plt.close()
         
         
+        #write to comma delimited file
         header = ""
         data_out = []
-        for name in ["A_nu0", "A", "temperature", "t0", "solar_line_area", "solar_line_area_c", "chisq"]:
+        for name in ["A_nu0", "A", "temperature", "t0", "solar_line_area", "solar_line_depth", "chisq"]:
             header += "%s," %name
             data_out.append(variables_fit[name])
 
@@ -240,6 +256,7 @@ for filename in filenames:
         for key in param_dict.keys():
             header += "%s," %key
             data_out.append(variables_fit[key])
+        header = header[:-1]
 
 
         np.savetxt("%s_%s_%.0f_aotf_function.txt" %(hdf5_filename, solar_spectrum, line), np.array(data_out).T, fmt="%.6f", delimiter=",", header=header)
