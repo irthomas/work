@@ -23,6 +23,8 @@ import matplotlib.pyplot as plt
 from tools.file.hdf5_functions import make_filelist
 from tools.file.read_write_hdf5 import write_hdf5_from_dict, read_hdf5_to_dict
 from tools.file.paths import paths
+from tools.file.get_hdf5_temperatures import get_interpolated_temperatures
+
 
 from tools.sql.get_sql_spectrum_temperature import get_sql_temperatures_all_spectra
 
@@ -55,7 +57,7 @@ def get_file(regex, file_level="hdf5_level_0p2a"):
 
 
 
-def get_data_from_file(hdf5_file, hdf5_filename):
+def get_data_from_file(hdf5_file, hdf5_filename, d):
 
     channel = hdf5_filename.split("_")[3].lower()
     aotf_freq = hdf5_file["Channel/AOTFFrequency"][...]
@@ -63,8 +65,17 @@ def get_data_from_file(hdf5_file, hdf5_filename):
     detector_data_all = hdf5_file["Science/Y"][...]
     detector_centre_data = detector_data_all[:, [9,10,11,15], :] #chosen to avoid bad pixels
     spectra = np.mean(detector_centre_data, axis=1)
+
+    d["hdf5_filename"] = hdf5_filename
+    d["channel"] = channel
+    d["aotf_freqs"] = aotf_freq
+    d["spectra"] = spectra
     
-    return {"hdf5_filename":hdf5_filename, "channel":channel, "aotf_freqs":aotf_freq, "spectra":spectra}
+    d["pixels"] = sim_parameters[d["line"]]["pixels"]
+    d["centre_order"] = sim_parameters[d["line"]]["centre_order"]
+    d["m_range"] = sim_parameters[d["line"]]["order_range"]
+    
+    return d
 
 
 
@@ -75,12 +86,9 @@ def select_data(d, index):
     d["A"] = d["aotf_freqs"][index]
     d["spectrum"] = d["spectra"][index]
     d["spectrum_norm"] = d["spectrum"]/np.max(d["spectrum"])
-    d["centre_order"] = sim_parameters[d["line"]]["centre_order"]
-    d["pixels"] = sim_parameters[d["line"]]["pixels"]
-    d["m_range"] = sim_parameters[d["line"]]["order_range"]
 
     if AOTF_FROM_FILE:
-        load_aotf_from_file(d)
+        d = load_aotf_from_file(d)
 
     
     return d
@@ -90,15 +98,37 @@ def select_data(d, index):
 
 
 
-def spectrum_temperature(hdf5_file, channel, index):
-    """get temperature of a specific spectrum (by index)"""
+# def spectrum_temperature(hdf5_file, channel, index):
+#     """get temperature of a specific spectrum (by index)"""
     
-    temperatures = get_sql_temperatures_all_spectra(hdf5_file, channel)
-    # temperature = np.mean(temperatures)
-    temperature = temperatures[index]
-    return temperature
+#     temperatures = get_sql_temperatures_all_spectra(hdf5_file, channel)
+#     # temperature = np.mean(temperatures)
+#     temperature = temperatures[index]
+#     return temperature
 
+
+def get_all_x(hdf5_file, d):   
     
+    temperatures = get_interpolated_temperatures(hdf5_file, "so")
+    pixels = d["pixels"]
+    order = d["centre_order"]
+    
+    x_array = np.zeros([len(temperatures), len(pixels)])
+    
+    #slack 29th August 2021
+    cfpixel = np.array([1.75128E-08, 5.55953E-04, 2.24734E+01])   # Blaze free-spectral-range (FSR) [cm-1 from pixel]
+    ncoeff  = [-1.76520810e-07, -2.26677449e-05, -1.93885521e-04] # Relative frequency shift coefficients [shift/frequency from Celsius]
+
+    for i, t in enumerate(temperatures):
+        xdat  = np.polyval(cfpixel, pixels) * order
+        xdat += xdat * np.polyval(ncoeff, t)
+    
+        x_array[i, :] = xdat
+        
+    d["temperatures"] = temperatures
+    d["x_all"] = x_array 
+    return d
+
 
 
 def get_solar_spectrum(d, plot=False):
@@ -147,6 +177,7 @@ def get_solar_spectrum(d, plot=False):
     
     d["I0_lr_slr"] = I0_lr_slr
 
+
     if plot:
         plt.figure()
         plt.plot(nu_hr, I0_lr)
@@ -164,9 +195,15 @@ def get_absorption_line_indices(d):
 
     return abs_indices
 
+
+
+
 def fit_temperature(d, hdf5_file, plot=False):
     """code to check absorption lines in solar spectrum"""
 
+
+    d = get_all_x(hdf5_file, d)
+    
     index = d["index"]
     
     abs_indices = get_absorption_line_indices(d)
@@ -176,14 +213,11 @@ def fit_temperature(d, hdf5_file, plot=False):
     
     # aotf_freqs = d["aotf_freqs"]
     spectra = d["spectra"]
-    channel = d["channel"]
+    # channel = d["channel"]
     nu_hr = d["nu_hr"]
-    temperature = spectrum_temperature(hdf5_file, channel, index)
+    # temperature = spectrum_temperature(hdf5_file, channel, index)
+    temperature = d["temperatures"][index]
     
-    
-    #TODO: fix this
-    # order = m_aotf_so(aotf_freqs[absorption_line_fit_index])
-
     order = d["centre_order"]
     
     
@@ -193,7 +227,9 @@ def fit_temperature(d, hdf5_file, plot=False):
     spectrum_cont = baseline_als(spectrum_w_absorption)
     spectrum_cr = spectrum_w_absorption[50:]/spectrum_cont[50:]
     smi = np.argmin(spectrum_cr) + 50 #spectrum min index
-    pixels_nu = nu_mp(order, sim_parameters[d["line"]]["pixels"], temperature)
+    
+    # pixels_nu = nu_mp(order, sim_parameters[d["line"]]["pixels"], temperature)
+    pixels_nu = d["x_all"][index, :]
     
     if np.abs(pixels_nu[smi]-d["line"]) > 2.0: #if not fitting to desired solar line
         # print("Warning: solar line at %0.2f and fitting to line at %0.2f" %(d["line"], pixels_nu[smi]))
@@ -228,8 +264,8 @@ def fit_temperature(d, hdf5_file, plot=False):
     
     
     
-    # delta_nu = absorption_nu - min_position_nu
-    # print("delta_nu=", delta_nu)
+    delta_nu = absorption_nu - min_position_nu
+    print("temperature=", temperature, "delta_nu=", delta_nu)
     t_calc = t_nu_mp(order, absorption_nu, smi)
     # delta_t = temperature - t_calc
     # print("delta_t=", delta_t)
@@ -459,6 +495,7 @@ def load_aotf_from_file(d):
       
     d["aotf_nu"] = aotf_data[:, 0]
     d["aotf_fn"] = aotf_data[:, 1]
+    return d
 
 
 def F_aotf(nu_pm, variables, d):

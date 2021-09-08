@@ -33,10 +33,12 @@ line = 4383.5
 # SAVE_OUTPUT = True
 SAVE_OUTPUT = False
 
-VARIABLE_TO_PLOT = "solar_line_area"
+# VARIABLE_TO_PLOT = "solar_line_area"
 # VARIABLE_TO_PLOT = "solar_line_depth"
-# VARIABLE_TO_PLOT = "solar_line_rel_depth"
+VARIABLE_TO_PLOT = "solar_line_rel_depth"
 
+PLOT_MINISCAN_FITS = []
+# PLOT_MINISCAN_FITS = ["aotf_width", "asymmetry", "blaze_centre", "offset_height", "sidelobe"]
 
 
 error_n_medians = sim_parameters[line]["error_n_medians"]
@@ -145,12 +147,12 @@ def fit_aotf(param_dict, x, y, sigma):
 
 
     
-all_points = {"A_nu0":[], VARIABLE_TO_PLOT:[]}
-plt.figure(figsize=(15, 8))
+# all_points = {"A_nu0":[], VARIABLE_TO_PLOT:[]}
+# plt.figure(figsize=(15, 8))
 
-for filename in filenames:
+for file_index, filename in enumerate(filenames):
     
-    for suffix in suffixes:
+    for suffix_index, suffix in enumerate(suffixes):
     
         file_path = os.path.join("output", "so_miniscan_aotf_fits", RESULTS_SUB_DIRECTORY, "%s_%s_%.0f_aotf_function.txt" %(filename, suffix, line))
         
@@ -162,76 +164,90 @@ for filename in filenames:
             print("Warning: file %s does not exist" %file_path)
             continue
             
-        # d_in = {"A":txt_in[:,0],"A_nu0":txt_in[:,1],"t0":txt_in[:,2],"t_calc":txt_in[:,3], "F_aotf":txt_in[:,4], "error":txt_in[:,5]}
-        d_in = {key:txt_in[:,i] for i,key in enumerate(headers_in)}
+        if file_index == suffix_index == 0:
+            # d_in = {key:txt_in[:,i] for i,key in enumerate(headers_in)}
+            d_in = {key:[] for i,key in enumerate(headers_in)}
+            
+        for i, key in enumerate(d_in.keys()):
+            d_in[key].extend(list(txt_in[:,i]))
         
         # print(d_in["error"], np.median(d_in["error"]), np.median(d_in["error"]) * error_n_medians)
-        good_indices = np.where(d_in["chisq"] < np.median(d_in["chisq"]) * error_n_medians)[0]
-        print("%0.1f%% of values have been retained" %(len(good_indices)/len(d_in["chisq"]) * 100.))
-    
-        #remove bad points where chisq too high    
-        d_good = {}
-        for key,values in d_in.items():
-            d_good[key] = values[good_indices]
-            
-        #sort together
-        sort_ix = np.argsort(d_good["A"])
-        for key,values in d_good.items():
-            d_good[key] = d_good[key][sort_ix]
-        
-        
-        c = [colours[get_nearest_index(t, temperature_colours)] for t in d_good["t0"]]
-            
+for i, key in enumerate(d_in.keys()):
+    d_in[key] = np.asfarray(d_in[key])
 
-        all_points["A_nu0"].extend(d_good["A_nu0"])
-        all_points[VARIABLE_TO_PLOT].extend(d_good[VARIABLE_TO_PLOT])
 
-        
-        plt.scatter(d_good["A_nu0"], d_good[VARIABLE_TO_PLOT], c=c)
-        
-        
-        
-        # """histogram bin"""
-        # nbins = 500
-        # bins = np.linspace(4200., 4500., nbins+1)
-        # ind = np.digitize(d_good["A_nu0"], bins)
-        # F_aotf_binned = [np.mean(d_good["F_aotf"][ind == j]) for j in range(0, nbins+1)]
-        
-        # plt.scatter(bins, F_aotf_binned)
-        
-        
-        """fit aotf function"""
-        # param_dict = make_param_dict_aotf()
-        # # fit_params, chisq = fit_aotf(param_dict, d_good["A_nu0"], d_good["F_aotf"])
-        # fit_params = {
-        #     "aotf_width":18.5,
-        #     "aotf_amplitude":0.65,
-        #     "sidelobe":4.,
-        #     "asymmetry":1.8,
-        #     "nu_offset":4385.0,
-        #     "offset_height":0.02079,
-        #     "offset_width":65.89586,
-        #     }
+good_indices = np.where(d_in["chisq"] < np.median(d_in["chisq"]) * error_n_medians)[0]
+print("%0.1f%% of values have been retained" %(len(good_indices)/len(d_in["chisq"]) * 100.))
+
+#remove bad points where chisq too high    
+d_good = {}
+for key,values in d_in.items():
+    d_good[key] = values[good_indices]
     
-        # x_range = np.arange(min(d_good["A_nu0"]), max(d_good["A_nu0"]), 0.01)
-        # F_aotf_fitted = F_aotf2(fit_params, x_range)
-        # plt.plot(x_range, F_aotf_fitted)
-    
-        # print(chisq)
-        print(min(d_good["t0"]), max(d_good["t0"]))
-    
+#sort together
+sort_ix = np.argsort(d_good["A"])
+for key,values in d_good.items():
+    d_good[key] = d_good[key][sort_ix]
+
+
+for variable in PLOT_MINISCAN_FITS:
+    plt.figure(figsize=(15,8), constrained_layout=True)
+    plt.title("%s: mean=%.5f" %(variable, np.mean(d_good[variable])))
+    plt.scatter(d_good["A_nu0"], d_good[variable])
+
+c = [colours[get_nearest_index(t, temperature_colours)] for t in d_good["t0"]]
+plt.figure(figsize=(15,8), constrained_layout=True)
+plt.scatter(d_good["A_nu0"], d_good[VARIABLE_TO_PLOT], c=c)
+   
+
+# all_points["A_nu0"].extend(d_good["A_nu0"])
+# all_points[VARIABLE_TO_PLOT].extend(d_good[VARIABLE_TO_PLOT])
+
+
+
+
+
+# """histogram bin"""
+# nbins = 500
+# bins = np.linspace(4200., 4500., nbins+1)
+# ind = np.digitize(d_good["A_nu0"], bins)
+# F_aotf_binned = [np.mean(d_good["F_aotf"][ind == j]) for j in range(0, nbins+1)]
+
+# plt.scatter(bins, F_aotf_binned)
+
+
+"""fit aotf function"""
+# param_dict = make_param_dict_aotf()
+# # fit_params, chisq = fit_aotf(param_dict, d_good["A_nu0"], d_good["F_aotf"])
+# fit_params = {
+#     "aotf_width":18.5,
+#     "aotf_amplitude":0.65,
+#     "sidelobe":4.,
+#     "asymmetry":1.8,
+#     "nu_offset":4385.0,
+#     "offset_height":0.02079,
+#     "offset_width":65.89586,
+#     }
+
+# x_range = np.arange(min(d_good["A_nu0"]), max(d_good["A_nu0"]), 0.01)
+# F_aotf_fitted = F_aotf2(fit_params, x_range)
+# plt.plot(x_range, F_aotf_fitted)
+
+# print(chisq)
+print("temperature range:", min(d_good["t0"]), "to", max(d_good["t0"]))
+
 # plt.xlim([4380, 4450])
 
 
-all_points["A_nu0"] = np.array(all_points["A_nu0"])
-all_points[VARIABLE_TO_PLOT] = np.array(all_points[VARIABLE_TO_PLOT])
+A_nu0 = d_good["A_nu0"]
+A_points = d_good[VARIABLE_TO_PLOT]
 
 
 """histogram bin"""
 bins_int = sim_parameters[line]["histogram_bins"]
-ind = np.digitize(all_points["A_nu0"], bins_int)
+ind = np.digitize(A_nu0, bins_int)
 bins = bins_int + (bins_int[1] - bins_int[0])
-F_aotf_binned = np.array([np.mean(all_points[VARIABLE_TO_PLOT][ind == j]) for j in range(0, len(bins_int))])
+F_aotf_binned = np.array([np.mean(A_points[ind == j]) for j in range(0, len(bins_int))])
 
 
 
@@ -247,11 +263,11 @@ plt.scatter(bins, F_aotf_binned * smooth_scalar, c="k", marker="+", label="Raw b
 plt.plot(bins_smoothed, smoothed_norm, label="Smoothed (Savitsky-Golay filter)")
 plt.xlabel("AOTF Wavenumber")
 plt.ylabel("Area of absorption line")
-plt.title("AOTF from fitting %.0fcm-1 solar line" %line)
+plt.title("AOTF from fitting %.0fcm-1 solar line: %s" %(line, VARIABLE_TO_PLOT))
 plt.legend()
 plt.grid()
 
-filename = "AOTF_from_fitting_%.0fcm-1_solar_line" %line
+filename = "AOTF_from_fitting_%.0fcm-1_solar_line_%s" %(line, VARIABLE_TO_PLOT)
 
 if SAVE_OUTPUT:
     plt.savefig("%s_binned.png" %filename)
@@ -260,10 +276,13 @@ if SAVE_OUTPUT:
 """fit aotf function to centre + main sidelobes"""
 
 if line == 4383.5:
-    # centre_nu_range = [4000., 5000.]
+    centre_nu_range = [4000., 5000.]
     # centre_nu_range = [4345., 4420.]
     # centre_nu_range = [4331., 4444.]
-    centre_nu_range = [4320., 4480.]
+    if VARIABLE_TO_PLOT == "solar_line_area":
+        centre_nu_range = [4320., 4480.]
+    if VARIABLE_TO_PLOT == "solar_line_rel_depth":
+        centre_nu_range = [4310., 4490.]
 
 if line == 4276.1:
     # centre_nu_range = [4000., 5000.]
@@ -304,7 +323,7 @@ text = "\n".join(["%s: %0.3f" %(key, value) for key, value in fit_params.items()
 plt.text(min(x_range), 0.4, text)
 plt.xlabel("AOTF Wavenumber")
 plt.ylabel("Area of absorption line")
-plt.title("AOTF from fitting %.0fcm-1 solar line" %line)
+plt.title("AOTF from fitting %.0fcm-1 solar line: %s" %(line, VARIABLE_TO_PLOT))
 plt.legend()
 plt.grid()
 
@@ -320,7 +339,7 @@ plt.figure()
 plt.plot(x_range_new, aotf_interp[::-1])
 plt.xlabel("AOTF Wavenumber")
 plt.ylabel("Area of absorption line")
-plt.title("AOTF from fitting %.0fcm-1 solar line" %line)
+plt.title("AOTF from fitting %.0fcm-1 solar line: %s" %(line, VARIABLE_TO_PLOT))
 plt.grid()
 
 if SAVE_OUTPUT:

@@ -69,6 +69,8 @@ if args.solar_index:
     print("Solar spectrum suffix:", args.solar_index)
     solar_spectra = [args.solar_index]
 
+d = {}
+d["line"] = line
 
 
 for filename in filenames:
@@ -77,30 +79,30 @@ for filename in filenames:
 
 
     hdf5_file, hdf5_filename = get_file(regex)
-    d = get_data_from_file(hdf5_file, hdf5_filename)
+    d = get_data_from_file(hdf5_file, hdf5_filename, d)
     
     
     
     for solar_spectrum in solar_spectra:
-        d["line"] = line
         d["solar_spectrum"] = solar_spectrum
         d = get_solar_spectrum(d, plot=SETUP)
     
     
-        indices = range(len(d["aotf_freqs"]))
-        # indices = range(0, len(d["aotf_freqs"]), 50)
+        # indices = range(len(d["aotf_freqs"]))
+        indices = range(0, len(d["aotf_freqs"]), 50)
 
         # indices = range(0,255,1)
 
         # indices = range(216,217,1) #20180716_000706_0p2a_SO_1_C centre of order 194
-        # indices = range(150, 255, 1)
+        # indices = range(200, 255, 1)
 
         # indices = get_absorption_line_indices(d)
         # indices = [*range(80,140,1), *range(80+256,140+256,1), *range(80+256*2, 140+256*2, 1), *range(80+256*3, 140+256*3, 1), *range(80+256*4, 140+256*4, 1), *range(80+256*5, 140+256*5, 1)]
         
         colours = get_colours(len(indices))
         
-        variables_fit = {"A":[], "A_nu0":[], "solar_line_area":[], "solar_line_depth":[], "solar_line_rel_depth":[], "chisq":[], "temperature":[], "t0":[]}
+        variables_fit = {"A":[], "A_nu0":[], "solar_line_area":[], "solar_line_depth":[], "solar_line_rel_depth":[], "solar_line_rel_area":[], \
+                         "chisq":[], "temperature":[], "t0":[]}
         
         for index, frame_index in enumerate(indices):
             print("frame_index=%i (%i/%i)" %(frame_index, index, len(indices)))
@@ -169,15 +171,18 @@ for filename in filenames:
             
             # solar_line_depth = area + (centre_order_contribution_slr[smi] - non_centre_order_contribution[smi])
             
-            #line depth x main order
+            #line depth x main order height
             solar_line_depth = centre_order_contribution_slr[smi]**2 / centre_order_contribution[smi]
 
-            #line depth x relative main/adjacent order
+            #line depth x relative main/all orders height
             solar_line_rel_depth = centre_order_contribution_slr[smi]**2 / (centre_order_contribution[smi] * solar_fit_slr[smi]) 
             
-
-            # area_c = area_under_curve(solar_fit_slr_norm_c[pixels_solar_line_area], solar_fit_norm_c[pixels_solar_line_area]) * ratio_centre
-            # area_c = area_under_curve(solar_fit_slr_c[pixels_solar_line_area], solar_fit_c[pixels_solar_line_area]) * ratio_centre
+            #solar line area x relative main order height x relative main/all orders height
+            area_c = area_under_curve(solar_fit_slr_c[pixels_solar_line_area], solar_fit_c[pixels_solar_line_area])
+            solar_line_rel_area = area_c * centre_order_contribution_slr[smi]**2 / solar_fit_slr[smi]
+            
+            #wrong - area is sinusoidal
+            # area_c = area_under_curve(solar_fit_slr_c[pixels_solar_line_area], solar_fit_c[pixels_solar_line_area])
 
             if PLOT_CENTRE_VS_ADJACENT_ORDERS:
                 plt.figure(constrained_layout=True)
@@ -219,6 +224,7 @@ for filename in filenames:
             variables_fit["solar_line_area"].append(area)
             variables_fit["solar_line_depth"].append(solar_line_depth)
             variables_fit["solar_line_rel_depth"].append(solar_line_rel_depth)
+            variables_fit["solar_line_rel_area"].append(solar_line_rel_area)
             variables_fit["chisq"].append(chisq)
             variables_fit["t0"].append(d["t0"])
             variables_fit["temperature"].append(d["temperature"])
@@ -227,6 +233,7 @@ for filename in filenames:
         variables_fit["solar_line_area"] = np.array(variables_fit["solar_line_area"])  
         variables_fit["solar_line_depth"] = np.array(variables_fit["solar_line_depth"])  
         variables_fit["solar_line_rel_depth"] = np.array(variables_fit["solar_line_rel_depth"])  
+        variables_fit["solar_line_rel_area"] = np.array(variables_fit["solar_line_rel_area"])  
         variables_fit["chisq"] = np.array(variables_fit["chisq"])
         variables_fit["A_nu0"] = np.array(variables_fit["A_nu0"])
         variables_fit["A"] = np.array(variables_fit["A"])
@@ -254,7 +261,7 @@ for filename in filenames:
         #write to comma delimited file
         header = ""
         data_out = []
-        for name in ["A_nu0", "A", "temperature", "t0", "solar_line_area", "solar_line_depth", "solar_line_rel_depth", "chisq"]:
+        for name in ["A_nu0", "A", "temperature", "t0", "solar_line_area", "solar_line_depth", "solar_line_rel_depth", "solar_line_rel_area", "chisq"]:
             header += "%s," %name
             data_out.append(variables_fit[name])
 

@@ -64,7 +64,7 @@ sim_parameters = {
         "solar_line_aotf_range":[25923-40, 25923+40],
         "solar_line_nu_range":[4275.6, 4276.8],
         "histogram_bins":np.linspace(4150., 4400., 501),
-        "error_n_medians":20,
+        "error_n_medians":20, #lower value = stricter
         "filter_smoothing":99,
         "filenames":[
             "20180716_000706_0p2a_SO_1_C", #25719-26738kHz (approx. orders 188-195) in steps of 4kHz
