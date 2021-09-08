@@ -18,9 +18,9 @@ uvis = get_interpolated_temperatures(hdf5_file, "uvis")
 from datetime import datetime
 from scipy import interpolate
 from scipy.signal import medfilt
-# import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 
-def get_interpolated_temperatures(hdf5_file, channel):
+def get_interpolated_temperatures(hdf5_file, channel , plot=False):
     """give an open hdf5 file and return a temperature for each spectrum in the file, interpolated from TGO readouts"""
     
     #get observation times from file
@@ -42,9 +42,15 @@ def get_interpolated_temperatures(hdf5_file, channel):
     #get channel dataset
     channel_temperatures = hdf5_file["Temperature/Nominal%s" %channel.upper()][...]
     temperatures_median = medfilt(channel_temperatures, 5)
-    # plt.figure()
-    # plt.plot(channel_temperatures)
-    # plt.plot(temperatures_median)
+    
+    if plot:
+        plt.figure()
+        plt.plot(channel_temperatures, label="Raw values")
+        plt.plot(temperatures_median, label="Median filtered")
+        plt.legend()
+        plt.title("TGO Temperature Readouts")
+        plt.xlabel("Measurement Number")
+        plt.ylabel("Temperature")
 
     
     #interpolate onto observation times
