@@ -11,11 +11,12 @@ import smtplib
 from tools.file.passwords import passwords
 from smtplib import SMTP_SSL, SMTP_SSL_PORT
 
-def send_email(subject, body):
+def send_email(subject, body, _to=None):
 
     # write email
     _from = "ithomas84@gmail.com"
-    _to  = "ithomas84@gmail.com"
+    if not _to:
+        _to  = "ithomas84@gmail.com"
     
     
     message = """Subject: %s\n%s""" % (subject, body)
@@ -42,17 +43,18 @@ def send_email(subject, body):
     
 
 
-def send_bira_email(subject, body):
+def send_bira_email(subject, body, _to=None):
 
     # write email
     _from = "ian.thomas@aeronomie.be"
-    _to  = "ian.thomas@aeronomie.be"
+    if not _to:
+        _to  = "ian.thomas@aeronomie.be"
 
     message = """Subject: %s\n%s""" % (subject, body)
     
     print("From:", _from)
     print("To:", _to)
-    print(message)
+    # print(message)
     
     
     
@@ -72,4 +74,4 @@ def send_bira_email(subject, body):
 
 
 #send_email("this is the subject", "this is the body")
-send_bira_email("this is the subject", "this is the body")
+# send_bira_email("this is the subject", "this is the body")

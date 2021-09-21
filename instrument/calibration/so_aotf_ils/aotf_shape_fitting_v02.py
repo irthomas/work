@@ -30,12 +30,13 @@ line = 4383.5
 
 
 
-# SAVE_OUTPUT = True
-SAVE_OUTPUT = False
+SAVE_OUTPUT = True
+# SAVE_OUTPUT = False
 
-# VARIABLE_TO_PLOT = "solar_line_area"
-# VARIABLE_TO_PLOT = "solar_line_depth"
-VARIABLE_TO_PLOT = "solar_line_rel_depth"
+VARIABLE_TO_PLOT = "solar_line_area"
+# VARIABLE_TO_PLOT = "solar_line_depth" #wrong
+# VARIABLE_TO_PLOT = "solar_line_rel_depth"
+# VARIABLE_TO_PLOT = "solar_line_rel_area" #wrong
 
 PLOT_MINISCAN_FITS = []
 # PLOT_MINISCAN_FITS = ["aotf_width", "asymmetry", "blaze_centre", "offset_height", "sidelobe"]
@@ -113,7 +114,9 @@ def F_aotf2(variables, x):
     F = sinc(dx, variables["aotf_amplitude"], variables["aotf_width"], variables["sidelobe"], variables["asymmetry"]) + offset
     
     #normalise offset
-    variables["offset_height"] = variables["offset_height"] / np.max(F)
+    if AOTF_OFFSET_SHAPE != "Constant":
+        variables["offset_height"] = variables["offset_height"] / np.max(F)
+
     return F/max(F)
 
 

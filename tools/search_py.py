@@ -11,7 +11,7 @@ import os
 import glob
 import posixpath
 
-SEARCH_STRING = '.pdf'
+SEARCH_STRING = '.xml'
 
 
 from tools.file.paths import paths
@@ -21,7 +21,7 @@ os.chdir(paths["BASE_DIRECTORY"])
 #list all py files
 file_list = glob.glob(posixpath.normcase(paths["BASE_DIRECTORY"])+ "/**/*.py", recursive=True)
 
-excluded_strings = ["search_py_v01.py", "django", "old_scripts"]
+excluded_strings = ["search_py.py", "old_scripts"]
 
     
 

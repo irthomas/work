@@ -39,7 +39,7 @@ from instrument.nomad_so_instrument import A_aotf, nu0_aotf
 # nu_px = nu_mp(order, pixels, p0)
 
 
-def make_ils_file(hdf5_filename, nu_px):
+def get_ils_params(hdf5_filename, nu_px, save_file=True):
     """make ils parameter file for a given hdf5 file"""
     if len(nu_px) == 320:
         pixels = np.arange(320)
@@ -62,16 +62,19 @@ def make_ils_file(hdf5_filename, nu_px):
     sconv = A_w_nu0/2.355
     
     
-    disp_3700_nu = np.polyval(disp_3700, pixels) #displacement
-    disp_order = disp_3700_nu / -3700.0 * A_nu0
+    disp_3700_nu = np.polyval(disp_3700, pixels) #displacement at 3700cm-1
+    disp_order = disp_3700_nu / -3700.0 * A_nu0 #displacement adjusted for wavenumber
     
-    #columns are: nu_p 0.0 sconv 1.0 disp_order sconv amp
-    lines = []
-    for nu, disp in zip(nu_px, disp_order):
-        lines.append("%0.5f, %0.1f, %0.6f, %0.1f, %0.8f, %0.6f, %0.6f\n" %(nu, 0.0, sconv, 1.0, disp, sconv, amp))
-    
-    with open("%s_ils.txt" %hdf5_filename, "w") as f:
-        f.writelines(lines)
+    if save_file:
+        #columns are: nu_p 0.0 sconv 1.0 disp_order sconv amp
+        lines = []
+        for nu, disp in zip(nu_px, disp_order):
+            lines.append("%0.5f, %0.1f, %0.6f, %0.1f, %0.8f, %0.6f, %0.6f\n" %(nu, 0.0, sconv, 1.0, disp, sconv, amp))
         
+        with open("%s_ils.txt" %hdf5_filename, "w") as f:
+            f.writelines(lines)
+    
+    else:
+        return {"width":np.tile(sconv, len(pixels)), "displacement":disp_order, "amplitude":np.tile(amp, len(pixels))}
         
         
