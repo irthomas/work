@@ -63,7 +63,7 @@ elif os.path.exists(os.path.normcase(r"C:\Users\iant\Dropbox\NOMAD\Python")): #o
     paths["DATA_DIRECTORY"] = os.path.normcase(r"D:\DATA\hdf5")
     # paths["DATA_DIRECTORY"] = os.path.normcase(r"D:\DATA\hdf5_lno")
     # paths["DATA_DIRECTORY"] = os.path.normcase(r"W:\data\SATELLITE\TRACE-GAS-ORBITER\NOMAD\hdf5")
-#    paths["DATA_DIRECTORY"] = os.path.normcase(r"W:\data\SATELLITE\TRACE-GAS-ORBITER\NOMAD\test\iant\hdf5")
+    # paths["DATA_DIRECTORY"] = os.path.normcase(r"W:\data\SATELLITE\TRACE-GAS-ORBITER\NOMAD\test\iant\hdf5")
 
     paths["LOCAL_DIRECTORY"] = os.path.normcase(r"C:\Users\iant\Documents\DATA")
     

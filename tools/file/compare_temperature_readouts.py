@@ -17,22 +17,25 @@ from tools.file.hdf5_functions import make_filelist
 from tools.plotting.colours import get_colours
 from tools.file.get_hdf5_temperatures import get_interpolated_temperatures
 
-# regex = re.compile("20210201_0.*_1p0a_SO_A_E_134")
-regex = re.compile("20......_(01|02)...._1p0a_SO_A_[IEG]_134")
+regex = re.compile("20210201_0.*_1p0a_SO_A_E_134")
+# regex = re.compile("20......_(01|02)...._1p0a_SO_A_[IEG]_134")
 # regex = re.compile("20180528_012146_1p0a_SO_A_E_134")
 file_level = "hdf5_level_1p0a"
 
-# regex = re.compile("20......_......_0p2a_SO_._C")
+# regex = re.compile("202102.._......_0p2a_SO_._C")
 # file_level = "hdf5_level_0p2a"
 
 channel = "SO"
-precooling = True
+precooling = False
+# precooling = True
 
 chosen_bin = 3
 
 hdf5_files, hdf5_filenames, _ = make_filelist(regex, file_level)
 colours = get_colours(len(hdf5_filenames))
 
+plot_raw_temps = True
+# plot_raw_temps = False
 
 sensors = ["Temperature/NominalSO", "Temperature/RedundantSO", "Housekeeping/AOTF_TEMP_SO", "Housekeeping/SENSOR_1_TEMPERATURE_SO", ]
 
@@ -64,10 +67,10 @@ with PdfPages("%s_temperature_comparison_precooling.pdf"
         for sensor in sensors:
             if "Housekeeping" in sensor:
                 suffix = "Median filter"
-                d[sensor] = get_interpolated_temperatures(hdf5_file, channel, plot=False, sensor=sensor, t_filter="median", precooling=precooling)
+                d[sensor] = get_interpolated_temperatures(hdf5_file, channel, plot=plot_raw_temps, sensor=sensor, t_filter="median", precooling=precooling)
             else:
                 suffix = "Median and quadratic fit"
-                d[sensor] = get_interpolated_temperatures(hdf5_file, channel, plot=False, sensor=sensor, t_filter="m+q", precooling=precooling)
+                d[sensor] = get_interpolated_temperatures(hdf5_file, channel, plot=plot_raw_temps, sensor=sensor, t_filter="m+q", precooling=precooling)
         
             ax1a.plot(d[sensor][bin_indices], label="%s (%s)" %(sensor, suffix))
     

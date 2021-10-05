@@ -79,10 +79,10 @@ def get_interpolated_temperatures(hdf5_file, channel, plot=False, sensor="", t_f
 
     if plot:
         plt.figure()
-        plt.plot(channel_temperatures, label="Raw values")
-        plt.plot(temperatures, label="%s filtered" %t_filter)
+        plt.plot(temperature_delta_seconds[idx], channel_temperatures[idx], label="Raw values")
+        plt.plot(temperature_delta_seconds[idx], temperatures[idx], label="%s filtered" %t_filter)
         if t_filter=="m+q":
-            plt.plot(ts, label="Median filtered")
+            plt.plot(temperature_delta_seconds[idx], ts[idx], label="Median filtered")
         plt.plot(frame_delta_seconds, frame_temperatures, label="%s filtered & interpolated" %t_filter)
         plt.legend()
         plt.title("TGO Temperature Readouts")

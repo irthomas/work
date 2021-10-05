@@ -39,7 +39,7 @@ from instrument.nomad_so_instrument import A_aotf, nu0_aotf
 # nu_px = nu_mp(order, pixels, p0)
 
 
-def get_ils_params(hdf5_filename, nu_px, save_file=True):
+def get_ils_params(hdf5_filename, nu_px, save_file=True, order=None):
     """make ils parameter file for a given hdf5 file"""
     if len(nu_px) == 320:
         pixels = np.arange(320)
@@ -53,7 +53,8 @@ def get_ils_params(hdf5_filename, nu_px, save_file=True):
     rp = 16939.80090831571 #resolving power cm-1/dcm-1
     disp_3700 = [-3.06665339e-06,  1.71638815e-03,  1.31671485e-03] #displacement of 2nd gaussian cm-1 w.r.t. 3700cm-1 vs pixel number
     
-    order = int(hdf5_filename[-3:])
+    if not order:
+        order = int(hdf5_filename[-3:])
     aotf_freq = A_aotf[order]
 
     A_nu0 = nu0_aotf(aotf_freq)
@@ -77,4 +78,44 @@ def get_ils_params(hdf5_filename, nu_px, save_file=True):
     else:
         return {"width":np.tile(sconv, len(pixels)), "displacement":disp_order, "amplitude":np.tile(amp, len(pixels))}
         
+
+
+def get_ils_params2(A_nu0):
+    """make ils parameter file for a given hdf5 file"""
+    if len(nu_px) == 320:
+        pixels = np.arange(320)
+    else:
+        print("Error: incorrect number of pixels")
+        return []
+    
+
+    #from ils.py on 6/7/21
+    amp = 0.2724371566666666 #intensity of 2nd gaussian
+    rp = 16939.80090831571 #resolving power cm-1/dcm-1
+    disp_3700 = [-3.06665339e-06,  1.71638815e-03,  1.31671485e-03] #displacement of 2nd gaussian cm-1 w.r.t. 3700cm-1 vs pixel number
+    
+    if not order:
+        order = int(hdf5_filename[-3:])
+    aotf_freq = A_aotf[order]
+
+    A_nu0 = nu0_aotf(aotf_freq)
+    
+    A_w_nu0 = A_nu0 / rp
+    sconv = A_w_nu0/2.355
+    
+    
+    disp_3700_nu = np.polyval(disp_3700, pixels) #displacement at 3700cm-1
+    disp_order = disp_3700_nu / -3700.0 * A_nu0 #displacement adjusted for wavenumber
+    
+    if save_file:
+        #columns are: nu_p 0.0 sconv 1.0 disp_order sconv amp
+        lines = []
+        for nu, disp in zip(nu_px, disp_order):
+            lines.append("%0.5f, %0.1f, %0.6f, %0.1f, %0.8f, %0.6f, %0.6f\n" %(nu, 0.0, sconv, 1.0, disp, sconv, amp))
+        
+        with open("%s_ils.txt" %hdf5_filename, "w") as f:
+            f.writelines(lines)
+    
+    else:
+        return {"width":np.tile(sconv, len(pixels)), "displacement":disp_order, "amplitude":np.tile(amp, len(pixels))}
         
