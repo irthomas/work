@@ -33,14 +33,14 @@ file_info = {
     # "20210921_132947_0p2a_LNO_1_P":{"px_range":range(120, 280), "frame_range":[0, -1], "aspect":3.},
     # "20210921_132947_0p2a_UVIS_P":{"px_range":range(500, 1000), "frame_range":[0, -1], "aspect":0.3},
     
-    # "20210927_224950_0p2a_LNO_1_P":{"px_range":range(120, 280), "frame_range":[0, -1], "aspect":3.},
-    # "20210927_224950_0p2a_UVIS_P":{"px_range":range(500, 1000), "frame_range":[0, -1], "aspect":0.3},
+    "20210927_224950_0p2a_LNO_1_P":{"px_range":range(120, 280), "frame_range":[0, -1], "aspect":3.},
+    "20210927_224950_0p2a_UVIS_P":{"px_range":range(500, 1000), "frame_range":[0, -1], "aspect":0.3},
     
     # "20210927_224950_0p2a_LNO_1_P":{"px_range":range(120, 280), "frame_range":[9, 35], "aspect":3.},
     # "20210927_224950_0p2a_UVIS_P":{"px_range":range(500, 1000), "frame_range":[6, 24], "aspect":0.3},
     
-    "20210927_224950_0p2a_LNO_1_P":{"px_range":range(120, 280), "frame_range":[70, -1], "aspect":3.},
-    "20210927_224950_0p2a_UVIS_P":{"px_range":range(500, 1000), "frame_range":[45, 80], "aspect":0.3},
+    # "20210927_224950_0p2a_LNO_1_P":{"px_range":range(120, 280), "frame_range":[70, -1], "aspect":3.},
+    # "20210927_224950_0p2a_UVIS_P":{"px_range":range(500, 1000), "frame_range":[45, 80], "aspect":0.3},
     }
     
 file_level = "hdf5_level_0p2a"
@@ -91,5 +91,20 @@ for i, filename in enumerate(file_info.keys()):
     #     plt.plot(np.mean(y_all[frame_range[0]:frame_range[1], 10, :], axis=0), "k.")
     #     plt.plot(np.mean(y_all[frame_range[0]:frame_range[1], 12, :], axis=0), "k.")
     
+    if "UVIS" in filename:
+        plt.figure(figsize=(10, 5), constrained_layout=True)
+        det_region = y_all[2:80, 66+57:104+57, 8:1032]
+        spectrum = np.mean(det_region, axis=(0,1))
+        plt.title("UVIS: Phobos uncalibrated spectrum")
+        plt.xlabel("Wavelength nm")
+        plt.ylabel("ADU counts")
+        plt.grid()
+        
+        import h5py
+        with h5py.File(r"D:\DATA\hdf5\hdf5_level_1p0a\2019\02\02\20190202_013117_1p0a_UVIS_D.h5", "r") as h5:
+            x = h5["Science/X"][...]
+            plt.plot(x[0, :], spectrum)
+        plt.savefig("%s_UVIS_Phobos_uncalibrated_spectrum.png" %(filename[0:15]))
     
-plt.savefig("%s_Phobos_Observation_%i-%i.png" %(filename[0:15], frame_range[0], frame_range[1]))
+    
+fig.savefig("%s_Phobos_Observation_%i-%i.png" %(filename[0:15], frame_range[0], frame_range[1]))

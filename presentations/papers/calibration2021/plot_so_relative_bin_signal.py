@@ -10,7 +10,10 @@ plot relative signal strengths of SO channel bins to check alignment
 
 import os
 import numpy as np
-from datetime import datetime
+import numpy.linalg as la
+
+from datetime import datetime, timedelta
+
 import re
 import h5py
 
@@ -18,28 +21,25 @@ import h5py
 import matplotlib.pyplot as plt
 from matplotlib.dates import MonthLocator
 from tools.file.hdf5_functions import make_filelist
-from tools.file.paths import FIG_X, FIG_Y, paths
+from tools.file.paths import paths
 
+import spiceypy as sp
+from tools.spice.load_spice_kernels import load_spice_kernels
 
 
 # if not os.path.exists("/bira-iasb/data/SATELLITE/TRACE-GAS-ORBITER/NOMAD"):
 #     print("Running on windows")
 
-# import spiceypy as sp
-# from tools.spice.load_spice_kernels import load_spice_kernels
-# load_spice_kernels()
+load_spice_kernels(planning=True)
 
 
 #SAVE_FIGS = False
 SAVE_FIGS = True
 
-# SAVE_FILES = False
-# #SAVE_FILES = True
-
 
 file_level = "hdf5_level_0p3k"
 # regex = re.compile("20(18|19|20)[0-9][0-9][0-9][0-9]_.*_0p3k_SO_A_[IE]_134")
-regex = re.compile("20(18|19)[0-9][0-9][0-9][0-9]_.*_0p3k_SO_A_[IE]_(134|136)")
+regex = re.compile("20......_.*_0p3k_SO_A_[IE]_(134|136)")
 # regex = re.compile("20180[456][0-9][0-9]_.*_0p3k_SO_A_[IE]_(134|136)")
 
 
@@ -98,17 +98,62 @@ for file_index, (hdf5_file, hdf5_filename) in enumerate(zip(hdf5_files, hdf5_fil
     
 relative_signals = np.asfarray(relative_signals)
 
-fig, ax = plt.subplots(figsize=(15, 5))
-plt.title("SO channel relative counts for each bin\nSearch string: %s" %regex.pattern)
-for bin_index in range(4):
-    ax.plot_date(obs_datetimes, relative_signals[:,bin_index], label="Bin %i" %bin_index, marker=".")
-ax.set_xlabel("Observation Date")
-ax.set_ylabel("Relative counts for each bin")
-ax.legend()
-ax.grid(True)
+#set up subplots
+fig = plt.figure(figsize=(15, 7), constrained_layout=True)
+gs = fig.add_gridspec(3, 1)
+ax1a = fig.add_subplot(gs[0, 0])
+ax1b = fig.add_subplot(gs[1:3, 0], sharex=ax1a)
 
-ax.xaxis.set_major_locator(MonthLocator(bymonth=None, interval=1, tz=None))    
-fig.tight_layout()
+
+
+
+for bin_index in range(4):
+    ax1b.plot_date(obs_datetimes, relative_signals[:,bin_index], label="Bin %i" %bin_index, ms=3)
+ax1b.set_ylabel("Relative counts for each bin")
+ax1b.legend()
+ax1b.grid(True)
+
+
+
+
+
+abcorr="None"
+ref="J2000"
+observer="-143" #observer
+target = "SUN"
+
+
+datetime_start = datetime(year=2018, month=4, day=21)
+datetimes = [datetime_start + timedelta(days=x) for x in range((obs_datetimes[-1]-obs_datetimes[0]).days)]
+
+date_strs = [datetime.strftime(x, "%Y-%m-%d") for x in datetimes]
+date_ets = [sp.str2et(x) for x in date_strs]
+tgo_pos = np.asfarray([sp.spkpos(target, time, ref, abcorr, observer)[0] for time in list(date_ets)])
+
+
+
+tgo_dist = la.norm(tgo_pos,axis=1)
+code = sp.bodn2c(target)
+pradii = sp.bodvcd(code, 'RADII', 3) # 10 = Sun
+sun_radius = pradii[1][0]
+sun_diameter_arcmins = np.arctan(sun_radius/tgo_dist) * sp.dpr() * 60.0 * 2.0
+
+
+
+
+ax1a.plot_date(datetimes, sun_diameter_arcmins, linestyle="-", ms=0)
+
+
+ax1b.set_xlabel("Observation Date")
+ax1a.set_ylabel("Solar diameter as seen\nfrom TGO (arcminutes)")
+
+ax1a.set_title("Apparent diameter of Sun")
+ax1b.set_title("SO channel relative counts for each bin")
+
+ax1a.xaxis.set_major_locator(MonthLocator(bymonth=None, interval=1, tz=None))    
+ax1a.grid(True)
+
+
 if SAVE_FIGS:
-    plt.savefig("so_relative_counts.png")
+    plt.savefig("sun_diameter_so_relative_counts.png", dpi=300)
    
