@@ -3,6 +3,9 @@
 Created on Tue May  5 21:27:12 2020
 
 @author: iant
+
+
+GET TEMPERATURES FROM SQL DATABASE. NOTE THIS HAS LARGELY BEEN SUPERSEDED BY THE DATA IN THE HDF5 FILES
 """
 from datetime import datetime, timedelta
 from scipy import interpolate

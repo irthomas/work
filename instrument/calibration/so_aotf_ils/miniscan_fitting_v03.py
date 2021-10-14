@@ -94,7 +94,7 @@ for filename in filenames:
         # indices = range(0,255,1)
 
         # indices = range(216,217,1) #20180716_000706_0p2a_SO_1_C centre of order 194
-        # indices = range(200, 255, 1)
+        indices = range(200, 255, 1)
 
         # indices = get_absorption_line_indices(d)
         # indices = [*range(80,140,1), *range(80+256,140+256,1), *range(80+256*2, 140+256*2, 1), *range(80+256*3, 140+256*3, 1), *range(80+256*4, 140+256*4, 1), *range(80+256*5, 140+256*5, 1)]

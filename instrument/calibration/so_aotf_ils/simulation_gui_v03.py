@@ -55,10 +55,11 @@ if line == 4276.1:
 
 #get data, fit temperature and get starting function parameters
 hdf5_file, hdf5_filename = get_file(regex)
-d = get_data_from_file(hdf5_file, hdf5_filename)
 
 solar_spectrum = "ACE"
+d = {}
 d["line"] = line
+d = get_data_from_file(hdf5_file, hdf5_filename, d)
 d["solar_spectrum"] = solar_spectrum
 d = get_solar_spectrum(d, plot=False)
 

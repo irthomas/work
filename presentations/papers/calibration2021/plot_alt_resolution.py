@@ -26,7 +26,7 @@ file_level = "hdf5_level_1p0a"
 
 for ie in ["i","e"]:
     
-    regex = re.compile("2018[0-9][0-9][0-9][0-9]_.*_1p0a_SO_A_[%s]_(134|136|167|168|189|190)" %ie.upper())
+    regex = re.compile("20......_.*_1p0a_SO_A_[%s]_(134|136|167|168|189|190)" %ie.upper())
     
     
     #get files
@@ -53,7 +53,10 @@ for ie in ["i","e"]:
         with h5py.File(file_path, "r") as f:
             sbsf = f["Channel/BackgroundSubtraction"][0]
             
-            if sbsf == 1:
+            #use non-bg subtracted for start of mission; use bg-subtracted later
+            if sbsf == 1 and obs_datetime < datetime(2019, 7, 1):
+                continue
+            if sbsf == 0 and obs_datetime > datetime(2019, 7, 1):
                 continue
             
             alt_all = f["Geometry/Point0/TangentAltAreoid"][...]
@@ -75,8 +78,9 @@ for ie in ["i","e"]:
         lat_diff = np.diff(lats)
         # et_diff = np.diff(et)
         
-        if len(d[ie]["dt"]) > 0:
-            if obs_datetime - d[ie]["dt"][-1] > timedelta(days=10):
+        if len(d[ie]["dt"]) > 0: #if not the first entry
+            #check time delta between this and previous observation - add nans to split occultation-free zones
+            if obs_datetime - d[ie]["dt"][-1] > timedelta(days=10): 
                 d[ie]["filename"].append(hdf5_filename)
                 d[ie]["dt"].append(obs_datetime)
                 d[ie]["lat_mean"].append(np.nan)
@@ -85,7 +89,8 @@ for ie in ["i","e"]:
                 d[ie]["lat_min_d"].append(np.nan)
                 d[ie]["lat_max_d"].append(np.nan)
                 # d[ie]["et"].append([np.nan])
-            elif obs_datetime - d[ie]["dt"][-1] < timedelta(minutes=10):
+            elif obs_datetime - d[ie]["dt"][-1] < timedelta(minutes=1): #check if same occultation but different order, ignore
+                # print("same occultation:", obs_datetime, obs_datetime - d[ie]["dt"][-1])
                 continue
 
         error = False
@@ -99,7 +104,7 @@ for ie in ["i","e"]:
             if np.abs(curr - exp) > 25:
                 error = True
             
-                print(obs_datetime, curr - exp)
+                print(file_index, obs_datetime, curr - exp)
 
         if not error:
             d[ie]["filename"].append(hdf5_filename)
@@ -114,7 +119,7 @@ for ie in ["i","e"]:
         
         
 
-fig = plt.figure(figsize=(FIG_X+3, FIG_Y+4))
+fig = plt.figure(figsize=(FIG_X+3, FIG_Y+4), constrained_layout=True)
 gs = fig.add_gridspec(5, 1)
 ax1 = fig.add_subplot(gs[0, 0])
 ax2 = fig.add_subplot(gs[1:3, 0], sharex=ax1)
@@ -140,20 +145,21 @@ ms = 4
 
 ie = "i"
 colour = "tab:blue"
+alpha = 1.0
 
 ax1.plot_date(d[ie]["dt"], d[ie]["lat_mean"], linestyle=linestyle, ms=ms, color=colour, label="Ingress")
 ax1.xaxis.set_major_locator(MonthLocator(bymonth=None, interval=1, tz=None))
 
-ax2.fill_between(d[ie]["dt"], y1=d[ie]["alt_min_d"], y2=d[ie]["alt_max_d"], color=colour, alpha=0.7, label="Ingress Altitude Change")
-ax3.fill_between(d[ie]["dt"], y1=d[ie]["lat_min_d"], y2=d[ie]["lat_max_d"], color=colour, alpha=0.7, label="Ingress Latitude Change")
+ax2.fill_between(d[ie]["dt"], y1=d[ie]["alt_min_d"], y2=d[ie]["alt_max_d"], color=colour, alpha=alpha, label="Ingress Altitude Change")
+ax3.fill_between(d[ie]["dt"], y1=d[ie]["lat_min_d"], y2=d[ie]["lat_max_d"], color=colour, alpha=alpha, label="Ingress Latitude Change")
 
 
 ie = "e"
 colour = "tab:red"
 ax1.plot_date(d[ie]["dt"], d[ie]["lat_mean"], linestyle=linestyle, ms=ms, color=colour, label="Egress")
 
-ax2.fill_between(d[ie]["dt"], y1=d[ie]["alt_min_d"], y2=d[ie]["alt_max_d"], color=colour, alpha=0.7, label="Egress Altitude Change")
-ax3.fill_between(d[ie]["dt"], y1=d[ie]["lat_min_d"], y2=d[ie]["lat_max_d"], color=colour, alpha=0.7, label="Egress Latitude Change")
+ax2.fill_between(d[ie]["dt"], y1=d[ie]["alt_min_d"], y2=d[ie]["alt_max_d"], color=colour, alpha=alpha, label="Egress Altitude Change")
+ax3.fill_between(d[ie]["dt"], y1=d[ie]["lat_min_d"], y2=d[ie]["lat_max_d"], color=colour, alpha=alpha, label="Egress Latitude Change")
 
 
 ax1.tick_params(axis="x", labelbottom=False)
@@ -163,3 +169,5 @@ ax1.legend(loc="lower right")
 ax2.legend(loc="lower right")
 ax3.legend(loc="lower right")
 # fig.tight_layout()
+
+fig.savefig("altitude_resolution.png", dpi=300)

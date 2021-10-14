@@ -93,7 +93,6 @@ sim_parameters = {
 }
 
 
-ORDER_RANGE = [185, 205]
 nu_range = [4150., 4650.]
 
 
