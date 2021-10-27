@@ -20,3 +20,19 @@ os.chdir(paths["BASE_DIRECTORY"])
 print(sp.tkvrsn("toolkit"))
 
 
+
+
+from datetime import datetime, timedelta
+
+for days in range(0, 500, 1):
+    
+    dt_start = datetime.now() - timedelta(days=days)
+    
+    dt_str = datetime.strftime(dt_start, "%Y %b %d %H:%M:%S.%f")
+    
+    et = sp.str2et(dt_str)
+    
+    #go back in time to see if errors
+    obs2SunVector = sp.spkpos("SUN", et, "TGO_NOMAD_SO", "None", "-143")
+    
+    print(dt_str)

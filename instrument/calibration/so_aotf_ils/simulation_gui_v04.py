@@ -34,8 +34,8 @@ line = 4383.5
 
 if line == 4383.5:
     regex = re.compile("20190416_020948_0p2a_SO_1_C") #choose a file
-    # index = 0
-    index = 80 #choose a spectrum in the file (where 0 = 1st spectrum)
+    index = 0
+    # index = 80 #choose a spectrum in the file (where 0 = 1st spectrum)
 
 if line == 4276.1:
     regex = re.compile("20180716_000706_0p2a_SO_1_C")
