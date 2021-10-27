@@ -88,7 +88,7 @@ for filename in filenames:
         d = get_solar_spectrum(d, plot=SETUP)
     
     
-        # indices = range(len(d["aotf_freqs"]))
+        indices = range(len(d["aotf_freqs"]))
         # indices = range(0, len(d["aotf_freqs"]), 50)
 
         # indices = range(0,255,1)
