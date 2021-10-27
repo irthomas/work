@@ -73,7 +73,7 @@ def check_invalid_temperatures(regex, file_level):
                 end = "%s-%s-%sT%s:%s:%i" %(hdf5_filename[0:4], hdf5_filename[4:6], hdf5_filename[6:8], hdf5_filename[9:11], hdf5_filename[11:13], int(hdf5_filename[13:15])+1)
                 print("./scripts/run_as_nomadr ./scripts/run_pipeline.py --log INFO make --from $FROM --to $TO --beg %s --end %s --filter='........_......_.*_(SO|LNO)_._[IEGS].*' --n_proc=8 --all" %(start, end))
     
-        #check if 
+        #check if temperatures outside expected values
         mask = ~((-20.0 < interpolated_ts) & (interpolated_ts < 15.0))
         if np.sum(mask) > 0:
     

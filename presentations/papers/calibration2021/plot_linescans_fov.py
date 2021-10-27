@@ -8,6 +8,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import spiceypy as sp
 
+import numpy.linalg as la
+
 
 
 from tools.file.paths import FIG_X, FIG_Y
@@ -16,15 +18,30 @@ from tools.file.hdf5_functions import open_hdf5_file, get_files_from_datastore
 from tools.spice.load_spice_kernels import load_spice_kernels
 from tools.spice.datetime_functions import utc2et
 
+from tools.spice.read_webgeocalc import read_webgeocalc
+
+# load_spice_kernels()
 load_spice_kernels()
 
 
 """user modifiable"""
+# SAVE_FIG = True
+SAVE_FIG = False
+
 MESHGRID = False
 # MESHGRID = True
 
-# channel = "so"
-channel = "lno"
+#use WebGeoCalc state vectors. Must be made first
+# WGC = True
+WGC = False
+
+#Print out ets so that they can be put in to the WGC
+# PRINT_WGC_ETS = True
+PRINT_WGC_ETS = False
+
+
+channel = "so"
+# channel = "lno"
 """end"""
 
 
@@ -39,7 +56,7 @@ DETECTOR_CENTRE_LINES = {"so":128, "lno":152}
 
 linescan_dict = {
         "so":{
-#            "MCO-1":["20161120_231420_0p1a_SO_1", "20161121_012420_0p1a_SO_1"],
+            "MCO-1":["20161120_231420_0p1a_SO_1", "20161121_012420_0p1a_SO_1"],
             "Old SO boresight (Apr 2018)":["20180428_023343_0p1a_SO_1", "20180511_084630_0p1a_SO_1"],
             "UVIS-prime (Aug 2018)":["20180821_193241_0p1a_SO_1", "20180828_223824_0p1a_SO_1"],
             "UVIS-prime (Dec 2018)":["20181219_091740_0p1a_SO_1", "20181225_025140_0p1a_SO_1"], #not a nomad linescan
@@ -49,10 +66,10 @@ linescan_dict = {
             "SO-prime (Dec 2020)":["20201224_011635_0p1a_SO_1", "20210102_092937_0p1a_SO_1"],
         },
          "lno":{
-            "SO-prime (June 2016)":["20161121_000420_0p1a_LNO_1", "20161121_021920_0p1a_LNO_1"], \
+            # "SO-prime (June 2016)":["20161121_000420_0p1a_LNO_1", "20161121_021920_0p1a_LNO_1"], \
             # "MTP001":["201905", "20190704"],
             # "MTP015":["", ""],
-            # "SO-prime (Jul 2020)":["20200724_125331_0p1a_LNO_1", "20200728_144718_0p1a_LNO_1"],
+            "SO-prime (Jul 2020)":["20200724_125331_0p1a_LNO_1", "20200728_144718_0p1a_LNO_1"],
         },
 }
 
@@ -62,6 +79,15 @@ referenceFrame = "TGO_NOMAD_SO"
 # referenceFrame = "TGO_NOMAD_LNO_OPS_OCC"
 # referenceFrame = "TGO_SPACECRAFT"
 
+
+
+def get_vector2(hdf5_filename):
+    dt, obs2SunVector = read_webgeocalc(hdf5_filename, "spkpos")
+    print(dt[0])
+    obs2SunUnitVector =  obs2SunVector / np.tile(la.norm(obs2SunVector, axis=1), (3, 1)).T
+    return -1 * obs2SunUnitVector #-1 is there to switch the directions to be like in cosmographia
+    
+    
 
 def get_vector(date_time, reference_frame):
     # print("SUN", date_time, reference_frame, SPICE_ABERRATION_CORRECTION, SPICE_OBSERVER)
@@ -122,16 +148,29 @@ for linescan_index, (title, hdf5_filenames) in enumerate(linescan_dict[channel].
         #convert data to times and boresights using spice
         et_all=np.asfarray([np.mean([utc2et(i[0]), utc2et(i[1])]) for i in datetime_all])
 
-        #find which window top contains the line
-        unique_window_tops = list(set(window_top_all))
-        for unique_window_top in unique_window_tops:
-            if unique_window_top <= detector_centre_line <= (unique_window_top + window_height):
-                centre_window_top = unique_window_top
-                centre_row_index = detector_centre_line - unique_window_top
-    
-        window_top_indices = np.where(window_top_all == centre_window_top)[0]
-        detector_data_line = detector_data_all[window_top_indices, centre_row_index, :]
-        et_line = et_all[window_top_indices]
+        if binning==1:
+            #find which window top contains the line - this is not correct for binning
+            unique_window_tops = list(set(window_top_all))
+            for unique_window_top in unique_window_tops:
+                if unique_window_top <= detector_centre_line <= (unique_window_top + window_height):
+                    centre_window_top = unique_window_top
+                    centre_row_index = detector_centre_line - unique_window_top
+        
+            window_top_indices = np.where(window_top_all == centre_window_top)[0]
+            detector_data_line = detector_data_all[window_top_indices, centre_row_index, :]
+            et_line = et_all[window_top_indices]
+
+        if binning==4:
+            #if all binned like an occultation
+            detector_data_line = np.mean(detector_data_all[:, 7:9, :], axis=1)
+            et_line = et_all[:]
+        
+        if PRINT_WGC_ETS:
+            with open("%s_ets.txt" %hdf5_filename, "w") as f:
+                for et in et_line:
+                    f.write("%0.3f\n" %et)
+            continue
+        
     
         detector_line_mean = np.mean(detector_data_line[:, 160:240], axis=1)
         detector_line_min = (np.max(detector_line_mean) + np.min(detector_line_mean)) * 0.65
@@ -142,7 +181,14 @@ for linescan_index, (title, hdf5_filenames) in enumerate(linescan_dict[channel].
         
         print("%s: max value = %0.0f, min value = %0.0f" %(hdf5_filename, np.max(detector_line_mean), np.min(detector_line_mean)))
         
-        unitVectors = np.asfarray([get_vector(datetime,referenceFrame) for datetime in et_line])
+        if not WGC:
+            unitVectors = np.asfarray([get_vector(datetime,referenceFrame) for datetime in et_line])
+        
+        else:
+            unitVectors = get_vector2(hdf5_filename)
+            print(et_line[0])
+
+
 #        marker_colour = np.log(detector_line_mean)
         marker_colour = detector_line_mean
         
@@ -191,7 +237,9 @@ for linescan_index, (title, hdf5_filenames) in enumerate(linescan_dict[channel].
 
 
 fig1.tight_layout()
-plt.savefig("%s_linescan_boresight.png" %channel, dpi=300)
+
+if SAVE_FIG:
+    plt.savefig("%s_linescan_boresight.png" %channel, dpi=300)
 #fig1.suptitle("SO Linescans")
 
 
