@@ -30,7 +30,7 @@ from tools.spice.load_spice_kernels import load_spice_kernels
 # if not os.path.exists("/bira-iasb/data/SATELLITE/TRACE-GAS-ORBITER/NOMAD"):
 #     print("Running on windows")
 
-load_spice_kernels(planning=True)
+load_spice_kernels()
 
 
 #SAVE_FIGS = False
