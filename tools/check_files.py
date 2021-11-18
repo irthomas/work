@@ -109,4 +109,4 @@ def check_off_nadir(regex, file_level):
                 print(hdf5_filename, ":", n_nans)
                 
                 
-check_off_nadir(regex, file_level)
+# check_off_nadir(regex, file_level)

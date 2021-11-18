@@ -28,6 +28,10 @@ from tools.spectra.fit_gaussian_absorption import fit_gaussian_absorption
 from tools.spectra.fit_polynomial import fit_polynomial
 from tools.plotting.colours import get_colours
 
+
+# PLOT_SPECTRA = True
+PLOT_SPECTRA = False
+
 file_level = "hdf5_level_0p1a"
 
 # regex = re.compile("20150404_072956_.*_SO_.") #order 134 CH4
@@ -53,15 +57,15 @@ file_level = "hdf5_level_0p1a"
 
 
 #LNO post detector swap
-regex = re.compile("20150425_074022_.*_LNO_.")  #order 129 CH4 T=-15
-good_indices = range(120,130)
-max_chisq = 0.005
-absorption_indices = np.arange(242,249)
+# regex = re.compile("20150425_074022_.*_LNO_.")  #order 129 CH4 T=-15
+# good_indices = range(120,130)
+# max_chisq = 0.005
+# absorption_indices = np.arange(242,249)
 
-regex = re.compile("20150427_081547_.*_LNO_.")  #order 129 CH4
-good_indices = range(120,130)
-max_chisq = 0.005
-absorption_indices = np.arange(265,271)
+# regex = re.compile("20150427_081547_.*_LNO_.")  #order 129 CH4
+# good_indices = range(120,130)
+# max_chisq = 0.005
+# absorption_indices = np.arange(265,271)
 
 
 # regex = re.compile("20150425_130615_.*_LNO_.")  #order 159 CO2 T=-15
@@ -79,118 +83,192 @@ absorption_indices = np.arange(265,271)
 # max_chisq = 0.005
 # absorption_indices = np.arange(243,251)
 
-regex = re.compile("20150427_123133_.*_LNO_.")  #order 159 CO2 T=10
-good_indices = range(200,210,1)
-max_chisq = 0.005
-absorption_indices = np.arange(182,188)
+# regex = re.compile("20150427_123133_.*_LNO_.")  #order 159 CO2 T=10
+# good_indices = range(200,210,1)
+# max_chisq = 0.005
+# absorption_indices = np.arange(182,188)
+# xlim = [184., 186.]
 
 
-
-hdf5Files, hdf5Filenames, _ = make_filelist(regex, file_level)
-
-
-for hdf5_file, hdf5_filename in zip(hdf5Files, hdf5Filenames):
+slant_dict = {
+    "Slant1":{ #order 159 CO2 T=-15
+        "regex":re.compile("20150425_130615_.*_LNO_."),
+        "good_indices":range(200,210),
+        "max_chisq":0.005,
+        "absorption_indices":np.arange(162,168),
+        "xlim":[164, 167],
+        },
+    "Slant2":{ #order 159 CO2 T=10
+        "regex":re.compile("20150427_123133_.*_LNO_."),
+        "good_indices":range(200,210),
+        "max_chisq":0.005,
+        "absorption_indices":np.arange(182,188),
+        "xlim":[184, 187],
+        },
+    "Slant3":{ #order 129 CH4 T=-15
+        "regex":re.compile("20150425_074022_.*_LNO_."),
+        "good_indices":range(120,130),
+        "max_chisq":0.005,
+        "absorption_indices":np.arange(242,249),
+        "xlim":[244, 247],
+        },
+    "Slant4":{ #order 129 CH4
+        "regex":re.compile("20150427_081547_.*_LNO_."),
+        "good_indices":range(120,130),
+        "max_chisq":0.005,
+        "absorption_indices":np.arange(265,271),
+        "xlim":[267, 270],
+        },
     
-    print(hdf5_filename)
+    }
+
+fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(13, 9))
+axes = axes.flatten()
+
+
+slant_ranges = []
+
+for slant_index, (slant_title, slant_dict) in enumerate(slant_dict.items()):
     
-    channel = hdf5_filename.split("_")[3].lower()
+    ax = axes[slant_index]
     
-    detector_rows = {"so":[128-8, 128+8], "lno":[152-72, 152+72]}[channel]
-    
-
-
-    detector_data_all = hdf5_file["Science/Y"][...]
-    window_top_all = hdf5_file["Channel/WindowTop"][...]
-    binning = hdf5_file["Channel/Binning"][0] + 1
-    temperature = np.mean(hdf5_file["Housekeeping"]["SENSOR_2_TEMPERATURE_%s" %channel.upper()][1:10])
+    regex = slant_dict["regex"]
+    good_indices = slant_dict["good_indices"]
+    max_chisq = slant_dict["max_chisq"]
+    absorption_indices = slant_dict["absorption_indices"]
+    xlim = slant_dict["xlim"]
     
 
-    dim = detector_data_all.shape
-    n_rows_raw = dim[1] #data rows
-    n_rows_binned = dim[1] * binning #pixel detector rows
-    frame_indices = np.arange(dim[0])
-    n_u = len(list(set(window_top_all))) #number of unique window tops
-    n_ff = int(np.floor(dim[0]/n_u)) #number of full frames
-    
-    colours = get_colours(dim[1])
-    colours2 = get_colours(len(good_indices), cmap="brg")
-    
-    #if not window stepping
-    row_no = np.arange(window_top_all[0], window_top_all[0]+n_rows_binned, binning)
+    hdf5_files, hdf5_filenames, _ = make_filelist(regex, file_level)
 
 
-    aotf_freq = hdf5_file["Channel/AOTFFrequency"][...]
-    if channel == "so":
-        orders = [m_aotf_so(a) for a in aotf_freq]
-    elif channel == "lno":
-        orders = [m_aotf_lno(a) for a in aotf_freq]
-    print("Starting Order=%i" %orders[0])
-
-    minima = {}
-
-    for index,i in enumerate(good_indices): #loop through good frames in file
+    for hdf5_file, hdf5_filename in zip(hdf5_files, hdf5_filenames):
         
-        plt.figure(figsize = (FIG_X, FIG_Y))
-        plt.title("Frame %i (%i)" %(i, orders[i]))
-        y_mean = np.mean(detector_data_all[i, 12, 160:240])
-        y_std = np.std(detector_data_all[i, 12, 160:240])
+        print(hdf5_filename)
         
-        minima[i] = {"row_no":[], "min_pixel":[], "colour":colours2[index]}
+        channel = hdf5_filename.split("_")[3].lower()
         
+        detector_rows = {"so":[128-8, 128+8], "lno":[152-72, 152+72]}[channel]
         
-        for j in range(n_rows_raw): #loop through detector rows
+    
+    
+        detector_data_all = hdf5_file["Science/Y"][...]
+        window_top_all = hdf5_file["Channel/WindowTop"][...]
+        binning = hdf5_file["Channel/Binning"][0] + 1
+        temperature = np.mean(hdf5_file["Housekeeping"]["SENSOR_2_TEMPERATURE_%s" %channel.upper()][1:10])
+        
+    
+        dim = detector_data_all.shape
+        n_rows_raw = dim[1] #data rows
+        n_rows_binned = dim[1] * binning #pixel detector rows
+        frame_indices = np.arange(dim[0])
+        n_u = len(list(set(window_top_all))) #number of unique window tops
+        n_ff = int(np.floor(dim[0]/n_u)) #number of full frames
+        
+        colours = get_colours(dim[1])
+        colours2 = get_colours(len(good_indices), cmap="brg")
+        
+        #if not window stepping
+        row_no = np.arange(window_top_all[0], window_top_all[0]+n_rows_binned, binning)
+    
+    
+        aotf_freq = hdf5_file["Channel/AOTFFrequency"][...]
+        if channel == "so":
+            orders = [m_aotf_so(a) for a in aotf_freq]
+        elif channel == "lno":
+            orders = [m_aotf_lno(a) for a in aotf_freq]
+        print("Starting Order=%i" %orders[0])
+    
+        minima = {}
+    
+        for index, i in enumerate(good_indices): #loop through good frames in file
             
-            if np.mean(detector_data_all[i, j, 160:240]) > 0.3*y_mean:
-                spectrum = detector_data_all[i, j, :]
+            if PLOT_SPECTRA:
+                plt.figure(figsize = (FIG_X, FIG_Y))
+                plt.title("Frame %i (%i)" %(i, orders[i]))
+            y_mean = np.mean(detector_data_all[i, 12, 160:240])
+            y_std = np.std(detector_data_all[i, 12, 160:240])
             
-                continuum = baseline_als(spectrum)
-                absorption = spectrum/continuum
+            minima[i] = {"row_no":[], "min_pixel":[], "colour":colours2[index]}
+            
+            
+            for j in range(n_rows_raw): #loop through detector rows
                 
-                plt.plot(absorption, color=colours[j], label="i=%i, row=%i" %(i,row_no[j]))
+                if np.mean(detector_data_all[i, j, 160:240]) > 0.3*y_mean:
+                    spectrum = detector_data_all[i, j, :]
                 
-                # sav_gol = savgol_filter(spectrum, 9, 2)
-                # plt.plot(sav_gol, color=colours[j], linestyle=":", label="i=%i, row=%i" %(i,row_no[j]))
-                
-                # oversampled = ss.resample(spectrum, 640)
-                # plt.plot(np.arange(0, 320, 0.5), oversampled, color=colours[j], linestyle="--", label="i=%i, row=%i" %(i,row_no[j]))
-                
-                rel_indices = absorption_indices - np.mean(absorption_indices)
-                gaussian = fit_gaussian_absorption(rel_indices, absorption[absorption_indices], error=True)
-                # print("i=%i, row=%i" %(i,row_no[j]), gaussian[3])
-                if len(gaussian[0])>0: #if not error
-                    if gaussian[3] < max_chisq:
-                        plt.plot(absorption_indices[0]-rel_indices[0]+gaussian[0], gaussian[1], color=colours[j], linestyle="--")
-                        minima[i]["row_no"].append(row_no[j])
-                        minima[i]["min_pixel"].append(absorption_indices[0]-rel_indices[0]+gaussian[2])
+                    continuum = baseline_als(spectrum)
+                    absorption = spectrum/continuum
+                    
+                    if PLOT_SPECTRA:
+                        plt.plot(absorption, color=colours[j], label="i=%i, row=%i" %(i,row_no[j]))
+                    
+                    # sav_gol = savgol_filter(spectrum, 9, 2)
+                    # plt.plot(sav_gol, color=colours[j], linestyle=":", label="i=%i, row=%i" %(i,row_no[j]))
+                    
+                    # oversampled = ss.resample(spectrum, 640)
+                    # plt.plot(np.arange(0, 320, 0.5), oversampled, color=colours[j], linestyle="--", label="i=%i, row=%i" %(i,row_no[j]))
+                    
+                    rel_indices = absorption_indices - np.mean(absorption_indices)
+                    gaussian = fit_gaussian_absorption(rel_indices, absorption[absorption_indices], error=True)
+                    # print("i=%i, row=%i" %(i,row_no[j]), gaussian[3])
+                    if len(gaussian[0])>0: #if not error
+                        if gaussian[3] < max_chisq:
+                            if PLOT_SPECTRA:
+                                plt.plot(absorption_indices[0]-rel_indices[0]+gaussian[0], gaussian[1], color=colours[j], linestyle="--")
+                            minima[i]["row_no"].append(row_no[j])
+                            minima[i]["min_pixel"].append(absorption_indices[0]-rel_indices[0]+gaussian[2])
+                        else:
+                            print("chisq too high", i, row_no[j], gaussian[3])
                     else:
-                        print("chisq too high", i, row_no[j], gaussian[3])
-                else:
-                    print("fitting error", i, row_no[j])
-            # else:
-            #     print("Signal too small", i, row_no[j])
-                        
-        plt.ylim((0.6, 1.1))
-
-    plt.legend()
+                        print("fitting error", i, row_no[j])
+                # else:
+                #     print("Signal too small", i, row_no[j])
+                            
+            if PLOT_SPECTRA:
+                plt.ylim((0.6, 1.1))
+            
     
-    fig, ax = plt.subplots(ncols=1, nrows=1)
-    ax.set_title("Detector Slant, Ground Calibration Order %i, T=%0.1fC" %(orders[i], temperature))
-    ax.set_xlabel("Pixel of absorption minimum")
-    ax.set_ylabel("Detector row")
-    for i in minima.keys():
-        if len(minima[i]["min_pixel"])>0:
-            ax.scatter(minima[i]["min_pixel"], minima[i]["row_no"], color=minima[i]["colour"], label="Frame %i" %(i))
-            # ax.plot(minima[i]["min_pixel"], fit_polynomial(minima[i]["min_pixel"], minima[i]["row_no"]), color=minima[i]["colour"])
+        if PLOT_SPECTRA:
+            plt.legend()
+        
+        ax.set_title("Detector Slant, Ground Calibration Order %i, T=%0.1fC" %(orders[i], temperature))
+        ax.set_xlabel("Pixel of absorption minimum")
+        ax.set_ylabel("Detector row")
+        ax.set_xlim(xlim)
+        ax.set_ylim([60, 240])
+        for i in minima.keys():
+            if len(minima[i]["min_pixel"])>0:
+                ax.scatter(minima[i]["min_pixel"], minima[i]["row_no"], color=minima[i]["colour"], label="Frame %i" %(i))
+                # ax.plot(minima[i]["min_pixel"], fit_polynomial(minima[i]["min_pixel"], minima[i]["row_no"]), color=minima[i]["colour"])
+    
+                # linear_coeffs = fit_polynomial(minima[i]["min_pixel"], minima[i]["row_no"], degree=2, coeffs=True)[1]
+                # y_range = [detector_rows[0], detector_rows[-1]+1]
+                # x_range = [(y_range[0]- linear_coeffs[1])/linear_coeffs[0], (y_range[-1]- linear_coeffs[1])/linear_coeffs[0]]
+                # ax.plot(x_range, y_range, color=minima[i]["colour"])
+    
+    
+                #fit function
+                x = minima[i]["min_pixel"]
+                y = minima[i]["row_no"]
+                poly = np.polyfit(y, x, 2)
+                vals = np.polyval(poly, np.arange(detector_rows[0], detector_rows[1]))
+                vals_calc = np.polyval(poly, np.arange(detector_rows[0]+1, detector_rows[1]-1))
+                ax.plot(vals, np.arange(detector_rows[0], detector_rows[1]), color=minima[i]["colour"])
+                
+                
+                slant_range = np.max(vals_calc) - np.min(vals_calc)
+                slant_ranges.append(slant_range)
+                print("slant range=", slant_range)
+    
+        ax.axhline(y=detector_rows[0], color="k", linestyle="--")
+        ax.axhline(y=detector_rows[1], color="k", linestyle="--")
+        ax.invert_yaxis()
+        ax.legend()
+        
+        fig.savefig("detector_slant.png", dpi=300)
+    
+        print(temperature, "C")
+        
 
-            # linear_coeffs = fit_polynomial(minima[i]["min_pixel"], minima[i]["row_no"], degree=2, coeffs=True)[1]
-            # y_range = [detector_rows[0], detector_rows[-1]+1]
-            # x_range = [(y_range[0]- linear_coeffs[1])/linear_coeffs[0], (y_range[-1]- linear_coeffs[1])/linear_coeffs[0]]
-            # ax.plot(x_range, y_range, color=minima[i]["colour"])
-
-    ax.axhline(y=detector_rows[0], color="k", linestyle="--")
-    ax.axhline(y=detector_rows[1], color="k", linestyle="--")
-    ax.invert_yaxis()
-    ax.legend()
-
-    print(temperature, "C")
-
+print("mean slant range=", np.mean(slant_ranges))

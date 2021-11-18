@@ -11,7 +11,7 @@ import os
 import glob
 import posixpath
 
-SEARCH_STRING = '.xml'
+SEARCH_STRING = 'comparison of'
 
 
 from tools.file.paths import paths

@@ -20,7 +20,12 @@ from tools.file.hdf5_functions import make_filelist
 
 
 #read in h5 file
-regex = re.compile("20210715_210153_1p0a_UVIS_O") #(approx. orders 188-202) in steps of 8kHz
+regex = re.compile("20210603_010708_1p0a_UVIS_O")
+regex = re.compile("20210724_013356_1p0a_UVIS_O")
+regex = re.compile("20210725_050456_1p0a_UVIS_O")
+
+# regex = re.compile("(20210603_010708|20210725_050456|20210724_013356)_...._UVIS_O")
+
 
 file_level="hdf5_level_1p0a"
 
@@ -39,7 +44,10 @@ for hdf5_file, hdf5_filename in zip(hdf5_files, hdf5_filenames):
     if ielo:
         
         alts = hdf5_file["Geometry/Point0/TangentAltAreoid"][...]
-        # alts_mean = np.mean(alts, axis=1)
+
+    lats = hdf5_file["Geometry/Point0/Lat"][...]
+    lons = hdf5_file["Geometry/Point0/Lon"][...]
+    dates = hdf5_file["Geometry/ObservationDateTime"][...]
         
     with PdfPages("%s_spectra.pdf" %(hdf5_filename)) as pdf: #open pdf
             
@@ -47,7 +55,7 @@ for hdf5_file, hdf5_filename in zip(hdf5_files, hdf5_filenames):
             plt.figure(figsize=(12, 4), constrained_layout=True)
             
             if ielo:
-                plt.title("%s: i=%i, %0.1f-%0.1fkm" %(hdf5_filename, i, alts[i, 0], alts[i, 1]))
+                plt.title("%s: i=%i, %0.1f-%0.1fkm, (%0.1fN, %0.1fE)" %(dates[i, 0].decode(), i, alts[i, 0], alts[i, 1], lats[i,0], lons[i,0]))
             else:
                 plt.title("%s: i=%i" %(hdf5_filename, i))
                 

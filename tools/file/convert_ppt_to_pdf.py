@@ -27,6 +27,7 @@ def PPTtoPDF(inputFileName, outputFileName, formatType = 32):
     deck.SaveAs(outputFileName, formatType) # formatType = 32 for ppt to pdf
     deck.Close()
     powerpoint.Quit()
+    time.sleep(5)
     
     
 
