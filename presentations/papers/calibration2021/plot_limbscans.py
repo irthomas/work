@@ -14,12 +14,22 @@ from tools.file.hdf5_functions import open_hdf5_file, get_files_from_datastore
 
 
 limbscan_dict = {
-    "LNO limb scan: direction parallel to long edge of FOV":["20170305_180300_0p1a_LNO_1"],
-    "LNO limb scan: direction perpendicular to long edge of FOV":["20170306_180300_0p1a_LNO_1"],
+    "LNO limb scan: scan direction parallel to long edge of FOV":["20170305_180300_0p1a_LNO_1"],
+    "LNO limb scan: scan direction perpendicular to long edge of FOV":["20170306_180300_0p1a_LNO_1"],
 }
 
 
-bins_to_use = [1,4,7,10]
+bins_to_use = {
+    1:"tab:blue",
+    4:"tab:orange",
+    7:"tab:green",
+    10:"tab:red"
+}
+
+
+ordinal = lambda n: "%d%s" % (n,"tsnrhtdd"[(n//10%10!=1)*(n%10<4)*n%10::4])
+
+frame_indices = np.arange(120, 410)
 
 for limbscan_index, (title, hdf5_filenames) in enumerate(limbscan_dict.items()):
     
@@ -46,7 +56,7 @@ for limbscan_index, (title, hdf5_filenames) in enumerate(limbscan_dict.items()):
 
         print(window_top_all[0], window_height, binning, sbsf)
         
-        x = np.arange(detector_data_all.shape[0])
+        # x = np.arange(detector_data_all.shape[0])
         n_bins = detector_data_all.shape[1]
         
         scaler=4.0 #conversion factor between the two diffraction orders
@@ -72,15 +82,36 @@ for limbscan_index, (title, hdf5_filenames) in enumerate(limbscan_dict.items()):
         offset_spec_summed_data = np.sum(offset_data_bins[:,:,chosen_range[0]:chosen_range[1]], axis=2)
         frame_range = np.arange(len(offset_spec_summed_data))
         
-        plt.figure(figsize = (6, 5), constrained_layout=True)
-        plt.xlabel("Frame Number")
+        plt.figure(figsize = (8.5, 4), constrained_layout=True)
+        plt.xlabel("Elapsed time (s)")
         plt.ylabel("Sum of detector bin signal")
         
         
-        for row_index in bins_to_use: #range(len(offset_spec_summed_data[0,:])): #plot each row separately
+        for row_index, colour in bins_to_use.items(): #range(len(offset_spec_summed_data[0,:])): #plot each row separately
             summed_row = offset_spec_summed_data[:,row_index]
-            plt.scatter(x ,summed_row, linewidth=0, label="Detector bin %i" %row_index)
+            plt.scatter((frame_indices - min(frame_indices))*7.5, summed_row[frame_indices], linewidth=0, color=colour, label="Detector %s bin" %ordinal(row_index+1))
+            # plt.plot(frame_indices - min(frame_indices), summed_row[frame_indices])
         
+        
+            if hdf5_filename == "20170305_180300_0p1a_LNO_1":
+                line_indices = {
+                    1:[63, 168, 240],
+                    4:[71, 160, 248],
+                    7:[79, 152, 256],
+                    10:[87, 144, 264],
+                    }
+            elif hdf5_filename == "20170306_180300_0p1a_LNO_1":
+                line_indices = {
+                    1:[70.5, 161., 245.],
+                    4:[70.5, 161., 245.],
+                    7:[70.5, 161., 245.],
+                    10:[70.5, 161., 245.],
+                }
+            
+            if row_index in line_indices:
+                for vertical_line in line_indices[row_index]:
+                    plt.axvline(x=vertical_line*7.5, color=colour, linestyle="--")
+            
         plt.title(title)
         plt.legend()
         plt.grid()
