@@ -44,7 +44,7 @@ def get_molecular_hr(molecule, nu_hr, Smin=0.0):
         Smin *= 10.0
         LineList = read_hitran2012_parfile(filename, nu_hr_min, nu_hr_max, Smin=Smin, silent=True)
         nlines = len(LineList['S'])
-        print('Found %i lines' % nlines)
+        print('Found %i lines for Smin of %0.1g' %(nlines, Smin))
 #    molecular_spectrum_hr = calculate_hitran_xsec(LineList, M, nu_hr, T=210., P=pressures[molecule]) * number_density * scaling_factor[molecule]
     molecular_spectrum_hr = calculate_hitran_xsec(LineList, M, nu_hr, T=210., P=pressures[molecule]) * number_density
 

@@ -57,7 +57,8 @@ PRINT_WGC_ETS = False
 
 """end"""
 
-channel = "so"
+# channel = "so"
+channel = "lno"
 
 
 SPICE_ABERRATION_CORRECTION = "None"
@@ -70,13 +71,14 @@ DETECTOR_CENTRE_LINES = {"so":128, "lno":152}
 
 linescan_dict = {
     # "SO-prime (Dec 2020)":["20201224_011635_0p1a_SO_1", "20210102_092937_0p1a_SO_1"],
-    "MTP040":["20210430_095159_0p1a_SO_1", "20210502_011033_0p1a_SO_1"]
+    # "MTP040":["20210430_095159_0p1a_SO_1", "20210502_011033_0p1a_SO_1"],
+    "SO-prime (Jul 2020)":["20200724_125331_0p1a_LNO_1", "20200728_144718_0p1a_LNO_1"],
 }
 
 
 #    referenceFrame = "TGO_NOMAD_UVIS_OCC"
-referenceFrame = "TGO_NOMAD_SO"
-# referenceFrame = "TGO_NOMAD_LNO_OPS_OCC"
+# referenceFrame = "TGO_NOMAD_SO"
+referenceFrame = "TGO_NOMAD_LNO_OPS_OCC"
 # referenceFrame = "TGO_SPACECRAFT"
 
 
@@ -255,12 +257,16 @@ for linescan_index, (title, hdf5_filenames) in enumerate(linescan_dict.items()):
                     max_signal_ix = np.where(marker_colour[line_idx] == max(marker_colour[line_idx]))[0][0] + line_idx[0]
                     # print(unitVectors[max_signal_ix, 0], unitVectors[max_signal_ix, 1])
                     
-                    if scan_direction == "x":
-                        xmax.append(unitVectors[max_signal_ix, 0])
-                        xmax_y.append(unitVectors[max_signal_ix, 1])
-                    elif scan_direction == "y":
-                        ymax.append(unitVectors[max_signal_ix, 1])
-                        ymax_x.append(unitVectors[max_signal_ix, 0])
+                    #check for sensible values
+                    if unitVectors[max_signal_ix, 0] < 0.001 and unitVectors[max_signal_ix, 1] < 0.001:
+                        if scan_direction == "x":
+                            xmax.append(unitVectors[max_signal_ix, 0])
+                            xmax_y.append(unitVectors[max_signal_ix, 1])
+                        elif scan_direction == "y":
+                            ymax.append(unitVectors[max_signal_ix, 1])
+                            ymax_x.append(unitVectors[max_signal_ix, 0])
+                    else:
+                        print("Error: result to far from expected position:", unitVectors[max_signal_ix, 0], unitVectors[max_signal_ix, 1])
 
 
         #closest point

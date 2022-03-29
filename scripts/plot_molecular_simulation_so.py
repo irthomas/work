@@ -15,7 +15,8 @@ from tools.spectra.smooth_hr import smooth_hr
 SMOOTHING_LEVEL = 350
 
 #order = 129 
-order = 130 
+# order = 130
+order = 134
 molecule = "HCl"
 molecule = "CO2"
 molecule = "H2O"
