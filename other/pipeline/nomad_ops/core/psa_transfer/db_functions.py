@@ -18,7 +18,7 @@ from nomad_ops.core.psa_transfer.config import PATH_PSA_LOG_DB
 from nomad_ops.core.psa_transfer.get_psa_logs import \
     get_log_list, extract_log_info, get_versions_from_zip, get_log_datetime, get_log_version
 
-
+from nomad_ops.core.psa_transfer.functions import get_datetime_from_lid
 
     
     
@@ -65,38 +65,41 @@ def empty_table(con, table_name):
         query = """CREATE TABLE logs (id INTEGER PRIMARY KEY AUTOINCREMENT, \
             log TEXT NOT NULL, \
             md5 TEXT NOT NULL, \
-            versions TEXT NOT NULL) """
+            version TEXT NOT NULL) """
         
         cur.execute(query)
 
     elif table_name == "pass":
         query = """CREATE TABLE pass (id INTEGER PRIMARY KEY AUTOINCREMENT, \
             log TEXT NOT NULL, \
-            versions TEXT NOT NULL, \
-            lid TEXT NOT NULL) """
+            version TEXT NOT NULL, \
+            lid TEXT NOT NULL, \
+            dt TIMESTAMP NOT NULL) """
 
         cur.execute(query)
 
     elif table_name == "fail":
         query = """CREATE TABLE fail (id INTEGER PRIMARY KEY AUTOINCREMENT, \
             log TEXT NOT NULL, \
-            versions TEXT NOT NULL, \
-            lid TEXT NOT NULL) """
+            version TEXT NOT NULL, \
+            lid TEXT NOT NULL, \
+            dt TIMESTAMP NOT NULL) """
 
         cur.execute(query)
 
     elif table_name == "error":
         query = """CREATE TABLE error (id INTEGER PRIMARY KEY AUTOINCREMENT, \
             log TEXT NOT NULL, \
-            versions TEXT NOT NULL, \
+            version TEXT NOT NULL, \
             lid TEXT NOT NULL, \
+            dt TIMESTAMP NOT NULL, \
             error TEXT NOT NULL) """
         
         cur.execute(query)
 
 
 
-def delete_rows(con, table_name, log_filename):
+def delete_log_rows(con, table_name, log_filename):
     """delete log entries from table"""
 
     cur = con.cursor()
@@ -172,14 +175,17 @@ def populate_log_db(log_filepath_list, clear=False):
             
             
                     
-            cur.execute("INSERT INTO logs (log, md5, versions) VALUES (?,?,?)", (new_log, md5, versions_str))
+            cur.execute("INSERT INTO logs (log, md5, version) VALUES (?,?,?)", (new_log, md5, versions_str))
     
             for lid in log_dict["validator_lids_pass"]:
-                cur.execute("INSERT INTO pass (log, versions, lid) VALUES (?,?,?)", (new_log, versions_str, lid))
+                dt = get_datetime_from_lid(lid)
+                cur.execute("INSERT INTO pass (log, version, lid, dt) VALUES (?,?,?,?)", (new_log, versions_str, lid, dt))
             for lid in log_dict["validator_lids_fail"]:
-                cur.execute("INSERT INTO fail (log, versions, lid) VALUES (?,?,?)", (new_log, versions_str, lid))
+                dt = get_datetime_from_lid(lid)
+                cur.execute("INSERT INTO fail (log, version, lid, dt) VALUES (?,?,?,?)", (new_log, versions_str, lid, dt))
             for lid, error in zip(log_dict["validator_lids_error"], log_dict["validator_errors"]):
-                cur.execute("INSERT INTO error (log, versions, lid, error) VALUES (?,?,?,?)", (new_log, versions_str, lid, error))
+                dt = get_datetime_from_lid(lid)
+                cur.execute("INSERT INTO error (log, version, lid, dt, error) VALUES (?,?,?,?,?)", (new_log, versions_str, lid, dt, error))
     
             con.commit()
             
@@ -196,7 +202,7 @@ def populate_log_db(log_filepath_list, clear=False):
                 print("Log %s in db but md5 mismatch" %new_log)
                 
                 for table_name in ["logs", "pass", "fail", "error"]:
-                    delete_rows(con, table_name, new_log)
+                    delete_log_rows(con, table_name, new_log)
     
                 print("Adding new log %s to db" %new_log)
                 #add to list and parse
@@ -214,14 +220,17 @@ def populate_log_db(log_filepath_list, clear=False):
                     versions_str = ",".join(unique_versions)
                 
                         
-                cur.execute("INSERT INTO logs (log, md5, versions) VALUES (?,?,?)", (new_log, md5, versions_str))
+                cur.execute("INSERT INTO logs (log, md5, version) VALUES (?,?,?,?)", (new_log, md5, versions_str))
         
                 for lid in log_dict["validator_lids_pass"]:
-                    cur.execute("INSERT INTO pass (log, versions, lid) VALUES (?,?,?)", (new_log, versions_str, lid))
+                    dt = get_datetime_from_lid(lid)
+                    cur.execute("INSERT INTO pass (log, version, lid, dt) VALUES (?,?,?,?)", (new_log, versions_str, lid, dt))
                 for lid in log_dict["validator_lids_fail"]:
-                    cur.execute("INSERT INTO fail (log, versions, lid) VALUES (?,?,?)", (new_log, versions_str, lid))
+                    dt = get_datetime_from_lid(lid)
+                    cur.execute("INSERT INTO fail (log, version, lid, dt) VALUES (?,?,?,?)", (new_log, versions_str, lid, dt))
                 for lid, error in zip(log_dict["validator_lids_error"], log_dict["validator_errors"]):
-                    cur.execute("INSERT INTO error (log, versions, lid, error) VALUES (?,?,?,?)", (new_log, versions_str, lid, error))
+                    dt = get_datetime_from_lid(lid)
+                    cur.execute("INSERT INTO error (log, version, lid, dt, error) VALUES (?,?,?,?,?)", (new_log, versions_str, lid, dt, error))
             
                 con.commit()
                 
@@ -239,7 +248,7 @@ def get_lids_of_version(table_name, version):
     con = connect_db(db_path)
 
     cur = con.cursor()
-    cur.execute("SELECT lid FROM {} WHERE versions IS ?".format(table_name), (version,))
+    cur.execute("SELECT lid FROM {} WHERE version IS ?".format(table_name), (version,))
 
     rows = cur.fetchall()
     close_db(con)

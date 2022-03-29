@@ -50,8 +50,15 @@ file_info = {
     # "20211112_221419_0p2a_LNO_1_P":{"px_range":range(120, 280), "frame_range":[0, -1], "aspect":3., "boresight":"UVIS"},
     # "20211112_221419_0p2a_UVIS_P":{"px_range":range(500, 1000), "frame_range":[0, -1], "aspect":0.3, "boresight":"UVIS"},
 
-    "20211123_173753_0p2a_LNO_1_P":{"px_range":range(120, 280), "frame_range":[0, -1], "aspect":3., "boresight":"LNO"},
+    # "20211123_173753_0p2a_LNO_1_P":{"px_range":range(120, 280), "frame_range":[0, -1], "aspect":3., "boresight":"LNO"},
     # "20211123_173753_0p2a_UVIS_P":{"px_range":range(500, 1000), "frame_range":[0, -1], "aspect":0.3, "boresight":"LNO"},
+
+    # "20211229_072837_0p2a_LNO_1_Q":{"px_range":range(120, 280), "frame_range":[0, -1], "aspect":3., "boresight":"LNO"},
+    # "20211229_072837_0p2a_UVIS_Q":{"px_range":range(500, 1000), "frame_range":[0, -1], "aspect":0.3, "boresight":"LNO"},
+
+    "20220102_015237_0p2a_LNO_1_Q":{"px_range":range(120, 280), "frame_range":[0, -1], "aspect":3., "boresight":"LNO"},
+    "20220102_015237_0p2a_UVIS_Q":{"px_range":range(500, 1000), "frame_range":[0, -1], "aspect":0.3, "boresight":"LNO"},
+
     }
     
 file_level = "hdf5_level_0p2a"

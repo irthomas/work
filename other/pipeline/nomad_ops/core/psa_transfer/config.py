@@ -37,7 +37,8 @@ if windows:
 
     PATH_DB_PSA_CAL_LOG = os.path.normcase(r"C:\Users\iant\Documents\DATA\psa\cal_logs")
     MAKE_PSA_LOG_DIR = os.path.normcase(r"C:\Users\iant\Documents\DATA\psa\logs\psa_cal")
-    PSA_FILE_DIR = os.path.normcase(r"C:\Users\iant\Documents\DATA\psa\3.0\data_calibrated")
+    PSA_DATASTORE_DIR = os.path.normcase(r"C:\Users\iant\Documents\DATA\psa\data_calibrated")
+    PSA_ARCHIVE_DIR = os.path.join(os.path.normcase(r"C:\Users\iant\Documents\DATA\psa\archive"), PSA_CAL_VERSION, "data_calibrated")
     LOCAL_UNZIP_TMP_DIR = os.path.normcase(r"C:\Users\iant\Documents\DATA\psa\tmp")
     PATH_PSA_LOG_DB = os.path.normcase(r"C:\Users\iant\Documents\DATA\psa\cal_logs\logs.db")
 
@@ -51,7 +52,8 @@ else:
 
     PATH_DB_PSA_CAL_LOG = os.path.join(ROOT_DATASTORE_PATH, "db", "psa", "cal_logs") #where the PSA ingestion logs are moved to
     MAKE_PSA_LOG_DIR = os.path.join(ROOT_DATASTORE_PATH, "logs", "psa_cal")
-    PSA_FILE_DIR = os.path.join(ROOT_DATASTORE_PATH, "archive", "psa", PSA_CAL_VERSION, "data_calibrated")
+    PSA_DATASTORE_DIR = os.path.join(ROOT_DATASTORE_PATH, "psa", "data_calibrated")
+    PSA_ARCHIVE_DIR = os.path.join(ROOT_DATASTORE_PATH, "archive", "psa", PSA_CAL_VERSION, "data_calibrated")
     LOCAL_UNZIP_TMP_DIR = os.path.join(ROOT_DATASTORE_PATH, "tmp")
     PATH_PSA_LOG_DB = os.path.join(PATH_DB_PSA_CAL_LOG, "logs.db")
 
@@ -66,5 +68,5 @@ ESA_PSA_CAL_URL = ESA_URL + "nmd/tmp0/"
 
 
 LOG_FORMAT_STR = "%Y-%m-%d %H:%M:%S"
-
-N_FILES_PER_ZIP = 200
+LID_DATETIME_STR = "%Y%m%dT%H%M%S"
+PSA_FILENAME_DATETIME_STR = "%Y%m%d-%H%M%S"

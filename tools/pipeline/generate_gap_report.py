@@ -95,8 +95,11 @@ timedelta_ranges = [
 
 #define known off-periods
 off_periods = [
-    [datetime(2019, 5, 18, 10, 14, 0), datetime(2019, 5, 25, 19, 0, 0), "TGO safe mode"],
-    [datetime(2020, 3, 28, 17, 13, 31), datetime(2020, 4, 11, 12, 0, 0), "Covid-19 at MOC"],
+    [datetime(2018, 6, 1, 13, 0, 0), datetime(2018, 6, 2, 1, 0, 0), "Malargue ground station failure", True],
+    [datetime(2019, 5, 18, 10, 14, 0), datetime(2019, 5, 25, 19, 0, 0), "TGO safe mode", True],
+    [datetime(2020, 3, 28, 17, 0, 0), datetime(2020, 4, 11, 12, 0, 0), "Covid-19 at MOC", True],
+    [datetime(2020, 6, 21, 10, 0, 0), datetime(2020, 6, 21, 11, 0, 0), "MITL change, data received", False],
+    [datetime(2020, 6, 23, 9, 0, 0), datetime(2020, 6, 23, 10, 0, 0), "MITL change, data received", False],
 ] 
 
 
@@ -160,9 +163,10 @@ for i, (itl_dt, channels) in enumerate(zip(d_itl["tc20_exec_start"], d_itl["chan
                 key = "%s_%s" %(itl_dt, channel)
                 if key not in matches.keys():
                     if itl_dt in missing_dts.keys():
-                        missing_dts[itl_dt].append(channel)
+                        missing_dts[itl_dt]["channels"].append(channel)
                     else:
-                        missing_dts[itl_dt] = [channel]
+                        missing_dts[itl_dt] = {"channels":[], "reason":[]}
+                        missing_dts[itl_dt]["channels"] = [channel]
 
 
 colour_dict = {
@@ -177,11 +181,11 @@ colour_dict = {
 fig, ax = plt.subplots(figsize=(14, 5), constrained_layout=True)
 ax.set_title("Timeline of missing %s files" %level)
 for colour, channels in colour_dict.items():
-    idx = [i for i,(k,v) in enumerate(missing_dts.items()) if v == channels]
+    idx = [i for i,(k,v) in enumerate(missing_dts.items()) if v["channels"] == channels]
     print(", ".join(channels), len(idx))
     ax.scatter([dt for i,dt in enumerate(missing_dts.keys()) if i in idx], np.zeros(len(idx)), color=colour, label=", ".join(channels))
     
-    texts = [k for i,(k,v) in enumerate(missing_dts.items()) if v == channels]
+    texts = [k for i,(k,v) in enumerate(missing_dts.items()) if v["channels"] == channels]
     for text in texts:
         ax.text(text, 0.1, text, rotation=90)
 ax.legend()
@@ -194,75 +198,97 @@ fig.savefig("missing_file_timeline.png")
 
 
 def match_pdhu_filename(dt, d_itl):
-    """get start of PDHU filename from ITL db"""
+    """get start of PDHU filenames from ITL db"""
     #e.g. SCI__DNMD__03479A01_2022-001T16-36-43__00001.EXM
     
     if dt in d_itl["tc20_exec_start"]:
         pdhu_match = [d_itl["pdhu_filename"][i] for i,v in enumerate(d_itl["tc20_exec_start"]) if v == dt]
         if len(pdhu_match) == 1:
-            pdhu_str = "SCI__DNMD__03%s_%04i-%sT" %(pdhu_match[0], dt.year, dt.strftime('%j'))
+            
+            dt_minus1 = dt - timedelta(days=1)
+            #make filename for day and day before (in case file starts before midnight)
+            pdhu_strs = [
+                "SCI__DNMD__03%s_%04i-%sT" %(pdhu_match[0], dt.year, dt.strftime('%j')),
+                "SCI__DNMD__03%s_%04i-%sT" %(pdhu_match[0], dt_minus1.year, dt_minus1.strftime('%j')),
+            ]
         else:
             print("Error: multiple PDHU filenames found")
-            pdhu_str = ""
+            pdhu_strs = ["",""]
     else:
         print("Error: Execution time not found")
-        pdhu_str = ""
+        pdhu_strs = ["",""]
 
-    return pdhu_str
+    return pdhu_strs
 
 
 print("Writing missing files to file")
-h = "<!DOCTYPE html><html><head><title>%s GAP REPORT</title>\n</head><body>\n" %level.upper()
-h += "<h1>%s GAP REPORT</h1>" %level.upper()
-h += "<table border=1>"
+# h = "<!DOCTYPE html><html><head><title>%s GAP REPORT</title>\n</head><body>\n" %level.upper()
+h = ""
+h += "<table border=1>\n"
 h += "<tr><th>Expected TC20 Execution Time</th><th>Channel(s) Affected</th><th>Reason for Failure</th><th>Expected EXM filename prefix (if missing)</th></tr>\n"
-for missing_dt, channels in missing_dts.items():
+for missing_dt in missing_dts.keys():
 
     reason = ""
-    pdhu_filename = ""
+    pdhu_filenames = ["",""]
 
     #check for known off-periods
+    include = True
     for off_period in off_periods:
         if off_period[0] < missing_dt < off_period[1]:
+            include = off_period[3]
             reason = off_period[2]
             
     #if not a known off-period
     if reason == "":
-        pdhu_filename = match_pdhu_filename(missing_dt, d_itl)
+        pdhu_filenames = match_pdhu_filename(missing_dt, d_itl)
         
-
-        #now check if PDHU substring in spacewire cache db
-        string1 = [s for s in cache_spacewire_filenames if pdhu_filename in s]
+        #now check if PDHU substrings appear in spacewire cache db
+        strings1 = [
+            [s for s in cache_spacewire_filenames if pdhu_filenames[0] in s], 
+            [s for s in cache_spacewire_filenames if pdhu_filenames[1] in s],
+        ]
 
         #now check if PDHU substring in ESAC tree
-        string2 = [s for s in esac_filenames if pdhu_filename in s]
+        strings2 = [
+            [s for s in esac_filenames if pdhu_filenames[0] in s],
+            [s for s in esac_filenames if pdhu_filenames[0] in s],
+        ]
         
-        if len(string1) == 0 and len(string2) == 0:
-            reason += "EXM not found in datastore or on ESAC server"
+        #if neither string is found in cache or at ESAC
+        if (len(strings1[0]) == 0 and len(strings1[1]) == 0) and (len(strings2[0]) == 0 and len(strings2[0]) == 0):
+            reason = "EXM not found in datastore or on ESAC server"
 
-        elif len(string1) == 0 and len(string2) == 1:
-            reason += "EXM not found in datastore but is present on ESAC server"
+        #if neither string is found in cache but one is found at ESAC
+        elif (len(strings1[0]) == 0 and len(strings1[1]) == 0) and (len(strings2[0]) == 1 or len(strings2[0]) == 1):
+            reason = "EXM not found in datastore but is present on ESAC server"
 
-        elif len(string1) == 0 and len(string2) > 1:
-            reason += "EXM not found in datastore but multiple versions are present on ESAC server"
+        #if neither string is found in cache but two or more are found at ESAC
+        elif (len(strings1[0]) == 0 and len(strings1[1]) == 0) and (len(strings2[0]) > 1 or len(strings2[0]) > 1):
+            reason = "EXM not found in datastore but multiple versions are present on ESAC server"
 
-        elif len(string1) == 1:
-            reason += "EXM file received, HDF5s not generated due to another error"
+        #if either string is found in cache
+        elif (len(strings1[0]) == 1 or len(strings1[1]) == 1):
+            reason = "EXM file received, HDF5s not generated due to another error"
 
-        elif len(string1) > 1:
-            reason += "Multiple EXM files found in datastore, HDF5s not generated due to another error"
-            print(missing_dt, string1)
+        #if either string is found in cache multiple times
+        elif (len(strings1[0]) > 1 or len(strings1[1]) > 1):
+            reason = "Multiple EXM files found in datastore, HDF5s not generated due to another error"
+            print(missing_dt, strings1)
 
         else:
-            reason += "Another error occurred"
+            reason = "Another error occurred"
         
 
-    h += "<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>\n" %(missing_dt, ", ".join(channels), reason, pdhu_filename)
+    if include:
+        channels = missing_dts[missing_dt]["channels"]
+        h += "<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>\n" %(missing_dt, ", ".join(channels), reason, pdhu_filenames[0])
+        
+    missing_dts[missing_dt]["reason"] = reason
 
 h += "</table><br>\n"
 h += "Made by tools.pipeline.generate_gap_report.py<br>\n"
 h += "Last updated %s\n" %str(datetime.now())[:19]
-h += "</body></html>"
+# h += "</body></html>"
 
 with open("missing_%s.html" %level, "w") as f:
     f.writelines(h)
@@ -270,11 +296,14 @@ with open("missing_%s.html" %level, "w") as f:
 
 command = "./scripts/run_as_nomadr ./scripts/run_pipeline.py --log INFO make --from inserted --to hdf5_l10a --beg %s --end %s --n_proc=8 --all\n"
 with open("missing_%s_commands.txt" %level, "w") as f:
-    for missing_dt, channels in missing_dts.items():
-        start = str(missing_dt - timedelta(seconds=5)).replace(" ", "T")
-        end = str(missing_dt + timedelta(seconds=5)).replace(" ", "T")
-
-        f.write(command %(start, end))
+    for missing_dt, channels_reasons in missing_dts.items():
+        
+        if "EXM file received, HDF5s not generated" in channels_reasons["reason"]:
+            
+            start = str(missing_dt - timedelta(seconds=60)).replace(" ", "T")
+            end = str(missing_dt + timedelta(seconds=60)).replace(" ", "T")
+    
+            f.write(command %(start, end))
 
 
 

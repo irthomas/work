@@ -26,11 +26,15 @@ plt.rcParams.update({'font.size': 8})
 # regex = re.compile("20210724_013356_1p0a_UVIS_O"); ff = False
 # regex = re.compile("20210725_050456_1p0a_UVIS_O"); ff = False
 
+regex = re.compile("20220109_150820_1p0a_UVIS_O|20220112_135320_1p0a_UVIS_O"); ff = False
+
+
 # regex = re.compile("(20210603_010708|20210725_050456|20210724_013356)_...._UVIS_O"); ff = False
 
 # regex = re.compile("20210603_010708_0p3b_UVIS_O"); ff = True
 # regex = re.compile("20210724_013356_0p3b_UVIS_O"); ff = True
-regex = re.compile("20210725_050456_0p3b_UVIS_O"); ff = True
+# regex = re.compile("20210725_050456_0p3b_UVIS_O"); ff = True
+
 
 
 file_level = "hdf5_level_%s" %regex.pattern[16:20]
