@@ -9,12 +9,12 @@ CHECK LOIC VS GODDARD SPECTRAL CALIBRATION AND FIND WHICH ONE MATCHES DATA THE B
 import re
 import numpy as np
 import matplotlib.pyplot as plt
-
-
+import h5py
+import os
 import pandas as pd
 
-from scipy.optimize import curve_fit
-from scipy.optimize import OptimizeWarning
+# from scipy.optimize import curve_fit
+# from scipy.optimize import OptimizeWarning
 
 
 
@@ -28,6 +28,7 @@ from tools.general.get_minima_maxima import get_local_minima
 from tools.general.get_nearest_index import get_nearest_index
 
 from tools.file.hdf5_functions import make_filelist
+from tools.file.paths import paths
 
 from tools.file.write_log import write_log
 
@@ -53,8 +54,9 @@ order_dict = {
 chosen_bin = 3
 chosen_y_mean = 0.5
 
+temperature_grid_spacing = 0.1
 
-
+PLOT_SPECTRA = False
 
 
 def gd21_waven(order, inter_temp, px_in):
@@ -163,7 +165,6 @@ def fit_polynomial(x_in, y_in, deg=2, error=False, hr_num=100):
 from matplotlib.colors import LinearSegmentedColormap
 
 redgreyblue = LinearSegmentedColormap.from_list('redgreyblue', (
-    # Edit this gradient at https://eltos.github.io/gradient/#redgreyblue=0:0053FB-48:9EA0DC-50:989696-52:DC9E9F-100:FF000C
     (0.000, (0.000, 0.325, 0.984)),
     (0.480, (0.620, 0.627, 0.863)),
     (0.500, (0.596, 0.588, 0.588)),
@@ -174,7 +175,7 @@ redgreyblue = LinearSegmentedColormap.from_list('redgreyblue', (
 
 def make_spectral_comparison_log(order_dict, chosen_bin, chosen_y_mean):
 
-    write_log("Filename\tOrder\tTemperature\tAbsorption nu\tAbsorption pixel\tGD nu\tLT nu\tGD delta nu\tLT delta nu\tFitted depth\tFitted max\tFit Chi-squared")
+    write_log("Filename\tOrder\tTemperature\tAbsorption nu\tAbsorption pixel\tGD nu\tLT nu\tGD delta nu\tLT delta nu\tFitted depth\tFitted max")
 
     for order, order_info in order_dict.items():
         
@@ -187,18 +188,23 @@ def make_spectral_comparison_log(order_dict, chosen_bin, chosen_y_mean):
     
     
     
-        # regex = re.compile("202104.._......_.*_SO_A_[IE]_%i" %order)
-        regex = re.compile("20(18|19|20|21)04.._......_.*_SO_A_[IE]_%i" %order)
+        # regex = re.compile("20(18|21)04.._......_.*_SO_A_[IE]_%i" %order)
+        # regex = re.compile("20(18|19|20|21)04.._......_.*_SO_A_[IE]_%i" %order)
         # regex = re.compile("20(18|19|20|21)0[4567].._......_.*_SO_A_[IE]_%i" %order)
+        regex = re.compile("20(18|19|20|21|22)...._......_.*_SO_A_[IE]_%i" %order)
     
-        hdf5_files, hdf5_filenames, _ = make_filelist(regex, file_level)
+        hdf5_files, hdf5_filenames, _ = make_filelist(regex, file_level, open_files=False, silent=True)
         
         
         colours = get_colours(len(hdf5_filenames))
         
-        fig, (ax1,ax2) = plt.subplots(nrows=2, ncols=1, figsize=(18,10), sharex=True, constrained_layout=True)
-        fig.suptitle("Order %i" %order)
-        for file_index, (hdf5_file, hdf5_filename) in enumerate(zip(hdf5_files, hdf5_filenames)):
+        if PLOT_SPECTRA:
+            fig, (ax1,ax2) = plt.subplots(nrows=2, ncols=1, figsize=(18,10), sharex=True, constrained_layout=True)
+            fig.suptitle("Order %i" %order)
+            
+        for file_index, (hdf5_file_path, hdf5_filename) in enumerate(zip(hdf5_files, hdf5_filenames)):
+            
+            hdf5_file = h5py.File(hdf5_file_path, "r")
             
             colour = colours[file_index]
             
@@ -234,14 +240,16 @@ def make_spectral_comparison_log(order_dict, chosen_bin, chosen_y_mean):
             # x_gd = gd21_waven(order, t, px)
             x_lt = lt21_waven(order, t, px)
             
-            # ax1.plot(x_gd, y_cr, color=colour, linestyle="--", label="%s GD" %hdf5_filename)
-            ax1.plot(x_lt, y_cr, color=colour, linestyle="-", label="%s LT" %hdf5_filename)
+            if PLOT_SPECTRA:
+                # ax1.plot(x_gd, y_cr, color=colour, linestyle="--", label="%s GD" %hdf5_filename)
+                ax1.plot(x_lt, y_cr, color=colour, linestyle="-", label="%s LT" %hdf5_filename)
         
             #do simulation only for first file
             if file_index == 0:
                 nu_hr = gd21_waven(order, t, np.arange(-10.0, n_px + 10.0, 0.001))
                 mol_hr = 1.0 - get_molecular_hr(molecule, nu_hr, Smin=smin)
-                ax2.plot(nu_hr, mol_hr)
+                if PLOT_SPECTRA:
+                    ax2.plot(nu_hr, mol_hr)
         
                 abs_ix_hr = get_local_minima(mol_hr) #get hitran absorption minima indices
                 abs_nu_hrs = nu_hr[abs_ix_hr] #get absorption nu
@@ -251,9 +259,10 @@ def make_spectral_comparison_log(order_dict, chosen_bin, chosen_y_mean):
                 #N strongest lines
                 abs_y_cutoff = sorted(abs_y_hrs)[n_lines] #select only the n strongest lines
         
-                for abs_index, (abs_nu_hr, abs_y_hr) in enumerate(zip(abs_nu_hrs, abs_y_hrs)):
-                    if abs_y_hr < abs_y_cutoff:
-                        ax2.text(abs_nu_hr, abs_y_hr, abs_nu_hr)
+                if PLOT_SPECTRA:
+                    for abs_index, (abs_nu_hr, abs_y_hr) in enumerate(zip(abs_nu_hrs, abs_y_hrs)):
+                        if abs_y_hr < abs_y_cutoff:
+                            ax2.text(abs_nu_hr, abs_y_hr, abs_nu_hr)
                 
                
             
@@ -284,7 +293,7 @@ def make_spectral_comparison_log(order_dict, chosen_bin, chosen_y_mean):
                             
                             #find pixel number minimum
                             # x_hr, y_hr, px_min_position, chisq = fit_gaussian_absorption(px[local_minimum_indices], y_cr[local_minimum_indices], error=True)
-                            x_hr, y_hr, px_min_position, chisq = fit_polynomial(px[local_minimum_indices], y_cr[local_minimum_indices], error=True)
+                            x_hr, y_hr, px_min_position = fit_polynomial(px[local_minimum_indices], y_cr[local_minimum_indices], error=False)
                         
                             if len(x_hr) > 0: #if no fitting error
                             
@@ -314,12 +323,13 @@ def make_spectral_comparison_log(order_dict, chosen_bin, chosen_y_mean):
                                 
                                 else:
                                     #plot
-                                    # x_hr_nu_gd = gd21_waven(order, t, x_hr)
-                                    x_hr_nu_lt = lt21_waven(order, t, x_hr)
-                                    # ax1.axvline(x=nu_min_position_gd, color=colour)
-                                    # ax1.plot(x_hr_nu_gd, y_hr, color=colour, linestyle=":", label=label)
-                                    ax1.axvline(x=nu_min_position_lt, color=colour)
-                                    ax1.plot(x_hr_nu_lt, y_hr, color=colour, linestyle=":", label=label)
+                                    if PLOT_SPECTRA:
+                                        # x_hr_nu_gd = gd21_waven(order, t, x_hr)
+                                        x_hr_nu_lt = lt21_waven(order, t, x_hr)
+                                        # ax1.axvline(x=nu_min_position_gd, color=colour)
+                                        # ax1.plot(x_hr_nu_gd, y_hr, color=colour, linestyle=":", label=label)
+                                        ax1.axvline(x=nu_min_position_lt, color=colour)
+                                        ax1.plot(x_hr_nu_lt, y_hr, color=colour, linestyle=":", label=label)
 
 
                             else:
@@ -335,10 +345,10 @@ def make_spectral_comparison_log(order_dict, chosen_bin, chosen_y_mean):
                             
 
                     if not error:
-                        text = "%s\t%i\t%0.3f\t%0.3f\t%0.3f\t%0.3f\t%0.3f\t%0.3f\t%0.3f\t%0.3f\t%0.3f\t%0.3f" \
+                        text = "%s\t%i\t%0.3f\t%0.3f\t%0.3f\t%0.3f\t%0.3f\t%0.3f\t%0.3f\t%0.3f\t%0.3f" \
                             %(hdf5_filename, order, t, abs_nu_hr, px_min_position, nu_min_position_gd, nu_min_position_lt, \
                               delta_nu_gd, delta_nu_lt, \
-                              abs_depth, abs_max, chisq*1.0e6) 
+                              abs_depth, abs_max) 
                         write_log(text)
         
         
@@ -353,17 +363,18 @@ def make_spectral_comparison_log(order_dict, chosen_bin, chosen_y_mean):
             # write_log(text)
             
         # ax1.legend()
-        plt.savefig("order_%i.png" %order)
+        if PLOT_SPECTRA:
+            plt.savefig("order_%i.png" %order)
         
 
         
-make_spectral_comparison_log(order_dict, chosen_bin, chosen_y_mean)
+# make_spectral_comparison_log(order_dict, chosen_bin, chosen_y_mean)
         
 
-df = pd.read_csv("log.txt", sep="\t")
+df = pd.read_csv(os.path.join(paths["BASE_DIRECTORY"], "reference_files", "so_spectral_cal_absorption_lines.txt"), sep="\t")
 
 
-temperature_range = np.arange(np.floor(min(df["Temperature"])), np.ceil(max(df["Temperature"])) + 0.25, 0.25)
+temperature_range = np.arange(np.floor(min(df["Temperature"])), np.ceil(max(df["Temperature"])) + temperature_grid_spacing, temperature_grid_spacing)
 px_range = np.arange(320)
 
 df["temp_bins"] = pd.cut(df["Temperature"], temperature_range, labels=False)
@@ -371,6 +382,9 @@ df["pixel_bins"] = pd.cut(df["Absorption pixel"], px_range, labels=False)
 
 df["GD-LT"] = np.abs(df["GD delta nu"]) - np.abs(df["LT delta nu"])
 
+
+
+"""plot all orders"""
 # grid = np.zeros((len(temperature_range), len(px_range))) + np.nan
 grid_list = [[[] for _ in range(len(px_range))] for _ in range(len(temperature_range))]
 
@@ -390,10 +404,6 @@ for i in range(len(px_range)):
             grid_median[j, i] = np.median(grid_list[j][i])
         grid_counts[j, i] = len(grid_list[j][i])
 
-# plt.figure()
-# im = plt.pcolormesh(px_range, temperature_range, grid, cmap="coolwarm")
-# plt.colorbar(im)
-
 plt.figure(constrained_layout=True)
 im = plt.pcolormesh(px_range, temperature_range, grid_median, cmap=redgreyblue, vmin=-0.1, vmax=0.1)
 plt.xlabel("Pixel Number")
@@ -401,6 +411,41 @@ plt.ylabel("Interpolated Temperature")
 cbar = plt.colorbar(im)
 cbar.set_label("abs(delta GD)-abs(delta LT)\n(median if more than 1 value per grid point)", rotation=270, labelpad=20)
 plt.title("Comparing spectral calibration methods: Loic vs Goddard")
+
+
+
+
+"""plot each order"""
+for order in order_dict.keys():
+    
+    # grid = np.zeros((len(temperature_range), len(px_range))) + np.nan
+    grid_list = [[[] for _ in range(len(px_range))] for _ in range(len(temperature_range))]
+    
+    for i, v in enumerate(df.loc[df["Order"] == order]["GD-LT"]):
+        # grid[df["temp_bins"][i], df["pixel_bins"][i]] = v
+        if 0.8 < df["Fitted max"][i] < 1.1:
+            if not ((df["GD delta nu"][i] < 0.02) & (df["GD delta nu"][i] > -0.02)):
+                if not ((df["LT delta nu"][i] < 0.02) & (df["LT delta nu"][i] > -0.02)):
+                    grid_list[int(df["temp_bins"][i])][int(df["pixel_bins"][i])].append(v)
+    
+    grid_median = np.zeros((len(temperature_range), len(px_range))) + np.nan
+    
+    grid_counts = np.zeros((len(temperature_range), len(px_range)))
+    for i in range(len(px_range)):
+        for j in range(len(temperature_range)):
+            if len(grid_list[j][i]) > 0:
+                grid_median[j, i] = np.median(grid_list[j][i])
+            grid_counts[j, i] = len(grid_list[j][i])
+
+
+
+    plt.figure(constrained_layout=True)
+    im = plt.pcolormesh(px_range, temperature_range, grid_median, cmap=redgreyblue, vmin=-0.1, vmax=0.1)
+    plt.xlabel("Pixel Number")
+    plt.ylabel("Interpolated Temperature")
+    cbar = plt.colorbar(im)
+    cbar.set_label("abs(delta GD)-abs(delta LT)\n(median if more than 1 value per grid point)", rotation=270, labelpad=20)
+    plt.title("Comparing spectral calibration methods: Loic vs Goddard Order %i" %order)
 
 
 # plt.figure(constrained_layout=True)
@@ -411,11 +456,11 @@ plt.title("Comparing spectral calibration methods: Loic vs Goddard")
 # cbar.set_label("Number of values per grid point", rotation=270, labelpad=20)
 # plt.title("Comparing spectral calibration methods: Loic vs Goddard\nNumber of values per temperature-pixel bin")
 
-plt.figure(constrained_layout=True)
-plt.plot(np.sum(grid_counts, axis=1), temperature_range)
-plt.xlabel("Number of observations at this temperature")
-plt.ylabel("Interpolated Temperature")
-plt.title("Comparing spectral calibration methods: Loic vs Goddard\nNumber of values per temperature-pixel bin")
+# plt.figure(constrained_layout=True)
+# plt.plot(np.sum(grid_counts, axis=1), temperature_range)
+# plt.xlabel("Number of observations at this temperature")
+# plt.ylabel("Interpolated Temperature")
+# plt.title("Comparing spectral calibration methods: Loic vs Goddard\nNumber of values per temperature-pixel bin")
 
 
 # from scipy.interpolate import griddata

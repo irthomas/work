@@ -22,7 +22,6 @@ import matplotlib.pyplot as plt
 from matplotlib.dates import MonthLocator
 from tools.file.hdf5_functions import make_filelist
 from tools.file.paths import paths
-from tools.file.hdf5_filename_to_datetime import hdf5_filename_to_datetime
 
 import spiceypy as sp
 from tools.spice.load_spice_kernels import load_spice_kernels
@@ -53,8 +52,6 @@ hdf5_files, hdf5_filenames, titles = make_filelist(regex, file_level, open_files
 obs_datetimes = []
 relative_signals = []
 
-    
-
 for file_index, (hdf5_file, hdf5_filename) in enumerate(zip(hdf5_files, hdf5_filenames)):
     if np.mod(file_index, 100) == 0:
         print(file_index, hdf5_filename)
@@ -63,8 +60,10 @@ for file_index, (hdf5_file, hdf5_filename) in enumerate(zip(hdf5_files, hdf5_fil
     year = hdf5_filename[0:4]
     month = hdf5_filename[4:6]
     day = hdf5_filename[6:8]
-    
-    obs_datetime = hdf5_filename_to_datetime(hdf5_filename)
+    hour = hdf5_filename[9:11]
+    minute = hdf5_filename[11:13]
+    second = hdf5_filename[13:15]
+    obs_datetime = datetime(year=int(year), month=int(month), day=int(day), hour=int(hour), minute=int(minute), second=int(second))
     
     file_path = os.path.join(paths["DATA_DIRECTORY"], file_level, year, month, day, hdf5_filename+".h5")
     
@@ -151,10 +150,10 @@ ax1a.set_ylabel("Solar diameter as seen\nfrom TGO (arcminutes)")
 ax1a.set_title("Apparent diameter of Sun")
 ax1b.set_title("SO channel relative counts for each bin")
 
-ax1a.xaxis.set_major_locator(MonthLocator(bymonth=None, interval=1, tz=None))    
+ax1a.xaxis.set_major_locator(MonthLocator(bymonth=None, interval=3, tz=None))    
 ax1a.grid(True)
 
 
 if SAVE_FIGS:
-    plt.savefig("sun_diameter_so_relative_counts.png", dpi=300)
+    fig.savefig("sun_diameter_so_relative_counts.png", dpi=300)
    

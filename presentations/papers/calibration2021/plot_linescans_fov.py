@@ -25,8 +25,8 @@ load_spice_kernels()
 
 
 """user modifiable"""
-# SAVE_FIG = True
-SAVE_FIG = False
+SAVE_FIG = True
+# SAVE_FIG = False
 
 MESHGRID = False
 # MESHGRID = True
@@ -40,8 +40,8 @@ WGC = False
 PRINT_WGC_ETS = False
 
 
-channel = "so"
-# channel = "lno"
+# channel = "so"
+channel = "lno"
 """end"""
 
 
@@ -56,8 +56,8 @@ DETECTOR_CENTRE_LINES = {"so":128, "lno":152}
 
 linescan_dict = {
         "so":{
-            "MCO-1":["20161120_231420_0p1a_SO_1", "20161121_012420_0p1a_SO_1"],
-            "Old SO boresight (Apr 2018)":["20180428_023343_0p1a_SO_1", "20180511_084630_0p1a_SO_1"],
+            "Initial boresight (Nov 2016)":["20161120_231420_0p1a_SO_1", "20161121_012420_0p1a_SO_1"],
+            "Mission start (Apr 2018)":["20180428_023343_0p1a_SO_1", "20180511_084630_0p1a_SO_1"],
             "UVIS-prime (Aug 2018)":["20180821_193241_0p1a_SO_1", "20180828_223824_0p1a_SO_1"],
             "UVIS-prime (Dec 2018)":["20181219_091740_0p1a_SO_1", "20181225_025140_0p1a_SO_1"], #not a nomad linescan
             "UVIS-prime (Jan 2019)":["20190118_183336_0p1a_SO_1", "20190125_061434_0p1a_SO_1"],
@@ -66,17 +66,19 @@ linescan_dict = {
             "SO-prime (Dec 2020)":["20201224_011635_0p1a_SO_1", "20210102_092937_0p1a_SO_1"],
         },
          "lno":{
-            # "SO-prime (June 2016)":["20161121_000420_0p1a_LNO_1", "20161121_021920_0p1a_LNO_1"], \
+            # "Initial boresight (June 2016)":["20160613_001950_0p1a_LNO_1", "20160613_022203_0p1a_LNO_1"], \
+            "Initial boresight (June 2016)":["20160615_233950_0p1a_LNO_1", "20160616_015450_0p1a_LNO_1"], \
+            # "Refined boresight (Nov 2016)":["20161121_000420_0p1a_LNO_1", "20161121_021920_0p1a_LNO_1"], \
             # "MTP001":["201905", "20190704"],
             # "MTP015":["", ""],
-            "SO-prime (Jul 2020)":["20200724_125331_0p1a_LNO_1", "20200728_144718_0p1a_LNO_1"],
+            # "SO-prime (Jul 2020)":["20200724_125331_0p1a_LNO_1", "20200728_144718_0p1a_LNO_1"],
         },
 }
 
 
 #    referenceFrame = "TGO_NOMAD_UVIS_OCC"
-referenceFrame = "TGO_NOMAD_SO"
-# referenceFrame = "TGO_NOMAD_LNO_OPS_OCC"
+# referenceFrame = "TGO_NOMAD_SO"
+referenceFrame = "TGO_NOMAD_LNO_OPS_OCC"
 # referenceFrame = "TGO_SPACECRAFT"
 
 
@@ -97,16 +99,22 @@ def get_vector(date_time, reference_frame):
 
 
 if channel == "so":
-    fig1, axes = plt.subplots(nrows=2, ncols=4, figsize=(FIG_X+5, FIG_Y+2), sharex=True, )
+    fig1, axes = plt.subplots(nrows=2, ncols=4, figsize=(FIG_X+5, FIG_Y+2))
     axes = axes.flatten()
 else:
-    fig1, ax = plt.subplots(nrows=1, ncols=1, figsize=(FIG_X, FIG_Y))
+    fig1, ax = plt.subplots(nrows=1, ncols=1, figsize=(FIG_X, FIG_Y),)
 
 
-fig1.add_subplot(111, frameon=False)
-plt.tick_params(labelcolor='none', top=False, bottom=False, left=False, right=False)
-plt.xlabel("%s FRAME X" %referenceFrame)
-plt.ylabel("%s FRAME Y" %referenceFrame)
+
+if channel == "so":
+    labelpad=15
+    fig1.add_subplot(111, frameon=False)
+    plt.tick_params(labelcolor='none', top=False, bottom=False, left=False, right=False)
+else:
+    labelpad=0
+plt.xlabel("%s SPICE FRAME X (Spatial direction)" %referenceFrame)
+
+plt.ylabel("%s SPICE FRAME Y (Spectral direction)" %referenceFrame, labelpad=labelpad)
 for linescan_index, (title, hdf5_filenames) in enumerate(linescan_dict[channel].items()):
 
     xs = []
@@ -134,6 +142,8 @@ for linescan_index, (title, hdf5_filenames) in enumerate(linescan_dict[channel].
         window_height = hdf5_file["Channel/WindowHeight"][0]+1
         binning = hdf5_file["Channel/Binning"][0]+1
         sbsf = hdf5_file["Channel/BackgroundSubtraction"][0]
+        
+        print(window_top_all[0], window_height, binning, sbsf)
 
         if binning==2: #stretch array
             detector_data_all=np.repeat(detector_data_all,2,axis=1)
@@ -148,7 +158,7 @@ for linescan_index, (title, hdf5_filenames) in enumerate(linescan_dict[channel].
         #convert data to times and boresights using spice
         et_all=np.asfarray([np.mean([utc2et(i[0]), utc2et(i[1])]) for i in datetime_all])
 
-        if binning==1:
+        if binning==1 or binning==2:
             #find which window top contains the line - this is not correct for binning
             unique_window_tops = list(set(window_top_all))
             for unique_window_top in unique_window_tops:
@@ -173,10 +183,10 @@ for linescan_index, (title, hdf5_filenames) in enumerate(linescan_dict[channel].
         
     
         detector_line_mean = np.mean(detector_data_line[:, 160:240], axis=1)
-        detector_line_min = (np.max(detector_line_mean) + np.min(detector_line_mean)) * 0.65
-        detector_line_max = np.max(detector_line_mean)
+        detector_line_min = (np.max(detector_line_mean) + np.min(detector_line_mean)) * 0.5
+        # detector_line_max = np.max(detector_line_mean)
         detector_line_mean[detector_line_mean < detector_line_min] = detector_line_min
-        detector_line_mean[detector_line_mean > detector_line_max] = detector_line_max
+        # detector_line_mean[detector_line_mean > detector_line_max] = detector_line_max
 
         
         print("%s: max value = %0.0f, min value = %0.0f" %(hdf5_filename, np.max(detector_line_mean), np.min(detector_line_mean)))
