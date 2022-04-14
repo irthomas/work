@@ -13,6 +13,9 @@ import h5py
 import os
 import pandas as pd
 
+
+from matplotlib.backends.backend_pdf import PdfPages
+
 # from scipy.optimize import curve_fit
 # from scipy.optimize import OptimizeWarning
 
@@ -78,7 +81,6 @@ def lt21_waven(order, inter_temp, px_in):
     p0_nu = -0.8276 * inter_temp #px/°C * T(interpolated)
     px_temp = px_in + p0_nu
     xdat  = np.polyval(cfpixel, px_temp) * order
-    
     
     return xdat
 
@@ -384,48 +386,17 @@ df["GD-LT"] = np.abs(df["GD delta nu"]) - np.abs(df["LT delta nu"])
 
 
 
-"""plot all orders"""
-# grid = np.zeros((len(temperature_range), len(px_range))) + np.nan
-grid_list = [[[] for _ in range(len(px_range))] for _ in range(len(temperature_range))]
+with PdfPages("so_spectral_calibration_comparison.pdf") as pdf: #open pdf
 
-for i, v in enumerate(df["GD-LT"]):
-    # grid[df["temp_bins"][i], df["pixel_bins"][i]] = v
-    if 0.8 < df["Fitted max"][i] < 1.1:
-        if not ((df["GD delta nu"][i] < 0.02) & (df["GD delta nu"][i] > -0.02)):
-            if not ((df["LT delta nu"][i] < 0.02) & (df["LT delta nu"][i] > -0.02)):
-                grid_list[int(df["temp_bins"][i])][int(df["pixel_bins"][i])].append(v)
-
-grid_median = np.zeros((len(temperature_range), len(px_range))) + np.nan
-
-grid_counts = np.zeros((len(temperature_range), len(px_range)))
-for i in range(len(px_range)):
-    for j in range(len(temperature_range)):
-        if len(grid_list[j][i]) > 0:
-            grid_median[j, i] = np.median(grid_list[j][i])
-        grid_counts[j, i] = len(grid_list[j][i])
-
-plt.figure(constrained_layout=True)
-im = plt.pcolormesh(px_range, temperature_range, grid_median, cmap=redgreyblue, vmin=-0.1, vmax=0.1)
-plt.xlabel("Pixel Number")
-plt.ylabel("Interpolated Temperature")
-cbar = plt.colorbar(im)
-cbar.set_label("abs(delta GD)-abs(delta LT)\n(median if more than 1 value per grid point)", rotation=270, labelpad=20)
-plt.title("Comparing spectral calibration methods: Loic vs Goddard")
-
-
-
-
-"""plot each order"""
-for order in order_dict.keys():
-    
+    """plot all orders"""
     # grid = np.zeros((len(temperature_range), len(px_range))) + np.nan
     grid_list = [[[] for _ in range(len(px_range))] for _ in range(len(temperature_range))]
     
-    for i, v in enumerate(df.loc[df["Order"] == order]["GD-LT"]):
+    for i, v in enumerate(df["GD-LT"]):
         # grid[df["temp_bins"][i], df["pixel_bins"][i]] = v
-        if 0.8 < df["Fitted max"][i] < 1.1:
-            if not ((df["GD delta nu"][i] < 0.02) & (df["GD delta nu"][i] > -0.02)):
-                if not ((df["LT delta nu"][i] < 0.02) & (df["LT delta nu"][i] > -0.02)):
+        # if 0.8 < df["Fitted max"][i] < 1.1:
+        #     if not ((df["GD delta nu"][i] < 0.02) & (df["GD delta nu"][i] > -0.02)):
+        #         if not ((df["LT delta nu"][i] < 0.02) & (df["LT delta nu"][i] > -0.02)):
                     grid_list[int(df["temp_bins"][i])][int(df["pixel_bins"][i])].append(v)
     
     grid_median = np.zeros((len(temperature_range), len(px_range))) + np.nan
@@ -436,16 +407,55 @@ for order in order_dict.keys():
             if len(grid_list[j][i]) > 0:
                 grid_median[j, i] = np.median(grid_list[j][i])
             grid_counts[j, i] = len(grid_list[j][i])
-
-
-
-    plt.figure(constrained_layout=True)
+    
+    plt.figure(figsize=(10, 5), constrained_layout=True)
     im = plt.pcolormesh(px_range, temperature_range, grid_median, cmap=redgreyblue, vmin=-0.1, vmax=0.1)
     plt.xlabel("Pixel Number")
     plt.ylabel("Interpolated Temperature")
     cbar = plt.colorbar(im)
     cbar.set_label("abs(delta GD)-abs(delta LT)\n(median if more than 1 value per grid point)", rotation=270, labelpad=20)
-    plt.title("Comparing spectral calibration methods: Loic vs Goddard Order %i" %order)
+    plt.title("Comparing spectral calibration methods: Loic vs Goddard")
+
+    pdf.savefig()
+    plt.close()
+    
+    
+    
+    
+    """plot each order"""
+    for order in order_dict.keys():
+        
+        # grid = np.zeros((len(temperature_range), len(px_range))) + np.nan
+        grid_list = [[[] for _ in range(len(px_range))] for _ in range(len(temperature_range))]
+        
+        for i in df.index[df["Order"] == order]:
+            # grid[df["temp_bins"][i], df["pixel_bins"][i]] = v
+            # if 0.8 < df["Fitted max"][i] < 1.1:
+            #     if not ((df["GD delta nu"][i] < 0.02) & (df["GD delta nu"][i] > -0.02)):
+            #         if not ((df["LT delta nu"][i] < 0.02) & (df["LT delta nu"][i] > -0.02)):
+                        grid_list[int(df["temp_bins"][i])][int(df["pixel_bins"][i])].append(df["GD-LT"][i])
+        
+        grid_median = np.zeros((len(temperature_range), len(px_range))) + np.nan
+        
+        grid_counts = np.zeros((len(temperature_range), len(px_range)))
+        for i in range(len(px_range)):
+            for j in range(len(temperature_range)):
+                if len(grid_list[j][i]) > 0:
+                    grid_median[j, i] = np.median(grid_list[j][i])
+                grid_counts[j, i] = len(grid_list[j][i])
+    
+    
+    
+        plt.figure(figsize=(10, 5), constrained_layout=True)
+        im = plt.pcolormesh(px_range, temperature_range, grid_median, cmap=redgreyblue, vmin=-0.1, vmax=0.1)
+        plt.xlabel("Pixel Number")
+        plt.ylabel("Interpolated Temperature")
+        cbar = plt.colorbar(im)
+        cbar.set_label("abs(delta GD)-abs(delta LT)\n(median if more than 1 value per grid point)", rotation=270, labelpad=20)
+        plt.title("Comparing spectral calibration methods: Loic vs Goddard Order %i" %order)
+
+        pdf.savefig()
+        plt.close()
 
 
 # plt.figure(constrained_layout=True)

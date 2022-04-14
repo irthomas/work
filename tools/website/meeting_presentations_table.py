@@ -22,7 +22,7 @@ from openpyxl import load_workbook
 from tools.file.ppt_pptx_to_pdf import ppt_pptx_to_pdf
 
 
-meeting_dir = r"C:\Users\iant\Documents\DOCUMENTS\meetings"
+meeting_dir = r"C:\Users\iant\Documents\DOCUMENTS\SWTs"
 
 header_dict = {
     6:"SWT6: CSL, Liege (20-22 April 2015)",
@@ -40,10 +40,11 @@ header_dict = {
     18:"SWT18 Virtual Meeting (7-9 December 2020)",
     19:"SWT19: Virtual Meeting (24-26 March 2021)",
     20:"SWT20: BIRA + Virtual (20-22 October 2021)",
+    21:"SWT21: Virtual Meeting (29-31 March 2022)",
     }
 
-swt_numbers = [20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6]
-# swt_numbers = [20]
+# swt_numbers = [20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6]
+swt_numbers = [21]
 dir_list = os.listdir(meeting_dir)
 
 
@@ -114,6 +115,7 @@ for swt_number in swt_numbers:
                 days = [v for v in os.listdir(swt_dir) if "Day" in v]
                 for day in days:
                     filepath_in = os.path.join(swt_dir, day, filename)
+                    # print("Trying path %s" %filepath_in)
                     if os.path.exists(filepath_in):
                         print(filename, "found in folder", day)
                         day_found = day

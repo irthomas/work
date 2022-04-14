@@ -23,13 +23,19 @@ import base64
 
 from tools.file.paths import paths
 
-with open(os.path.join(paths["REFERENCE_DIRECTORY"], "passwords.txt"), "r") as f:
-    lines = "".join(f.readlines())
-    
-    passwords = eval(lines)
-    
-for key, value in passwords.items():
-    passwords[key] = base64.b64decode(value).decode()
 
+if os.path.exists(os.path.join(paths["REFERENCE_DIRECTORY"], "passwords.txt")):
+
+    with open(os.path.join(paths["REFERENCE_DIRECTORY"], "passwords.txt"), "r") as f:
+        lines = "".join(f.readlines())
+        
+        passwords = eval(lines)
+        
+    for key, value in passwords.items():
+        passwords[key] = base64.b64decode(value).decode()
+
+else:
+    print("Password file not found, certain functions will be disabled")
+    passwords = {}
 
 # base64.b64encode("pword".encode("utf-8"))

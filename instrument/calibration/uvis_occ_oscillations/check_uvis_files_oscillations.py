@@ -17,15 +17,18 @@ from matplotlib.backends.backend_pdf import PdfPages
 from tools.file.hdf5_functions import make_filelist
 
 
-# regex = re.compile("20181029_203917_.*_UVIS_E")
+regex = re.compile("20181029_203917_.*_UVIS_E")
 # regex = re.compile("20180622_......_.*_UVIS_E")
-regex = re.compile("2018...._......_.*_UVIS_E")
+# regex = re.compile("2018...._......_.*_UVIS_E")
 
 file_level = "hdf5_level_0p3k"
 
 
 
 hdf5_files, hdf5_filenames, _ = make_filelist(regex, file_level)
+
+
+transmittance_dict = {}
 
 with PdfPages("uvis_oscillations.pdf") as pdf: #open pdf
     for file_index, (h5, h5_filename) in enumerate(zip(hdf5_files, hdf5_filenames)):
@@ -57,37 +60,55 @@ with PdfPages("uvis_oscillations.pdf") as pdf: #open pdf
             
         df = df_raw / df_sun
         
-        
+        #select 500 to 600nm region
         df_500 = df[(df.index > 500) & (df.index < 600)]
         
         #if no visible region spectra acquired
         if len(df_500.index) == 0:
             continue
         
+        #apply rolling mean (follows oscillation pattern)
         df_rolling = df_500.rolling(5, axis=0, center=True).mean()
         
-        
-        
-        
+        #new dataframe with 4th order polynomial fit to spectra continuum (no fitting to oscillations)
         df_poly = df_500.copy()
         for i in df_500.columns:
             df_poly[i] = np.polyval(np.polyfit(np.arange(df_500.shape[0]), df_500[i], 4), np.arange(df_500.shape[0]))
         
+        #subtract rolling mean from raw spectra
         df_rolling_sub = df_500 - df_rolling
+        #subtract polynomial fit from raw spectra
         df_poly_sub = df_500 - df_poly
         
         
         
-        
+        #standard deviations
         rolling_std = df_rolling_sub.std()
         poly_std = df_poly_sub.std()
         
+        #mean transmittance of polynomial (continuum) fit
         mean_trans = df_poly.mean()
         
+        #
         sigma1 = (poly_std / rolling_std)
         # sigma2 = (poly_std / rolling_std) / mean_trans
-        alt_max_sigma = sigma1.index[sigma1 == max(sigma1)]
-        trans_max_sigma = mean_trans[sigma1 == max(sigma1)]
+        
+        
+        max_sigma = max(sigma1)
+
+        alt_max_sigma = sigma1.index[sigma1 == max_sigma]
+        index_max_sigma = sigma1.index.get_loc(alt_max_sigma[0])
+        
+        next_alt_max_sigma = sigma1.index[index_max_sigma+1]
+        prev_alt_max_sigma = sigma1.index[index_max_sigma-1]
+        
+        trans_max_sigma = mean_trans[alt_max_sigma]
+        next_trans_max_sigma = mean_trans[next_alt_max_sigma]
+        prev_trans_max_sigma = mean_trans[prev_alt_max_sigma]
+
+
+        transmittance_dict[h5_filename] = {"cont_trans":trans_max_sigma.item(), "alt":alt_max_sigma.item(), \
+                                           "max_sigma":max_sigma, "next_cont_trans":next_trans_max_sigma, "prev_cont_trans":prev_trans_max_sigma}
         
         plt.figure(figsize=(10, 8))
         plt.title(h5_filename)
@@ -103,4 +124,4 @@ with PdfPages("uvis_oscillations.pdf") as pdf: #open pdf
         plt.xlabel("Strength / transmittance")
         plt.ylabel("Tangent Alt Areoid (km)")
         pdf.savefig()
-        plt.close()
+        # plt.close()
