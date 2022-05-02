@@ -61,7 +61,7 @@ for h5, h5_filename in zip(hdf5_files, hdf5_filenames):
     
     plt.figure()
     plt.title("LNO phobos observation after patching: %s" %h5_filename)
-    plt.plot([bin_d[i]["mean_all"] for i in bin_d.keys()])
+    plt.plot(bin_d.keys(), [bin_d[i]["mean_all"] for i in bin_d.keys()])
     
     grid_2d = np.asfarray([bin_d[i]["mean_px"] for i in bin_d.keys()])
     

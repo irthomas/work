@@ -145,6 +145,9 @@ for hdf5_file, hdf5_filename in zip(hdf5Files, hdf5Filenames):
     plt.plot(smooth/np.max(row_max_value), smooth_rows, linewidth=5, color="k", label="Instrument sensitivity")
     plt.legend(loc="upper right")
     
+    for sensitivity, row in zip(smooth/np.max(row_max_value), smooth_rows):
+        print(row, sensitivity)
+    
     if SAVE_FIGS: 
         plt.savefig(channel+"_MCC_line_scan_vertical_columns_on_detector_where_sun_is_seen.png")
 
