@@ -130,11 +130,11 @@ def files_for_period(cur, beg_dtime=None, end_dtime=None):
 
 
 
-def get_data_from_cache(db_path, beg_dtime=None, end_dtime=None):
+def get_data_from_cache(cache_db_path, beg_dtime=None, end_dtime=None):
     """get filenames from cache.db"""
         
-    con = sql.connect(db_path)
-    print("Getting data from %s" %os.path.basename(db_path))
+    con = sql.connect(cache_db_path)
+    print("Getting data from %s" %os.path.basename(cache_db_path))
     
     cur = con.cursor()
     
@@ -172,9 +172,9 @@ if __name__ == "__main__":
     parser.add_argument('-silent', action='store_true', help='Output messages')
     parser.add_argument('--regex', type=str, default="", help='Match regex')
     args = parser.parse_args()
-    command = args.command
+    observation_type = args.observation_type
 else:
-    command = ""
+    observation_type = ""
 
 
 
@@ -189,8 +189,8 @@ else:
 
 # filenames = get_filenames_from_cache(cache_db_path)
 # #make datetime from hdf5 filenames, find those that match the beg/end times
-# hdf5_datetimes = [datetime.datetime.strptime(i[:15], HDF5_FILENAME_FORMAT) for i in hdf5Filenames]
-# matching_hdf5_filenames = [hdf5_filename for hdf5_datetime, hdf5_filename in zip(hdf5_datetimes, hdf5Filenames) if beg_datetime < hdf5_datetime < end_datetime]
+# hdf5_datetimes = [datetime.datetime.strptime(i[:15], HDF5_FILENAME_FORMAT) for i in hdf5_filenames]
+# matching_hdf5_filenames = [hdf5_filename for hdf5_datetime, hdf5_filename in zip(hdf5_datetimes, hdf5_filenames) if beg_datetime < hdf5_datetime < end_datetime]
 
 
 
@@ -210,7 +210,6 @@ if args.regenerate:
     
     
 print("Getting file list")
-level = args.level
 observation_type = args.observation_type
 
 if args.beg:
@@ -219,7 +218,7 @@ if args.end:
     end_dt = datetime.datetime.strptime(args.end, ARG_FORMAT)
 
 
-rows = get_data_from_cache(db_path, beg_dtime=beg_dt, end_dtime=end_dt)
+rows = get_data_from_cache(cache_db_path, beg_dtime=beg_dt, end_dtime=end_dt)
 hdf5_filepaths = [row[0] for row in rows]
 utc_start_times = [row[2] for row in rows]
 
@@ -230,7 +229,7 @@ for file_index, (utc_start_time, hdf5_filepath) in enumerate(zip(utc_start_times
     hdf5_filename = os.path.basename(hdf5_filepath)
     
     if not silent:
-        print("Collecting data: file %i/%i" %(file_index, len(hdf5_filepaths)))
+        print("Collecting data: file %i/%i: %s" %(file_index, len(hdf5_filepaths), hdf5_filename))
 
     
     file_dict["filename"][1].append(hdf5_filename)
@@ -239,31 +238,37 @@ for file_index, (utc_start_time, hdf5_filepath) in enumerate(zip(utc_start_times
     if not os.path.exists(hdf5_filepath):
         print("Error: %s does not exist" %hdf5_filename)
         
+    elif "UVIS" in hdf5_filename:
+        continue
+    
     else:
-        with h5py.File(hdf5_filepath, "r") as hdf5File:
+        with h5py.File(hdf5_filepath, "r") as hdf5_file:
             
-            n_spectra = len(hdf5File["Geometry/ObservationDateTime"][:, 0])
+            n_spectra = len(hdf5_file["Geometry/ObservationDateTime"][:, 0])
             
-            file_dict["orbit"][1].append(hdf5File.attrs["Orbit"])
-            file_dict["duration"][1].append(get_obs_duration(hdf5File))
+            file_dict["orbit"][1].append(hdf5_file.attrs["Orbit"])
+            file_dict["duration"][1].append(get_obs_duration(hdf5_file))
             file_dict["n_spectra"][1].append(n_spectra)
-            file_dict["n_orders"][1].append(hdf5File.attrs["NSubdomains"])
-            file_dict["bg_subtraction"][1].append(hdf5File["Channel/BackgroundSubtraction"][0])
+            file_dict["n_orders"][1].append(hdf5_file.attrs["NSubdomains"])
+            file_dict["bg_subtraction"][1].append(hdf5_file["Channel/BackgroundSubtraction"][0])
             
             file_id = file_index #update this
             
-            
-            temperatures = hdf5File["Channel/InterpolatedTemperature"][...]
-            diffraction_orders = hdf5File["Channel/DiffractionOrder"][...]
-            bg_subtractions = hdf5File["Channel/BackgroundSubtraction"][0]
-            longitudes = hdf5File["Geometry/Point0/Lon"][:, 0]
-            latitudes = hdf5File["Geometry/Point0/Lat"][:, 0]
-            local_times = hdf5File["Geometry/Point0/LST"][:, 0]
+            if "InterpolatedTemperature" in hdf5_file["Channel"].keys():
+                temperatures = hdf5_file["Channel/InterpolatedTemperature"][...]
+            else:
+                temperatures = hdf5_file["Channel/MeasurementTemperature"][...]
+                
+            diffraction_orders = hdf5_file["Channel/DiffractionOrder"][...]
+            bg_subtractions = hdf5_file["Channel/BackgroundSubtraction"][0]
+            longitudes = hdf5_file["Geometry/Point0/Lon"][:, 0]
+            latitudes = hdf5_file["Geometry/Point0/Lat"][:, 0]
+            local_times = hdf5_file["Geometry/Point0/LST"][:, 0]
     
             if "SO" in hdf5_filename:
                 
-                bin_index = hdf5File["Channel/IndBin"][...]
-                altitudes = hdf5File["Geometry/Point0/TangentAltAreoid"][:, 0]
+                bin_index = hdf5_file["Channel/IndBin"][...]
+                altitudes = hdf5_file["Geometry/Point0/TangentAltAreoid"][:, 0]
     
                 for i in range(n_spectra):
                 
@@ -279,7 +284,7 @@ for file_index, (utc_start_time, hdf5_filepath) in enumerate(zip(utc_start_times
                     
             elif "LNO" in hdf5_filename:
     
-                incidence_angles = hdf5File["Geometry/Point0/IncidenceAngle"][:, 0]
+                incidence_angles = hdf5_file["Geometry/Point0/IncidenceAngle"][:, 0]
                 
                 for i in range(n_spectra):
                 
@@ -289,7 +294,7 @@ for file_index, (utc_start_time, hdf5_filepath) in enumerate(zip(utc_start_times
                     lno_obs_dict["diffration_order"][1].append(diffraction_orders[i])
                     lno_obs_dict["longitude"][1].append(longitudes[i])
                     lno_obs_dict["latitude"][1].append(latitudes[i])
-                    lno_obs_dict["incidence_angle"][1].append(altitudes[i])
+                    lno_obs_dict["incidence_angle"][1].append(incidence_angles[i])
                     lno_obs_dict["local_time"][1].append(local_times[i])
     
                 
