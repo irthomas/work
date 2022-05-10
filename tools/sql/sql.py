@@ -43,10 +43,16 @@ class sql_db(object):
     def get_all_rows(self, table_name):
         """get data from all rows of the given table"""
         self.cur.execute('SELECT * FROM {}'.format(table_name))
+        self.con.commit()
         rows = self.cur.fetchall()
         return rows
 
-
+    def query(self, query):
+        self.cur.execute(query)
+        self.con.commit()
+        rows = self.cur.fetchall()
+        return rows
+        
 
 
     def empty_table(self, table_name, table_dict):
@@ -66,6 +72,7 @@ class sql_db(object):
         print("Deleting and rebuilding table", table_name)
         self.cur.execute('DROP TABLE IF EXISTS {}'.format(table_name))
         self.cur.execute(query)
+        self.con.commit()
 
 
     def populate_db(self, table_name, table_dict, clear=False):
@@ -88,8 +95,9 @@ class sql_db(object):
         for i in range(len(table_dict[field_not_primary][1])):
             
             values = [table_dict[key][1][i] for key in fields_not_primary]
-        
+       
             self.cur.execute("INSERT INTO {} (%s) VALUES (%s)".format(table_name) %(field_names_text, questions_str), values)
+        self.con.commit()
 
 
 #Example code: clear table h5 (if it exists) and repoplulate with 3 fields. Add 3 rows to the table, then exit

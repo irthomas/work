@@ -13,3 +13,6 @@ OBSERVATION_TYPE_LOG = r"C:\Users\iant\Documents\DATA\pfm_auxiliary_files\observ
 
 PATH_PSA_PAR_UVIS = r"C:\Users\iant\Dropbox\NOMAD\Python"
 MAKE_PSA_LOG_DIR = r"C:\Users\iant\Dropbox\NOMAD\Python"
+
+
+ROOT_STORAGE_PATH = r"C:\Users\iant\Documents\DATA"

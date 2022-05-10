@@ -4,11 +4,12 @@ __pycache__/
 analysis/asimut/
 analysis/retrievals/
 analysis/simulations/
-analysis/so/
-analysis/lno/
+analysis/so_retrievals/
+analysis/lno_retrievals/
+analysis/uvis_retrievals/
 old_scripts
 output
 reference_files
 
-web_dev/
 repos/
+other/pipeline/nomad_ops/

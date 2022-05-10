@@ -19,7 +19,7 @@ from tools.file.paths import paths
 def make_line_anim(d):
     """
     pass dictionary to function to make a line plot animation. Keys are:
-    'x':{name:data}, 'y':{name:data}, 'text':[], 'text_position', 'xlabel', 'ylabel', 'xlim', 'ylim', 'filename', 'legend':{}, 'keys':[], 'title'
+    'x':{name:data}, 'y':{name:data}, 'text':[], 'text_position':[x,y], 'xlabel', 'ylabel', 'xlim', 'ylim', 'filename', 'legend':{}, 'keys':[], 'title'
     """
 
     if "format" in d.keys():
@@ -96,10 +96,10 @@ def make_line_anim(d):
                 print(e)
             finally:
                 os.chdir(cwd)
-    plt.show()
+    # plt.show()
 
 
-    return 0
+    return anim
     
 
 

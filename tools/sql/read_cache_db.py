@@ -42,3 +42,27 @@ def get_filenames_from_cache(db_path):
     return channels, filenames
 
 
+
+
+
+def get_data_from_cache(db_path, bi):
+    """get filenames from cache.db"""
+    
+    print("Getting data from %s" %os.path.basename(db_path))
+    localpath = os.path.join(db_path)
+    
+    con = connect_db(localpath)
+    cur = con.cursor()
+    cur.execute('SELECT path FROM files')
+    rows = cur.fetchall()
+    filepaths = [filepath[0] for filepath in rows]
+    close_db(con)
+    filenames = [os.path.split(filepath)[1] for filepath in filepaths]
+    
+    if "spacewire" in os.path.basename(db_path):
+        return [] * len(filenames), filenames
+
+    channels = [re.search("(SO|LNO|UVIS)", filename).group() for filename in filenames]
+    return channels, filenames
+
+

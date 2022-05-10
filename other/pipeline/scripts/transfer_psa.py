@@ -292,7 +292,7 @@ if args.task == "transfer":
         # Run a 'tar' extract on ESA server
         with subprocess.Popen(ssh_cmd,
                         shell=False,
-                        stdin=subprocess.PIPE,
+                        stdin=subprocess.PIPE, 
                         stdout=subprocess.PIPE,
                         stderr=subprocess.PIPE) as ssh:
 
