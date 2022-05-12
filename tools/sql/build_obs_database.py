@@ -188,7 +188,7 @@ def populate_db(args):
         
         """TODO: check if already present; if not, get next file_id"""
         
-        obs_file_dicts["files"]["filename"][1].append(hdf5_filename)
+        obs_file_dicts["files"]["filename"][1].append(os.path.splitext(hdf5_filename)[0]) #strip .h5 from filename
         obs_file_dicts["files"]["utc_start_time"][1].append(utc_start_time)
         
         if not os.path.exists(hdf5_filepath):
@@ -200,7 +200,8 @@ def populate_db(args):
         else:
     
             if not silent:
-                print("Collecting data: file %i/%i: %s" %(file_index, len(hdf5_filepaths), hdf5_filename))
+                if np.mod(file_index, 100) == 0:
+                    print("Collecting data: file %i/%i: %s" %(file_index, len(hdf5_filepaths), hdf5_filename))
     
     
             with h5py.File(hdf5_filepath, "r") as hdf5_file:
