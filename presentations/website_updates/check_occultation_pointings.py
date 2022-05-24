@@ -16,7 +16,6 @@ import os
 from tools.file.hdf5_functions import make_filelist
 from tools.file.paths import paths, FIG_X_PDF, FIG_Y_PDF
 
-paths["DATA_DIRECTORY"] = os.path.normcase(r"W:\data\SATELLITE\TRACE-GAS-ORBITER\NOMAD\hdf5")
 
 #for writing code for website
 IMG_WIDTH = 400
