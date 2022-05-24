@@ -5,17 +5,6 @@ import numpy as np
 
 
 
-##quadratic test values
-##MAYBE NOT CORRECT FOR SO!
-#Q0=2.50515577e+00
-#Q1=-2.09395082e-02
-#Q2=6.53155833e-05
-#T0 = -6.267734 / 7.299039E-1
-#def t_p0_bad(m, t, Q0=Q0, Q1=Q1, Q2=Q2):
-#    """instrument temperature to pixel0 shift"""
-#    new_Q1 = Q0 + m * (Q1 + m * Q2)
-#    p0 = new_Q1 * (t-T0)
-#    return p0
 
 
 #old values
