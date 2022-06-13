@@ -29,7 +29,7 @@ def run_remote_command(command):
         print(line, end='')
 
 
-def run_asimut(sh_filepath_linux):
+def execute_asimut(sh_filepath_linux):
     """make the shell script executable and run it"""
     
     

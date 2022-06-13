@@ -13,10 +13,10 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 
 
-def plot_asimut_dict_pdf(h5, d):
+def plot_asimut_dict_pdf(h5, d, pdf_filepath):
     """make a pdf from the asimut output data dictionary"""
 
-    with PdfPages("%s%s_retrieval.pdf" %(h5, "")) as pdf: #open pdf
+    with PdfPages("%s" %pdf_filepath) as pdf: #open pdf
     
         n = len(d["indices"])
     
@@ -59,6 +59,15 @@ def plot_asimut_dict_pdf(h5, d):
             
             ax_grp[0].legend(loc="upper right")
             ax_grp[1].legend(loc="upper right")
+            
+            ax_grp[0].minorticks_on()
+            ax_grp[0].grid(b=True, which='major', linestyle='-')
+            ax_grp[0].grid(b=True, which='minor', linestyle='--', alpha=0.5)
+
+            ax_grp[1].minorticks_on()
+            ax_grp[1].grid(b=True, which='major', linestyle='-')
+            ax_grp[1].grid(b=True, which='minor', linestyle='--', alpha=0.5)
+            
             pdf.savefig()
             plt.close()
 

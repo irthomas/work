@@ -35,7 +35,7 @@ def lt22_p0_shift(t):
 
 
 
-def lt22_waven(order, t, channel="so"):
+def lt22_waven(order, t, channel="so", coeffs=False):
     """spectral calibration Loic Feb 22. Get pixel wavenumbers from order + temperature"""
     
     px_shifted = np.arange(320.0) + lt22_p0_shift(t)
@@ -43,7 +43,11 @@ def lt22_waven(order, t, channel="so"):
     cfpixel = {"so":[3.32e-8, 5.480e-4, 22.4701], "lno":[3.32e-8, 5.480e-4, 22.4701]}
     xdat  = np.polyval(cfpixel[channel], px_shifted) * order
     
-    return xdat
+    if coeffs:
+        return cfpixel[channel]
+    
+    else:
+        return xdat
 
 
 

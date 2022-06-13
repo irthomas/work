@@ -23,7 +23,7 @@ def read_inp_to_dict(inp_filepath):
     
     d = {}
     
-    d["A_nu0"] = float(inp_config_dict["SP1"]["aotfcentralwnb"])
+    d["A_nu0"] = float(inp_config_dict["SP1"]["aotfcentralwnb"].replace("[", "").replace("]", ""))
     d["YError"] = inp_config_dict["SP1"]["datayerrorselect"]
     
     vals = inp_config_dict["SP1"]["spectraid_list"]

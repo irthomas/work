@@ -7,7 +7,7 @@ Created on Mon Apr  6 20:43:33 2020
 import numpy as np
 
 
-from instrument.nomad_so_instrument import nu_mp, spec_res_order, F_blaze, F_aotf_goddard18b
+from instrument.nomad_so_instrument_v01 import nu_mp, spec_res_order, F_blaze, F_aotf_goddard18b
 from tools.spectra.solar_spectrum import get_solar_hr
 from tools.spectra.nu_hr_grid import nu_hr_grid
 
