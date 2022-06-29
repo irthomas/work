@@ -162,18 +162,30 @@ def populate_db(args):
         print("Regenerating table")
         
         
-    print("Getting file list")
-    # observation_type = args.observation_type
+    observation_type = args.observation_type
+    print("Getting file list for %s" %observation_type)
     
     if args.beg:
         beg_dt = datetime.datetime.strptime(args.beg, ARG_FORMAT)
+    else:
+        beg_dt = datetime.datetime(2018, 3, 1)
+
     if args.end:
         end_dt = datetime.datetime.strptime(args.end, ARG_FORMAT)
+    else:
+        end_dt = datetime.datetime(2050, 1, 1)
     
     
     rows = get_data_from_cache(cache_db_path, beg_dtime=beg_dt, end_dtime=end_dt)
     
-    regex = re.compile(".*(_SO_._[IEG]|_LNO_._D[PF]).*")
+    if observation_type == "so_occultation":
+        regex = re.compile(".*_SO_._[IEG].*")
+    if observation_type == "lno_nadir":
+        regex = re.compile(".*_LNO_._D[PF].*")
+    if observation_type == "all":
+        regex = re.compile(".*(_SO_._[IEG]|_LNO_._D[PF]).*")
+        
+        
     rows = sorted([row for row in rows if regex.match(os.path.basename(row[0]))])
     
     

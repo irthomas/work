@@ -125,8 +125,8 @@ def blaze_conv(d):
 
 
 
-# def get_cal_params(d, temp):
-if True:
+def get_cal_params(d, temp):
+# if True:
     #from blazecalc.py 17/9/21
     
     aotf = d["A"]
@@ -221,6 +221,6 @@ if True:
     d = blaze_conv(d)
     
 
-
+    return d
 
 

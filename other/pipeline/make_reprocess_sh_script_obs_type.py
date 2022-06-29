@@ -82,7 +82,7 @@ def transfer_cache_db(level):
     
     print("Connecting to hera")
     p = paramiko.SSHClient()
-    p.set_missing_host_key_policy(paramiko.AutoAddPolicy())   # This script doesn't work for me unless this line is added!
+    p.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     p.connect("hera.oma.be", port=22, username="iant", password=passwords["hera"])
     
     sftp = p.open_sftp()

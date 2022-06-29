@@ -48,7 +48,13 @@ class sql_db(object):
         return rows
 
     def query(self, query):
-        self.cur.execute(query)
+        #if query is only a string
+        if len(query) == 1:
+            self.cur.execute(query)
+            
+        #if query is a string and a list of variables
+        elif len(query) == 2:
+            self.cur.execute(query[0], query[1])
         self.con.commit()
         rows = self.cur.fetchall()
         return rows

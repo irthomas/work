@@ -23,7 +23,7 @@ def get_esac_tree_filenames(user, level, host="hera.oma.be"):
 
     print("Connecting to %s" %host)
     p = paramiko.SSHClient()
-    p.set_missing_host_key_policy(paramiko.AutoAddPolicy())   # This script doesn't work for me unless this line is added!
+    p.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     p.connect(host, port=22, username=user, password=passwords["hera"])
     
     print("Connecting to ESAC")

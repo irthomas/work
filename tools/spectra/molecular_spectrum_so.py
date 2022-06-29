@@ -9,9 +9,9 @@ MAKE LNO MOLECULAR SPECTRA FOR A GIVEN ORDER/WAVENUMBER RANGE
 import numpy as np
 import os
 
-from analysis.retrievals.pytran.pytran.hitran_utils import get_molecule_id
-from analysis.retrievals.pytran.pytran.hitran import read_hitran2012_parfile, calculate_hitran_xsec
-from analysis.retrievals.NOMADTOOLS.nomadtools.paths import NOMADParams
+from analysis.so_retrievals.pytran.pytran.hitran_utils import get_molecule_id
+from analysis.so_retrievals.pytran.pytran.hitran import read_hitran2012_parfile, calculate_hitran_xsec
+from analysis.so_retrievals.NOMADTOOLS.nomadtools.paths import NOMADParams
 
 
 def get_molecular_hr(molecule, nu_hr, Smin=0.0):

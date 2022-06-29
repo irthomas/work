@@ -12,6 +12,37 @@ from scipy.optimize import curve_fit
 # from scipy.optimize import OptimizeWarning
 
 
+
+def fit_gauss(x_in, y_in, guess=[None], silent=False):
+    """fit inverted gaussian to absorption band. x_in is already centred on zero"""
+
+    def func(x, a, b, c, d):
+        return 1.0 - a * np.exp(-((x - b)/c)**2.0) + d
+    
+    
+    if not guess[0]:
+        guess = [0.1, 0.02, 0.25, 0.0]
+    
+    try:
+        popt, pcov = curve_fit(func, x_in, y_in, p0=guess)
+
+    except RuntimeError:
+        if not silent:
+            print("Gaussian fitting error")
+        return True, np.zeros(4)
+    
+    return False, popt
+
+
+def make_gauss(x_in, popt):
+    """fit inverted gaussian to absorption band. x_in is already centred on zero"""
+
+    def func(x, a, b, c, d):
+        return 1.0 - a * np.exp(-((x - b)/c)**2.0) + d
+    
+    return func(x_in, *popt)
+
+
 def fit_gaussian_absorption(x_in, y_in, error=False, hr_num=500):
     """fit inverted gaussian to absorption band.
     Normalise continuum to 1 first"""
