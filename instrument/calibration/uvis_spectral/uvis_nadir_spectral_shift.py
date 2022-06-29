@@ -742,11 +742,11 @@ def calculate_nm_coeffs(poly_degree, plot=False):
             diff = ys-np.polyval(polyfit, pxs)
     
             if plot:
-                fig, (ax1a, ax1b) = plt.subplots(nrows=2, sharex=True)
-                fig.suptitle(t_bin)
+                fig, (ax1a, ax1b) = plt.subplots(nrows=2, sharex=True, constrained_layout=True)
+                fig.suptitle("UVIS spectral fitting, temperature %0.1fC-%0.1fC" %(t_bin, t_bin + bin_delta))
                 ax1a.scatter(pxs, ys)
                 ax1a.plot(np.arange(1024), polyval)
-                ax1b.scatter(pxs, diff)
+                ax1b.scatter(pxs, diff, label="Before bad points removed")
                 
             good_points = np.where(diff > -0.5)[0]
     
@@ -762,8 +762,14 @@ def calculate_nm_coeffs(poly_degree, plot=False):
             if plot:
                 ax1a.scatter(pxs, ys)
                 ax1a.plot(np.arange(1024), polyval)
-                ax1b.scatter(pxs, diff)
-            
+                ax1b.scatter(pxs, diff, label="After bad points removed")
+                
+                ax1b.set_xlabel("Pixel number")
+                ax1a.set_ylabel("Wavelength nm")
+                ax1b.set_ylabel("Deviation from best fit")
+                ax1b.legend()
+                ax1a.grid()
+                ax1b.grid()
             
             
             t_bins.append(t_bin)
@@ -789,9 +795,13 @@ for i in range(poly_degree+1):
     polyval = np.polyval(polyfit, t_bins)
 
 
-    # plt.figure()
-    # plt.scatter(t_bins, coeffs[:, i])
-    # plt.plot(t_bins, polyval)
+    plt.figure(constrained_layout=True)
+    plt.title("UVIS polynomial fit coefficient %i vs temperature" %i)
+    plt.scatter(t_bins, coeffs[:, i])
+    plt.plot(t_bins, polyval)
+    plt.xlabel("Temperature")
+    plt.ylabel("Coefficient value")
+    plt.savefig("uvis_spectral_cal_coefficient_%i.png" %i)
     
     print("["+",".join([str(f) for f in polyfit])+"],")
     # print(i, str(polyfit))
@@ -825,9 +835,18 @@ def get_x_from_temperature(temperature, coefficients_vs_temperature, full_spectr
     else:
         return nm_1024
     
+t1 = -7.5
+t2 = 7.5
 
-x_m12 = get_x_from_temperature(-12, coefficients_vs_temperature)
-x_12 = get_x_from_temperature(12, coefficients_vs_temperature)
+x_m5 = get_x_from_temperature(t1, coefficients_vs_temperature)
+x_5 = get_x_from_temperature(t2, coefficients_vs_temperature)
+
 
 plt.figure()
-plt.scatter(x_m12, x_m12 - x_12)
+plt.scatter(x_m5, x_m5 - x_5)
+plt.xlim((190, 660))
+plt.title("Spectral calibration difference between %0.1fC and %0.1fC" %(t1, t2))
+plt.xlabel("Wavelength nm")
+plt.ylabel("%0.1fC calibration minus %0.1fC calibration (nm)" %(t1, t2))
+plt.grid()
+plt.savefig("uvis_spectral_calibration_%0.1fC_minus_%0.1fC.png" %(t1, t2))

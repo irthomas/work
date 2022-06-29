@@ -77,7 +77,7 @@ def get_gem_data(myear, ls, lat, lon, lst, plot=False):
 
 
 
-
+# atmos_dict = get_gem_data(36, 180.0, 0.0, 0.0, 12.0, plot=True)
 
 
 def get_gem_data_from_h5(h5_f, reference_altitude=50.0, index=None, plot=False):

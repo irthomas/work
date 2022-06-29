@@ -77,6 +77,7 @@ elif os.path.exists(os.path.normcase(r"C:\Users\iant\Dropbox\NOMAD\Python")): #o
     paths["DB_DIRECTORY"] = os.path.normcase(r"C:\Users\iant\Documents\DATA\db")
     paths["ANIMATION_DIRECTORY"] = os.path.normcase(r"C:\Users\iant\Documents\DATA\animations")
     paths["SIMULATION_DIRECTORY"] = os.path.normcase(r"C:\Users\iant\Documents\DATA\simulations")
+    paths["GCM_DIRECTORY"] = os.path.normcase(r"E:\DATA\gcm")
     paths["KERNEL_DIRECTORY"] = os.path.normcase(r"C:\Users\iant\Documents\DATA\local_spice_kernels\kernels\mk")
 
     paths["COP_TABLE_DIRECTORY"] = os.path.normcase(r"C:\Users\iant\Documents\DATA\cop_tables")
@@ -86,8 +87,8 @@ elif os.path.exists(os.path.normcase(r"C:\Users\iant\Dropbox\NOMAD\Python")): #o
     paths["PFM_AUXILIARY_FILES"] = os.path.normcase(r"C:\Users\iant\Documents\DATA\pfm_auxiliary_files")
 #    paths["PFM_AUXILIARY_FILES"] = os.path.normcase(r"X:\projects\NOMAD\data\pfm_auxiliary_files")
 
-#    paths["FS_DATA_DIRECTORY"] = os.path.normcase(r"C:\Users\iant\Dropbox\NOMAD\Python\data\flight_spare\hdf5")
-    paths["FS_DATA_DIRECTORY"] = os.path.normcase(r"X:\projects\NOMAD\data\flight_spare\hdf5")
+    paths["FS_DATA_DIRECTORY"] = os.path.normcase(r"E:\DATA\flight_spare\hdf5")
+    # paths["FS_DATA_DIRECTORY"] = os.path.normcase(r"X:\projects\NOMAD\data\flight_spare\hdf5")
 
     FIG_X = 10 #for PPT
     FIG_Y = 5 #for PPT
@@ -121,30 +122,30 @@ elif os.path.exists(os.path.normcase(r"C:\Users\iant\Dropbox\NOMAD\Python")): #o
 
 
 
-elif os.path.exists(os.path.normcase(r"C:\Users\ithom\Dropbox\NOMAD\Python")): #home computer
+# elif os.path.exists(os.path.normcase(r"C:\Users\ithom\Dropbox\NOMAD\Python")): #home computer
     
-    paths["BASE_DIRECTORY"] = os.path.normcase(r"C:\Users\ithom\Dropbox\NOMAD\Python")
-    paths["DATA_DIRECTORY"] = os.path.normcase(r"D:\hdf5_copy")
-    paths["DATASTORE_ROOT_DIRECTORY"] = os.path.normcase(r"D:")
-    paths["RETRIEVAL_DIRECTORY"] = os.path.normcase(r"")
-    paths["DB_DIRECTORY"] = os.path.normcase(r"D:\db")
-    paths["FS_DATA_DIRECTORY"] =os.path.normcase(r"D:\hdf5_copy")
-    paths["KERNEL_DIRECTORY"] = ""
+#     paths["BASE_DIRECTORY"] = os.path.normcase(r"C:\Users\ithom\Dropbox\NOMAD\Python")
+#     paths["DATA_DIRECTORY"] = os.path.normcase(r"D:\hdf5_copy")
+#     paths["DATASTORE_ROOT_DIRECTORY"] = os.path.normcase(r"D:")
+#     paths["RETRIEVAL_DIRECTORY"] = os.path.normcase(r"")
+#     paths["DB_DIRECTORY"] = os.path.normcase(r"D:\db")
+#     paths["FS_DATA_DIRECTORY"] =os.path.normcase(r"D:\hdf5_copy")
+#     paths["KERNEL_DIRECTORY"] = ""
 
-#    FIG_X = 10 #for PPT
-#    FIG_Y = 5 #for PPT
-    FIG_X = 25
-    FIG_Y = 14
+# #    FIG_X = 10 #for PPT
+# #    FIG_Y = 5 #for PPT
+#     FIG_X = 25
+#     FIG_Y = 14
 
-    FIG_X_PDF = 9
-    FIG_Y_PDF = 9
+#     FIG_X_PDF = 9
+#     FIG_Y_PDF = 9
     
-    paths["DATASTORE"] = {}
-    paths["DATASTORE"]["DIRECTORY_STRUCTURE"] = True
-    paths["DATASTORE"]["SEARCH_DATASTORE"] = True #only applies if DIRECTORY_STRUCTURE = True
-    paths["DATASTORE"]["DATASTORE_SERVER"] = ["hera.oma.be", "iant"]
-    paths["DATASTORE"]["DATASTORE_DIRECTORY"] = r"/ae/data1/SATELLITE/TRACE-GAS-ORBITER/NOMAD/hdf5"
-#    paths["DATASTORE"]["DATASTORE_DIRECTORY"] = r"/ae/data1/SATELLITE/TRACE-GAS-ORBITER/NOMAD/test/iant/hdf5"
+#     paths["DATASTORE"] = {}
+#     paths["DATASTORE"]["DIRECTORY_STRUCTURE"] = True
+#     paths["DATASTORE"]["SEARCH_DATASTORE"] = True #only applies if DIRECTORY_STRUCTURE = True
+#     paths["DATASTORE"]["DATASTORE_SERVER"] = ["hera.oma.be", "iant"]
+#     paths["DATASTORE"]["DATASTORE_DIRECTORY"] = r"/ae/data1/SATELLITE/TRACE-GAS-ORBITER/NOMAD/hdf5"
+# #    paths["DATASTORE"]["DATASTORE_DIRECTORY"] = r"/ae/data1/SATELLITE/TRACE-GAS-ORBITER/NOMAD/test/iant/hdf5"
 
 
 

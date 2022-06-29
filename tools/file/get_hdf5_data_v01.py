@@ -9,7 +9,7 @@ import numpy as np
 from datetime import datetime
 
 
-def getLevel1Data(hdf5_file, hdf5_filename, bin_index, silent=True, top_of_atmosphere=65.0):
+def getLevel1Data(hdf5_file, hdf5_filename, bin_index, silent=True, top_of_atmosphere=65.0, ix_range=[0, -1]):
     """Convert the selected bin to transmittance and output a dictionary
     Inputs:
         hdf5_file = an open level 1.0a hdf5 file
@@ -46,7 +46,7 @@ def getLevel1Data(hdf5_file, hdf5_filename, bin_index, silent=True, top_of_atmos
     bins = hdf5_file["Science/Bins"][:, 0]
     uniqueBins = sorted(list(set(bins)))
     binIndex = np.where(bins == uniqueBins[bin_index])[0]
-      
+
     transmittance = hdf5_file["Science/%s" %TRANSMITTANCE_FIELD][binIndex, :]
     detector_data = hdf5_file["Science/%s" %DETECTOR_DATA_FIELD][binIndex, :]
     detector_error = hdf5_file["Science/%s" %DETECTOR_DATA_ERROR][binIndex, :]
@@ -103,23 +103,25 @@ def getLevel1Data(hdf5_file, hdf5_filename, bin_index, silent=True, top_of_atmos
 
     outputDict["hdf5_filename"] = hdf5_filename
     
-    outputDict["alt"] = alt
-    outputDict["x"] = np.tile(wavenumbers, [len(binIndex), 1])
-    outputDict["y_mean"] = detector_data_transmittance
-    outputDict["y"] = transmittance
-    outputDict["y_raw"] = detector_data
-    outputDict["y_error"] = detector_error
+
+    
+    outputDict["alt"] = alt[ix_range[0]:ix_range[-1]]
+    outputDict["x"] = np.tile(wavenumbers, [len(binIndex), 1])[ix_range[0]:ix_range[-1], :]
+    outputDict["y_mean"] = detector_data_transmittance[ix_range[0]:ix_range[-1], :]
+    outputDict["y"] = transmittance[ix_range[0]:ix_range[-1], :]
+    outputDict["y_raw"] = detector_data[ix_range[0]:ix_range[-1], :]
+    outputDict["y_error"] = detector_error[ix_range[0]:ix_range[-1], :]
     outputDict["order"] = int(diffraction_order)
     outputDict["temperature"] = measurementTemperature
     outputDict["first_pixel"] = firstPixel
     outputDict["obs_datetime"] = obsDatetime
     outputDict["label"] = label_out
     outputDict["label_full"] = label_full_out
-    outputDict["bin_index"] = np.asarray([bin_index] * len(binIndex))
-    outputDict["ls"] = np.tile(ls, len(binIndex))
-    outputDict["lst"] = np.tile(lst, len(binIndex))
-    outputDict["longitude"] = lon
-    outputDict["latitude"] = lat
+    outputDict["bin_index"] = np.asarray([bin_index] * len(binIndex))[ix_range[0]:ix_range[-1]]
+    outputDict["ls"] = np.tile(ls, len(binIndex))[ix_range[0]:ix_range[-1]]
+    outputDict["lst"] = np.tile(lst, len(binIndex))[ix_range[0]:ix_range[-1]]
+    outputDict["longitude"] = lon[ix_range[0]:ix_range[-1]]
+    outputDict["latitude"] = lat[ix_range[0]:ix_range[-1]]
 
     return outputDict
 

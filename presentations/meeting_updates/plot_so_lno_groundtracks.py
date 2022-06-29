@@ -149,16 +149,16 @@ def plot_3d_files_tracks(search_tuple):
 # plot_3d_files_tracks(search_tuple)
 # stop()
 
-dt = datetime(2018, 3, 1)
-data = True
-while data:
-    dt_end = dt + relativedelta(months=3)
-    search_tuple = ("files", {"utc_start_time":[dt, dt_end]})
-    h5s = plot_files_tracks(search_tuple)
-    plt.close()
+# dt = datetime(2018, 3, 1)
+# data = True
+# while data:
+#     dt_end = dt + relativedelta(months=3)
+#     search_tuple = ("files", {"utc_start_time":[dt, dt_end]})
+#     h5s = plot_files_tracks(search_tuple)
+#     plt.close()
 
-    if len(h5s) == 0:
-        data = False
-    dt = dt_end
+#     if len(h5s) == 0:
+#         data = False
+#     dt = dt_end
 
 # for 
