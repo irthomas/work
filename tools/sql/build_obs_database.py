@@ -40,7 +40,7 @@ SQL_DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 HDF5_FILENAME_FORMAT = "%Y%m%d_%H%M%S"
 ARG_FORMAT = "%Y-%m-%d"
 
-db_path = "test.db"
+db_path = "obs_db.db"
 
 if platform.system() == "Windows":
 
