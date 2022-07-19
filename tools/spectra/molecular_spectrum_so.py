@@ -9,9 +9,9 @@ MAKE LNO MOLECULAR SPECTRA FOR A GIVEN ORDER/WAVENUMBER RANGE
 import numpy as np
 import os
 
-from analysis.so_retrievals.pytran.pytran.hitran_utils import get_molecule_id
-from analysis.so_retrievals.pytran.pytran.hitran import read_hitran2012_parfile, calculate_hitran_xsec
-from analysis.so_retrievals.NOMADTOOLS.nomadtools.paths import NOMADParams
+from repos.pytran.pytran.hitran_utils import get_molecule_id
+from repos.pytran.pytran.hitran import read_hitran2012_parfile, calculate_hitran_xsec
+from repos.nomad_tools.nomadtools.rcsetup import defaultParams
 
 
 def get_molecular_hr(molecule, nu_hr, Smin=0.0):
@@ -27,9 +27,9 @@ def get_molecular_hr(molecule, nu_hr, Smin=0.0):
     pressures = {"H2O":113.0*1.0e-6*550, "CO2":550.0, "CO":876.0*1.0e-6*550, "HCl":3.0*1.0e-9*550} #previous: 0.24*1.0e3 pressure in Pa
 #    scaling_factor = {"H2O":1.5, "CO2":20.0, "CO":40.0, "HCl":10}
     M = get_molecule_id(molecule)
-    filename = os.path.join(NOMADParams['HITRAN_DIR'], '%02i_hit16_2000-5000_CO2broadened.par' % M)
+    filename = os.path.join(defaultParams['paths.dirLP'], '%02i_hit16_2000-5000_CO2broadened.par' % M)
     if not os.path.exists(filename):
-        filename = os.path.join(NOMADParams['HITRAN_DIR'], '%02i_hit16_2000-5000.par' % M)
+        filename = os.path.join(defaultParams['paths.dirLP'], '%02i_hit16_2000-5000.par' % M)
     
     if Smin == 0.0:
         if molecule == "CO2":
@@ -40,11 +40,12 @@ def get_molecular_hr(molecule, nu_hr, Smin=0.0):
             Smin=1.0e-33
         
     nlines = 999
+    Smin /= 10.0
     while nlines>200:
         Smin *= 10.0
-        LineList = read_hitran2012_parfile(filename, nu_hr_min, nu_hr_max, Smin=Smin, silent=True)
+        LineList = read_hitran2012_parfile(filename, nu_hr_min, nu_hr_max, Smin=Smin)
         nlines = len(LineList['S'])
-        print('Found %i lines for Smin of %0.1g' %(nlines, Smin))
+        print('Found %i lines for %s Smin of %0.1g' %(nlines, molecule, Smin))
 #    molecular_spectrum_hr = calculate_hitran_xsec(LineList, M, nu_hr, T=210., P=pressures[molecule]) * number_density * scaling_factor[molecule]
     molecular_spectrum_hr = calculate_hitran_xsec(LineList, M, nu_hr, T=210., P=pressures[molecule]) * number_density
 

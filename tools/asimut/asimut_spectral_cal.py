@@ -12,13 +12,15 @@ import matplotlib.pyplot as plt
 from tools.file.hdf5_functions import open_hdf5_file
 from tools.spectra.baseline_als import baseline_als
 from tools.spectra.molecular_spectrum_so import get_molecular_hr
-from tools.general.get_minima_maxima import get_local_minima
+from tools.general.get_minima_maxima import get_local_maxima
 
+h5 = "20220301_063212_1p0a_SO_A_E_185"
+# h5 = "20220101_005247_1p0a_SO_A_E_136" #high water
 
-h5 = "20220101_005247_1p0a_SO_A_E_136" #high water
 molecules = {
-    "h2o":{"smin":1.0e-28, "n_lines":9, "orders":[135, 136, 137]}, 
-    "co2":{"smin":1.0e-29, "n_lines":9, "orders":[136]}
+    # "h2o":{"smin":1.0e-27, "n_lines":9, "orders":[135, 136, 137]}, 
+    "co":{"smin":1.0e-40, "n_lines":9, "orders":[184, 185, 186]}, 
+    # "co2":{"smin":1.0e-28, "n_lines":9, "orders":[136]}
 }
 
 def lt22_waven(order, inter_temp, px_in):
@@ -38,6 +40,7 @@ def lt22_waven(order, inter_temp, px_in):
 
 h5_f = open_hdf5_file(h5) #open file
 
+centre_order = int(h5.rsplit("_")[-1])
 
 #find indices of spectra where 0.1 < median transmittance < 0.95
 y_median = np.median(h5_f["Science/Y"][...], axis=1)
@@ -49,6 +52,8 @@ y_mean = np.mean(h5_f["Science/Y"][indices, :], axis=0)
 y_cont = baseline_als(y_mean)
 y_cr = y_mean / y_cont
 
+    
+
 
 order = int(h5.split("_")[-1])
 t = np.mean(h5_f["Channel/InterpolatedTemperature"][indices])
@@ -58,36 +63,49 @@ x = lt22_waven(order, t, np.arange(320.))
 fig, axes = plt.subplots(nrows=3, figsize=(18, 10), sharex=True)
 axes[0].plot(x, y_cr)
 
+for index in indices:
+    y = h5_f["Science/Y"][index, :]
+    y_cont = baseline_als(y)
+    y_cr = y / y_cont
+
+    axes[0].plot(x, y_cr, alpha=0.1)
 
 
 if "InterpolatedTemperature" not in h5_f["Channel"].keys():
     print("%s: Error temperatures not in file" %h5)
 
 
+nu_hr_centre = lt22_waven(order, t, np.arange(0., 320., 0.001))
 
 for i, molecule in enumerate(molecules):
     smin = molecules[molecule]["smin"]
     n_lines = molecules[molecule]["n_lines"]
     
     orders = molecules[molecule]["orders"]
+    
 
     for order in orders:
-        nu_hr = lt22_waven(order, t, np.arange(320.))
+        nu_hr = lt22_waven(order, t, np.arange(0., 320., 0.001))
         mol_hr = get_molecular_hr(molecule.upper(), nu_hr, Smin=smin)
 
-        axes[i+1].plot(x, mol_hr, label=f"{molecule} {order}")
+        if order == centre_order:
+            alpha = 1.0
+        else:
+            alpha = 0.3
+        axes[i+1].plot(nu_hr_centre, mol_hr, label=f"{molecule} {order}", alpha=alpha)
 
-        abs_ix_hr = get_local_minima(mol_hr) #get hitran absorption minima indices
-        abs_nu_hrs = nu_hr[abs_ix_hr] #get absorption nu
-        abs_y_hrs = mol_hr[abs_ix_hr] #get absorption depth
-
-
-        #N strongest lines
-        abs_y_cutoff = sorted(abs_y_hrs)[n_lines] #select only the n strongest lines
-        
-        for abs_index, (abs_nu_hr, abs_y_hr) in enumerate(zip(abs_nu_hrs, abs_y_hrs)):
-            if abs_y_hr < abs_y_cutoff:
-                axes[i+1].text(abs_nu_hr, abs_y_hr, abs_nu_hr)
+        if order == centre_order:
+            abs_ix_hr = get_local_maxima(mol_hr) #get hitran absorption minima indices
+            abs_nu_hrs = nu_hr[abs_ix_hr] #get absorption nu
+            abs_y_hrs = mol_hr[abs_ix_hr] #get absorption depth
+    
+    
+            #N strongest lines
+            abs_y_cutoff = sorted(abs_y_hrs)[-n_lines] #select only the n strongest lines
+            
+            for abs_index, (abs_nu_hr, abs_y_hr) in enumerate(zip(abs_nu_hrs, abs_y_hrs)):
+                if abs_y_hr > abs_y_cutoff:
+                    axes[i+1].text(abs_nu_hr, abs_y_hr, abs_nu_hr)
 
     axes[i+1].set_yscale("log")
     axes[i+1].grid()
