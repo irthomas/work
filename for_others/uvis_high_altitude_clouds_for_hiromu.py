@@ -8,34 +8,24 @@ CHECK UVIS SPECTRA FOR HIGH ALTITUDE CLOUDS
 """
 
 
-# import os
 import re
 import numpy as np
 import matplotlib.pyplot as plt
-# from datetime import datetime
-
-# from tools.file.paths import paths
-from tools.file.hdf5_functions import make_filelist, open_hdf5_file
-# from tools.general.get_nearest_index import get_nearest_index
-# from tools.spectra.baseline_als import baseline_als
-# from tools.plotting.colours import get_colours
-# from tools.general.get_minima_maxima import get_local_minima, get_local_maxima
-
-# from tools.spectra.fft_zerofilling import fft_hr_nu_spectrum
-# from tools.spectra.savitzky_golay import savitzky_golay
-# from tools.spectra.fit_gaussian_absorption import fit_gauss, make_gauss
-
 from matplotlib.backends.backend_pdf import PdfPages
 
+from tools.file.hdf5_functions import make_filelist, open_hdf5_file
 from tools.general.progress_bar import progress_bar
 
-regex = re.compile("20......_......_.*_UVIS_[IE]")
+
+
+regex = re.compile("20......_......_.*_UVIS_[IE]") #find all UVIS ingress and egress files
 file_level = "hdf5_level_0p3k"
 
 #set top of atmosphere to be 100. Check all spectra above this level
 toa = 100.0
 
 def make_solar_spectra_obs_dict(regex, file_level, toa):
+    """make a dictionary containing all the spectra, altitudes and pointing errors"""
 
     _, h5s, _ = make_filelist(regex, file_level, open_files=False)
     spectra_dict = {}
@@ -44,9 +34,6 @@ def make_solar_spectra_obs_dict(regex, file_level, toa):
     # for i, h5 in enumerate(h5s):
     for h5 in progress_bar(h5s):
         
-        # if np.mod(i, 100) == 0:
-        #     print("%i/%i" %(i, len(h5s)))
-        
         h5_f = open_hdf5_file(h5)
     
         mode = h5_f["Channel/AcquisitionMode"][0]
@@ -54,11 +41,6 @@ def make_solar_spectra_obs_dict(regex, file_level, toa):
         if mode != 0:
             continue
         
-        # x = h5_f["Science/X"][0, :]
-        
-        # #most observations have binning=7
-        # if len(x) != 128:
-        #     continue
 
         alts_all = h5_f["Geometry/Point0/TangentAltAreoid"][:, 0]
         pointing_deviation = h5_f["Geometry/FOVSunCentreAngle"][:, 0]
@@ -91,6 +73,7 @@ def make_solar_spectra_obs_dict(regex, file_level, toa):
 
 spectra_dict = make_solar_spectra_obs_dict(regex, file_level, toa)
 
+"""check each observation, if criteria are met then save to pdf"""
 with PdfPages("high_altitude_clouds.pdf") as pdf: #open pdf
     for h5 in spectra_dict.keys():
         spectra = spectra_dict[h5]["spectra"]
@@ -124,7 +107,8 @@ with PdfPages("high_altitude_clouds.pdf") as pdf: #open pdf
                 fig, (ax1a, ax1b, ax1c) = plt.subplots(figsize=(12, 10), nrows=3, sharex=True)
                 fig.suptitle(h5)
                 ax1a.plot(alts[:-1], diff_mean)
-                ax1b.plot(alts, spectra[:, np.arange(start_row, end_row, row_delta)]/np.mean(spectra[:, np.arange(start_row, end_row, row_delta)], axis=0), label=np.arange(start_row, end_row, row_delta))
+                for i_px in np.arange(start_row, end_row, row_delta):
+                    ax1b.plot(alts, spectra[:, i_px]/np.mean(spectra[:, i_px], axis=0), label="Pixel %i" %i_px)
                 ax1c.plot(alts, spectra_dict[h5]["pointing_error"])
                 
                 ax1c.set_xlabel("Tangent Altitude (km)")
