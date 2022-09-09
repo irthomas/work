@@ -16,15 +16,15 @@ from tools.file.passwords import passwords
 search_strs = ["invites you to", "has invited you to", r"https://teams.microsoft.com"]
 log_filepath = os.path.join("reference_files", "email_log.txt")
 
-EMAIL_FOLDER = "Mail/VenSpecH-Meetings"
+EMAIL_FOLDER = "VenSpecH-Meetings"
 N_EMAILS_TO_SEARCH = 100
 
 
 email_user = "iant"
 email_pass = passwords["hera"]
-email_server = "mail-ae.oma.be"
+email_server = "imap.aeronomie.be"
 
-M = imaplib.IMAP4_SSL("mail-ae.oma.be", 993)
+M = imaplib.IMAP4_SSL(email_server, 993)
 M.login(email_user, email_pass)
 # M.select("Inbox")
 M.select(EMAIL_FOLDER)

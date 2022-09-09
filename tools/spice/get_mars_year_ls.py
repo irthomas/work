@@ -13,14 +13,8 @@ import numpy as np
 
 
 def get_mars_year_ls(dt):
-    """get mars year and ls from a datetime without loading spice.
+    """get mars year and ls from a datetime without loading SPICE kernels
     Calculation approximation from Piqueux et al. 2015 http://dx.doi.org/10.1016/j.icarus.2014.12.014"""
-    # code to get it from spice kernels
-    # import spiceypy as sp
-    # from tools.spice.load_spice_kernels import load_spice_kernels
-    # load_spice_kernels(planning=True)
-    # et = sp.utc2et(datetime.strftime(utc, "%Y %m %d"))
-    # ls = sp.lspcn("MARS", et, "NONE") * sp.dpr()
 
     j2000 = datetime(2000, 1, 1, 12)
     dpr = 57.29577951308232
