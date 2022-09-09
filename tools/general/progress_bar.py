@@ -19,6 +19,12 @@ def progress_bar(iterable, prefix = '', suffix = '', decimals = 1, length = 50, 
         length      - Optional  : character length of bar (Int)
         fill        - Optional  : bar fill character (Str)
         printEnd    - Optional  : end character (e.g. "\r", "\r\n") (Str)
+        
+        use as follows:
+            for item in progress_bar(list):
+                action
+                note that all print statements must be removed
+        
     """
     total = len(iterable)
     # Progress Bar Printing Function
@@ -34,4 +40,21 @@ def progress_bar(iterable, prefix = '', suffix = '', decimals = 1, length = 50, 
         yield item
         printProgressBar(i + 1)
     # Print New Line on Complete
+    print()
+    
+    
+def progress(iterable, length=50):
+    total = len(iterable)
+
+    def printProgressBar (iteration):
+        percent = ("{0:.1f}").format(100 * (iteration / float(total)))
+        filledLength = int(length * iteration // total)
+        bar = "*" * filledLength + '-' * (length - filledLength)
+        print(f'\r |{bar}| {percent}% ', end = "\r")
+
+    printProgressBar(0)
+
+    for i, item in enumerate(iterable):
+        yield item
+        printProgressBar(i + 1)
     print()

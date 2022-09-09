@@ -24,7 +24,7 @@ print(sp.tkvrsn("toolkit"))
 
 from datetime import datetime, timedelta
 
-for days in range(0, 500, 1):
+for days in range(10, 500, 1):
     
     dt_start = datetime.now() - timedelta(days=days)
     
