@@ -30,7 +30,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 root_dir = r"E:\DATA\hdf5\hdf5_level_1p0a"
-data_dir = r"E:\DATA\hdf5\hdf5_level_1p0a\2018\05"
+data_dir = r"E:\DATA\hdf5\hdf5_level_1p0a\2022\01"
 
 #get list of SO files
 h5_paths = sorted(glob.glob(data_dir+os.sep+"**"+os.sep+"*_SO_*.h5", recursive=True))
@@ -43,7 +43,7 @@ h5s = [os.path.splitext(os.path.basename(s))[0] for s in h5_paths]
 observation_dts = {}
 
 #for now, ignore fullscans and orders that do not measure the full wavelength range
-files_to_ignore = ["I_S", "E_S", "_SO_H_", "_SO_L"] #if a filename contains any of these, skip it
+files_to_ignore = ["I_S", "E_S", "_SO_H_", "_SO_L", "_CM"] #if a filename contains any of these, skip it
 
 
 #loop through list of filenames
@@ -88,7 +88,7 @@ chosen_observations = order_combinations[chosen_order_combination]
 
 #now loop through prefixes, making the filenames for each order and extracting the data
 #load files
-for chosen_observation in chosen_observations:
+for chosen_observation in chosen_observations[0:1]:
     
     data = {}
     
@@ -121,10 +121,16 @@ for chosen_observation in chosen_observations:
             #TODO: must remove atmospheric bands!!
             y = np.mean(h5_f["Science/Y"][bin_ixs, 160:240], axis=1)
             alts = h5_f["Geometry/Point0/TangentAltAreoid"][bin_ixs, 0]
+            
+            ixs = np.where((alts > 60.) & (alts < 70.))[0]
+            plt.figure()
+            plt.title(order)
+            plt.plot(h5_f["Science/YUnmodified"][bin_ixs[ixs], :].T, label=alts[ixs])
+            plt.legend()
 
             # spectral calibration is the same for all spectra -> just get first row
             #take mean of wavenumber (x)
-            x = np.mean(h5_f["Science/X"][0, :])
+            x = np.mean(h5_f["Science/X"][0, 160:240])
             
             #add to dictionary for that order
             data[order] = {"mean_cm-1":x, "trans":y, "alts":alts}
