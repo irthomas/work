@@ -71,6 +71,10 @@ for xml_path in xml_paths[0:1]:
 
         if plot:
             header = structures["Header"]
+            header_data = header.data
+            
+            frames = structures["Frames"]
+            frames_data = frames.data
             #NIR: TOA orders x (counts and error) x detector rows x detector spectral pixels
             #MIR: 1 x detector rows x detector spectral pixels (remove 1)
             reference_s = structures["Reference"]

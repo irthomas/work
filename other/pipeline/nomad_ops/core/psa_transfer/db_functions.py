@@ -16,9 +16,9 @@ import hashlib
 from nomad_ops.core.psa_transfer.config import PATH_PSA_LOG_DB
 
 from nomad_ops.core.psa_transfer.get_psa_logs import \
-    get_log_list, extract_log_info, get_versions_from_zip, get_log_datetime, get_log_version
+    get_log_list, extract_log_info, get_log_datetime, get_log_version
 
-from nomad_ops.core.psa_transfer.functions import get_datetime_from_lid
+
 
     
     
@@ -73,8 +73,7 @@ def empty_table(con, table_name):
         query = """CREATE TABLE pass (id INTEGER PRIMARY KEY AUTOINCREMENT, \
             log TEXT NOT NULL, \
             version TEXT NOT NULL, \
-            lid TEXT NOT NULL, \
-            dt TIMESTAMP NOT NULL) """
+            lid TEXT NOT NULL) """
 
         cur.execute(query)
 
@@ -82,24 +81,13 @@ def empty_table(con, table_name):
         query = """CREATE TABLE fail (id INTEGER PRIMARY KEY AUTOINCREMENT, \
             log TEXT NOT NULL, \
             version TEXT NOT NULL, \
-            lid TEXT NOT NULL, \
-            dt TIMESTAMP NOT NULL) """
+            lid TEXT NOT NULL) """
 
         cur.execute(query)
 
-    elif table_name == "error":
-        query = """CREATE TABLE error (id INTEGER PRIMARY KEY AUTOINCREMENT, \
-            log TEXT NOT NULL, \
-            version TEXT NOT NULL, \
-            lid TEXT NOT NULL, \
-            dt TIMESTAMP NOT NULL, \
-            error TEXT NOT NULL) """
-        
-        cur.execute(query)
 
 
-
-def delete_log_rows(con, table_name, log_filename):
+def delete_rows(con, table_name, log_filename):
     """delete log entries from table"""
 
     cur = con.cursor()
@@ -126,113 +114,70 @@ def populate_log_db(log_filepath_list, clear=False):
     
     db_path = os.path.join(PATH_PSA_LOG_DB)
     if not os.path.exists(db_path):
+        print("%s doesn't exist: creating" %db_path)
         clear = True
     con = connect_db(db_path)
     
     
     if clear:
-        for table_name in ["logs", "pass", "fail", "error"]:
+        print("clearing tables from %s" %db_path)
+        for table_name in ["logs", "pass", "fail"]:
             empty_table(con, table_name)
     
+    #get data from table of existing log filenames
     rows = get_db_rows(con, "logs")
-    existing_logs = {row[1]:row[2] for row in rows}
-    # existing_md5s = [row[2] for row in rows]
+    existing_logs = {row[1]:row[2] for row in rows} #make dict: log name:md5 checksum
     cur = con.cursor()
-    
-    previous_versions = []
     
     for new_log_path in log_filepath_list:
         new_log = os.path.basename(new_log_path)
     
         md5 = md5sum(new_log_path)
         
+
+        log_datetime = get_log_datetime(new_log_path)
+        log_version = get_log_version(log_datetime)
+        
+        
         if new_log not in existing_logs.keys():
+            add_log = True
+
             print("Adding new log %s to db" %new_log)
             #add to list and parse
-            
-            log_dict = extract_log_info(new_log_path)
-            
-            unique_versions1 = get_versions_from_zip(log_dict["zip_filenames_received"])
-            unique_versions2 = get_versions_from_zip(log_dict["zip_filenames_transferred"])
-            unique_versions3 = get_versions_from_zip(log_dict["zip_filenames_expanded"])
-            unique_versions = sorted(list(set(unique_versions1 + unique_versions2 + unique_versions3)))
-            
-            
-            #if no version found in file, use version from previous file
-            if len(unique_versions) == 0:
-                print("Warning: no version numbering found in file. Using previous file version")
-                unique_versions = previous_versions
-            else:
-                previous_versions = unique_versions.copy()
-
-            log_datetime = get_log_datetime(new_log_path)
-            log_version = get_log_version(log_datetime)
-            versions_str = ",".join(unique_versions)
-            if log_version != versions_str:
-                print("Error: log version %s does not match expected %s" %(log_version, versions_str))
+            cur.execute("INSERT INTO logs (log, version, md5) VALUES (?,?,?)", (new_log, log_version, md5))
 
 
+
+            #if log already in db, check md5 matches
+        elif md5 == existing_logs[new_log]:
+            add_log = False
+            #already in db
+            print("Log %s already in db" %new_log)
+        
+        else:
+            add_log = True
+
+            #file different -> remove and reprocess
+            print("Log %s in db but md5 mismatch" %new_log)
+            for table_name in ["logs", "pass", "fail"]:
+                delete_rows(con, table_name, new_log)
+
             
-            
-                    
-            cur.execute("INSERT INTO logs (log, md5, version) VALUES (?,?,?)", (new_log, md5, versions_str))
+
+        if add_log:
+            pass_dict, fail_dict = extract_log_info(new_log_path)
     
-            for lid in log_dict["validator_lids_pass"]:
-                dt = get_datetime_from_lid(lid)
-                cur.execute("INSERT INTO pass (log, version, lid, dt) VALUES (?,?,?,?)", (new_log, versions_str, lid, dt))
-            for lid in log_dict["validator_lids_fail"]:
-                dt = get_datetime_from_lid(lid)
-                cur.execute("INSERT INTO fail (log, version, lid, dt) VALUES (?,?,?,?)", (new_log, versions_str, lid, dt))
-            for lid, error in zip(log_dict["validator_lids_error"], log_dict["validator_errors"]):
-                dt = get_datetime_from_lid(lid)
-                cur.execute("INSERT INTO error (log, version, lid, dt, error) VALUES (?,?,?,?,?)", (new_log, versions_str, lid, dt, error))
+            print("Pass: Adding %i lids to %s" %(len(pass_dict.keys()), new_log_path))
+            for lid in pass_dict.keys():
+                cur.execute("INSERT INTO pass (log, version, lid) VALUES (?,?,?)", (new_log, pass_dict[lid]["version"], lid))
+
+            print("Fail: Adding %i lids to %s" %(len(fail_dict.keys()), new_log_path))
+            for lid in fail_dict.keys():
+                cur.execute("INSERT INTO fail (log, version, lid) VALUES (?,?,?)", (new_log, fail_dict[lid]["version"], lid))
     
             con.commit()
             
-            # stop()
             
-        else:
-            #if log already in db, check md5 matches
-            if md5 == existing_logs[new_log]:
-                #already in db
-                print("Log %s already in db" %new_log)
-            
-            else:
-                #file different -> remove and reprocess
-                print("Log %s in db but md5 mismatch" %new_log)
-                
-                for table_name in ["logs", "pass", "fail", "error"]:
-                    delete_log_rows(con, table_name, new_log)
-    
-                print("Adding new log %s to db" %new_log)
-                #add to list and parse
-                
-                log_dict = extract_log_info(new_log_path)
-                
-                unique_versions = get_versions_from_zip(log_dict["zip_filenames_received"])
-                #if no version found in file, use version from previous file
-                if len(unique_versions) == 0:
-                    print("Warning: version not found in new file, getting version from UPLOAD_DATES")
-                    log_datetime = get_log_datetime(new_log_path)
-                    log_version = get_log_version(log_datetime)
-                    versions_str = log_version
-                else:
-                    versions_str = ",".join(unique_versions)
-                
-                        
-                cur.execute("INSERT INTO logs (log, md5, version) VALUES (?,?,?,?)", (new_log, md5, versions_str))
-        
-                for lid in log_dict["validator_lids_pass"]:
-                    dt = get_datetime_from_lid(lid)
-                    cur.execute("INSERT INTO pass (log, version, lid, dt) VALUES (?,?,?,?)", (new_log, versions_str, lid, dt))
-                for lid in log_dict["validator_lids_fail"]:
-                    dt = get_datetime_from_lid(lid)
-                    cur.execute("INSERT INTO fail (log, version, lid, dt) VALUES (?,?,?,?)", (new_log, versions_str, lid, dt))
-                for lid, error in zip(log_dict["validator_lids_error"], log_dict["validator_errors"]):
-                    dt = get_datetime_from_lid(lid)
-                    cur.execute("INSERT INTO error (log, version, lid, dt, error) VALUES (?,?,?,?,?)", (new_log, versions_str, lid, dt, error))
-            
-                con.commit()
                 
             
     con.commit()
@@ -255,5 +200,3 @@ def get_lids_of_version(table_name, version):
     
     lids = [i[0] for i in rows]
     return lids
-
-

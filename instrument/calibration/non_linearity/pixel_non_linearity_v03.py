@@ -38,6 +38,10 @@ from tools.file.read_write_hdf5 import read_hdf5_to_dict, write_hdf5_from_dict
 
 
 def poly(y, degree, x=None, extrap=None):
+    """fit n degreee polynomial to a 1d array and then make fitted spectrum
+    extrapolate x to a different range of x values (optional)
+    extrapolate extrap[0] values backwards and extrap[1] values forwards"""
+    
     if not x:
         x = np.arange(len(y))
     coeffs = np.polyfit(x, y, degree)
@@ -102,83 +106,124 @@ hdf5_files, hdf5_filenames, hdf5_paths = make_filelist(regex, file_level, full_p
 
 for hdf5_file_3k, hdf5_filename_3k, hdf5_path_3k in zip(hdf5_files_3k, hdf5_filenames_3k, hdf5_paths_3k):
     
+    if "SO_A_I_" not in hdf5_filename_3k:
+        print("Error: must be ingress")
     
     alts = hdf5_file_3k["Geometry/Point0/TangentAltAreoid"][:, 0]
     y_all = hdf5_file_3k["Science/Y"][:, :]
     x_old = hdf5_file_3k["Science/X"][0, px_range[0]:]
     bins = hdf5_file_3k["Science/Bins"][:, 0]
     
+    # exponent = hdf5_file_3k["Channel/Exponent"][0]
     
     hdf5_file_3k.close()
 
     pixels = np.arange(320)
     
-    # unique_bins = list(dict(bins))
+    #get indices and spectra for 1 bin only
     indices = np.where(bins == bin_top)[0]
-
+    #y data for 1 bin
     y_bin = y_all[indices, :]
     alt_bin = alts[indices]
 
     n_spectra = y_bin.shape[0]
     n_pixels = len(pixels)
-    
+
+    #get mean of all spectra above TOA
     toa_index = get_nearest_index(calibration_alt, alt_bin)
-    toa_indices = np.arange(toa_index, toa_index+10)
+    toa_indices = np.arange(toa_index-10, toa_index)
     y_toa = np.mean(y_bin[toa_indices, :], axis=0)
 
+    #get mean of all spectra hitting surface
     surf_index = get_nearest_index(surf_alt, alt_bin)
     surf_indices = np.arange(surf_index, n_spectra)
     y_surf = np.mean(y_bin[surf_indices, :], axis=0)
+    
+    
+    #set -999s to NaN
+    alt_bin[alt_bin < -100] = np.nan
 
-    #transmittance
+
+    #calculate transmittance for each spectrum including TOA and surface
     y_trans = np.zeros_like(y_bin)
     for i in range(n_spectra):
         y_trans[i, :] = (y_bin[i, :] - y_surf) / (y_toa - y_surf)
-        # y_trans[i, :] = (y_bin[i, :]) / (y_toa)
     
-    #continuum removal
+    #continuum removal - make spectrum divided by continuum for each spectrum
     y_cr_poly = np.zeros_like(y_bin) 
     for i in range(n_spectra):
         y_poly = np.polyval(np.polyfit(pixels, y_trans[i, :], 5), pixels)
         y_cr_poly[i, :] = y_trans[i, :]/ y_poly
 
-    # y_diff = np.zeros_like(y_bin)
-    # for i in range(n_spectra-1):
-    #     # y_diff[i, :] = y_bin[i+1, :] - y_bin[i, :] - (np.mean(y_bin[i+1, 160:240]) - np.mean(y_bin[i, 160:240]))
-    #     y_diff[i, :] = y_cr_poly[i+1, :] - y_cr_poly[i, :]
-        
-    # y_trans_nlr = np.zeros_like(y_bin)
-    # for j in range(n_pixels):
-    #     nl_poly = poly(y_trans[:toa_index, j], 2, extrap=n_spectra-toa_index+1)
-    #     y_trans_nlr[:, j] = y_trans[:, j] / nl_poly
 
+    #fit a polynomial to the continuum removed spectra for each pixel, from index 20 to top of atmosphere
+    #extrapolate into atmospheric region
     y_cr_poly_nlr = np.zeros_like(y_bin)
     for j in range(n_pixels):
         nl_poly = poly(y_cr_poly[20:toa_index, j], 2, extrap=[20, n_spectra-toa_index+1])
         y_cr_poly_nlr[:, j] = y_cr_poly[:, j] / nl_poly
+
+
+    #plot from max altitude down to this frame index
+    frame_index_to_stop = 240
+    pixel_index_to_start = 50
+    chosen_alts = alt_bin[:frame_index_to_stop]
         
-    fig, ax = plt.subplots(figsize=(10,5))
-    ax.imshow(y_trans[:240, :])
+    fig, ax = plt.subplots(figsize=(10,5), constrained_layout=True)
+    fig.suptitle("%s\nY mean transmittance above atmosphere from 0.3k" %hdf5_filename_3k)
+    im = ax.imshow(y_trans[:frame_index_to_stop, pixel_index_to_start:], aspect="auto", extent=(pixel_index_to_start, 320, frame_index_to_stop, 0))
+    fig.colorbar(im)
+    ax.set_xlabel("Pixel number")
+    ax.set_ylabel("Frame index")
+    ax.text(pixel_index_to_start + 10, 10, "%0.1f km" %chosen_alts[0])
+    ax.text(pixel_index_to_start + 10, frame_index_to_stop-10, "%0.1f km" %chosen_alts[-1])
+    fig.savefig("%s_ymean_transmittance.png" %hdf5_filename_3k)
 
-    fig, ax = plt.subplots(figsize=(10,5))
-    ax.imshow(y_cr_poly[:, :])
+    fig, ax = plt.subplots(figsize=(10,5), constrained_layout=True)
+    fig.suptitle("%s\nY continuum removed transmittance from 0.3k" %hdf5_filename_3k)
+    im = ax.imshow(y_cr_poly[:frame_index_to_stop, pixel_index_to_start:], aspect="auto", extent=(pixel_index_to_start, 320, frame_index_to_stop, 0))
+    fig.colorbar(im)
+    ax.set_xlabel("Pixel number")
+    ax.set_ylabel("Frame index")
+    ax.text(10, 10, "%0.1f km" %chosen_alts[0])
+    ax.text(10, frame_index_to_stop-10, "%0.1f km" %chosen_alts[-1])
 
-    fig, ax = plt.subplots(figsize=(10,5))
-    ax.imshow(y_cr_poly_nlr[:, :])
+    fig, ax = plt.subplots(figsize=(10,5), constrained_layout=True)
+    fig.suptitle("%s\nPoly fit to each pixel of the Y continuum removed transmittance, extrapolated into atmosphere" %hdf5_filename_3k)
+    im = ax.imshow(y_cr_poly_nlr[:frame_index_to_stop, pixel_index_to_start:], aspect="auto", extent=(pixel_index_to_start, 320, frame_index_to_stop, 0))
+    fig.colorbar(im)
+    ax.set_xlabel("Pixel number")
+    ax.set_ylabel("Frame index")
+    ax.text(10, 10, "%0.1f km" %chosen_alts[0])
+    ax.text(10, frame_index_to_stop-10, "%0.1f km" %chosen_alts[-1])
+
+
+
 
     plt.figure()
-    plt.plot(y_trans[:, 65])
-    plt.plot(y_trans[:, 66])
-    plt.plot(y_trans[:, 199])
+    plt.title("%s\nY mean transmittance above atmosphere from 0.3k" %hdf5_filename_3k)
+    
+    pixel_ixs = [65, 66, 199, 201]
+    
+    for pixel_ix in pixel_ixs:
+        plt.plot(alt_bin, y_trans[:, pixel_ix], label="Pixel %i" %pixel_ix)
+    plt.xlabel("Tangent altitude (km)")
+    plt.ylabel("Transmittance")
+    plt.legend()
+    plt.grid()
+    plt.savefig("%s_ymean_transmittance_vs_alt.png" %hdf5_filename_3k)
+    
 
     
     plt.figure()
-    plt.plot(y_cr_poly[:, 65])
-    plt.plot(y_cr_poly[:, 66])
-    plt.plot(y_cr_poly[:, 199])
+    plt.title("Y continuum removed transmittance vs altitude")
+    plt.plot(alt_bin, y_cr_poly[:, 65])
+    plt.plot(alt_bin, y_cr_poly[:, 66])
+    plt.plot(alt_bin, y_cr_poly[:, 199])
+    plt.plot(alt_bin, y_cr_poly[:, 201])
 
-    plt.plot(poly(y_cr_poly[:toa_index, 65], 2, extrap=n_spectra-toa_index+1))
-    plt.plot(poly(y_cr_poly[:toa_index, 66], 2, extrap=n_spectra-toa_index+1))
+    plt.plot(poly(y_cr_poly[:toa_index, 65], 2, extrap=[20, n_spectra-toa_index+1]))
+    plt.plot(poly(y_cr_poly[:toa_index, 66], 2, extrap=[20, n_spectra-toa_index+1]))
 
     plt.figure()
     plt.plot(y_cr_poly_nlr[:, 65])

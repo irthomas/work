@@ -148,38 +148,40 @@ def get_file_from_datastore(file_level, year_in, month_in, day_in, filename_in, 
 
 
 
-def get_file(obspath, file_level, count, model="INFLIGHT", silent=False, open_files=True):
+def get_file(obspath, file_level, count, model="INFLIGHT", silent=False, open_files=True, path=None):
     """check if file exists in data directory; if not download from server"""
-
-#    if model == "INFLIGHT":
-#        DATA_DIRECTORY_IN = DATA_DIRECTORY
-#        DATASTORE_DIRECTORY_IN = DATASTORE_DIRECTORY
-#    elif model == "PFM":
-#        DATA_DIRECTORY_IN = DATA_DIRECTORY_PFM
-#        DATASTORE_DIRECTORY_IN = DATASTORE_DIRECTORY_PFM
-    if model == "FS":
-        DATA_DIRECTORY_IN = paths["DATA_DIRECTORY_FS"]
-#        DATASTORE_DIRECTORY_IN = DATASTORE_DIRECTORY_FS
-
 
     year = obspath[0:4] #get the date from the filename to find the file
     month = obspath[4:6]
     day = obspath[6:8]
+
+
+    if path:
+        print("Using path %s" %path)
+        DATA_DIRECTORY_IN = path
     
-    """secondary check if model is defined correctly"""
-#    if year == "2015" and month in ["03","04"] and model != "PFM":
-#        print("Warning: model is %s but observation is during PFM ground calibration period. Switching to PFM" %model)
-#        model = "PFM"
-#        DATA_DIRECTORY_IN = DATA_DIRECTORY_PFM
-#        DATASTORE_DIRECTORY_IN = DATASTORE_DIRECTORY_PFM
-    if year == "2015" and month == "09" and model != "FS":
-        print("Warning: model is %s but observation is during FS ground calibration period. Switching to FS" %model)
-        model = "PFM"
-        DATA_DIRECTORY_IN = paths["DATA_DIRECTORY_FS"]
-#        DATASTORE_DIRECTORY_IN = DATASTORE_DIRECTORY_FS
     else:
-        DATA_DIRECTORY_IN = paths["DATA_DIRECTORY"]
-        DATASTORE_DIRECTORY_IN = DATASTORE_PATHS["DATASTORE_DIRECTORY"]
+        # if model == "INFLIGHT":
+        #     DATA_DIRECTORY_IN = DATA_DIRECTORY
+        #     DATASTORE_DIRECTORY_IN = DATASTORE_DIRECTORY
+        # elif model == "PFM":
+        #     DATA_DIRECTORY_IN = DATA_DIRECTORY_PFM
+        #     DATASTORE_DIRECTORY_IN = DATASTORE_DIRECTORY_PFM
+    #     if model == "FS":
+    #         DATA_DIRECTORY_IN = paths["DATA_DIRECTORY_FS"]
+    # #        DATASTORE_DIRECTORY_IN = DATASTORE_DIRECTORY_FS
+
+
+    
+        """secondary check if model is defined correctly"""
+        if year == "2015" and month == "09" and model != "FS":
+            print("Warning: model is %s but observation is during FS ground calibration period. Switching to FS" %model)
+            model = "PFM"
+            DATA_DIRECTORY_IN = paths["DATA_DIRECTORY_FS"]
+    #        DATASTORE_DIRECTORY_IN = DATASTORE_DIRECTORY_FS
+        else:
+            DATA_DIRECTORY_IN = paths["DATA_DIRECTORY"]
+            DATASTORE_DIRECTORY_IN = DATASTORE_PATHS["DATASTORE_DIRECTORY"]
 
 
     
@@ -207,13 +209,20 @@ def get_file(obspath, file_level, count, model="INFLIGHT", silent=False, open_fi
     return filename, hdf5_file
 
 
-def open_hdf5_file(hdf5_filename):
+def open_hdf5_file(hdf5_filename, path=None):
 
+    if path:
+        data_directory = path
+        print("Using path %s" %path)
+    else:
+        data_directory = paths["DATA_DIRECTORY"]
+        
+        
     year = hdf5_filename[0:4] #get the date from the filename to find the file
     month = hdf5_filename[4:6]
     day = hdf5_filename[6:8]
     file_level = "hdf5_level_%s" %hdf5_filename[16:20]
-    hdf5_filepath = os.path.join(paths["DATA_DIRECTORY"], file_level, year, month, day, hdf5_filename+".h5")
+    hdf5_filepath = os.path.join(data_directory, file_level, year, month, day, hdf5_filename+".h5")
     hdf5_file = h5py.File(hdf5_filepath, "r")
     
     return hdf5_file
@@ -224,6 +233,7 @@ def make_filelist(obs_paths, file_level, model="INFLIGHT", silent=False, open_fi
     """new version uses regex"""
     if path:
         DATA_DIRECTORY_IN = path
+        print("Using path %s" %path)
     else:
         if model == "INFLIGHT":
             DATA_DIRECTORY_IN = paths["DATA_DIRECTORY"]
@@ -259,7 +269,7 @@ def make_filelist(obs_paths, file_level, model="INFLIGHT", silent=False, open_fi
         if badFile:
             print("Warning: Bad file %s (%s) not added to list" %(obspath,BAD_FILE_DICTIONARY[found_bad_file]))
         else:
-            filename, hdf5_file = get_file(obspath, file_level, fileIndex, model=model, silent=silent, open_files=open_files)
+            filename, hdf5_file = get_file(obspath, file_level, fileIndex, model=model, silent=silent, open_files=open_files, path=path)
             hdf5_files_out.append(hdf5_file) #add open file to list
             hdf5_filenames_out.append(obspath) #add open file to list
             

@@ -7,9 +7,8 @@ DONE:
 
 TRANSMITTANCE ESTIMATION
 
-STILL TO DO:
+TO DO:
 
-COMPUTE COVARIANCE PROPERLY FOR THE UNCERTAINTIES COMPUTATION
 
 Filename definition:
 For SO:
@@ -34,15 +33,16 @@ import h5py
 #from scipy.stats import pearsonr
 import matplotlib.pyplot as plt
 from matplotlib.font_manager import FontProperties
-if True: # not to be used for TESTING
-    import matplotlib
-    matplotlib.use('Agg')
+# if True: # not to be used for TESTING
+#     import matplotlib
+#     matplotlib.use('Agg')
 
 # from nomad_ops.config import ROOT_STORAGE_PATH
 # import nomad_ops.core.hdf5.generic_functions as generics
 
 ROOT_STORAGE_PATH = "."
 import generic_functions as generics
+from calc_covariance import calc_covariance
 
 
 __project__   = "NOMAD"
@@ -129,6 +129,26 @@ DS_TO_BE_REMOVED = [
 
 
 #####################################################################################
+
+
+def covariance_min_altitude(order):
+    
+    if order < 140:
+        min_alt = 200
+    elif order < 160:
+        min_alt = 200
+    elif order < 167:
+        min_alt = 200
+    elif order < 172:
+        min_alt = 200
+    elif order < 186:
+        min_alt = 200
+    elif order < 193:
+        min_alt = 200
+    else:
+        min_alt = 200
+        
+    return min_alt
 
 
 
@@ -467,7 +487,11 @@ def TransmittancesAlgo(h5file_in_path,h5file_out_path,make_plots=False):
     SRegAlt = np.zeros((NBins,2))    # in alt
     Criteria = np.zeros((NBins,ncrit))
     altTmin = -10    # the slit height projected on tangent altitude is 5 km
+    
+    d = {}
     for ibin in range(NBins):
+        d[ibin] = {"Y":[], "YError":[]}
+        
         ind_ibin = np.arange(ibin,NSpec,NBins)
         # INVERT EGRESS
         if alt_1[0] < alt_1[-1]: #Egress
@@ -532,7 +556,8 @@ def TransmittancesAlgo(h5file_in_path,h5file_out_path,make_plots=False):
         indR = range(Rmax,smin)
         lenR = len(indR)
         #indT has to be defined here to avoid problem when recombining all bins.
-        indT = range(smin+1,tmin+1)
+        # indT = range(smin+1,tmin+1) #get indices from solar region through to bottom of atmosphere
+        indT = range(0,tmin+1) #get indices from solar region through to bottom of atmosphere
         lenT = len(indT)
         if np.where(alt_2 < altTmin)[0].shape[0] > params[6]:
             indU = range(tmin+1, umin)
@@ -668,6 +693,9 @@ def TransmittancesAlgo(h5file_in_path,h5file_out_path,make_plots=False):
                     pass
         # SAVE T AND ALT_2
         if tCalculatedForBin:   # to be replaced by "if accepted:"
+        
+            
+        
             indT_1 = ind_ibin[indT] # need to find back the index in spectra_1
             spectra_1[indT_1] = T
             Tmean_1[indT_1] = Tmean
@@ -687,11 +715,19 @@ def TransmittancesAlgo(h5file_in_path,h5file_out_path,make_plots=False):
     if tCalculated and not error:
         # Produce an h5 file only if no error
         # faire un dictionnaire au lieu de toutes ces variables
+        if channel == 'SO':
+            plt.figure()
+            plt.plot(spectra_1.T)
+            min_alt = covariance_min_altitude(order)
+            covariance_cube = calc_covariance(X[0, :], spectra_1, dT_1, alt_1, min_alt, filename)
+        else:
+            covariance_cube = None
+        
         h5file_out_path = WriteFile(alt_1, allindT, params,
                         IndBin, Coeffs, binaccepted, SRegIndex, SRegAlt,
-                        Criteria, snr_1, spectra_1, spectra_raw_1,
-                        Tmean_1, dTmean_1, dTmeanMR_1, dTmeanMS_1, dT_1,
-                        h5file_in_path, h5file_out_path)
+                        Criteria, snr_1, spectra_1, spectra_raw_1, #_, SNR, Y, YUnmodified
+                        Tmean_1, dTmean_1, dTmeanMR_1, dTmeanMS_1, dT_1, #YMean, YMeanError, UVIS, UVIS, YError
+                        h5file_in_path, covariance_cube, h5file_out_path)
         h5file_out_path = [h5file_out_path]
     else:
         h5file_out_path = []
@@ -776,7 +812,7 @@ def PlotTr(X,ind_ibin,indT,T,plotTitle,ibin,critpix,filename):
 
 def WriteFile(alt_1, allindT, params, IndBin, Coeffs, binaccepted, SRegIndex, SRegAlt,
               Criteria, snr_1, spectra_1, spectra_raw_1, Tmean_1, dTmean_1, dTmeanMR_1,
-              dTmeanMS_1, dT_1, h5file_in_path, h5file_out_path):
+              dTmeanMS_1, dT_1, h5file_in_path, covariance_cube, h5file_out_path):
     """ Write new file for next level """
     #RECOMBINE BINS
     # select the index of alt_1 corresponding to the current occ
@@ -849,6 +885,11 @@ def WriteFile(alt_1, allindT, params, IndBin, Coeffs, binaccepted, SRegIndex, SR
                                        shuffle=True)
             hdf5FileOut.create_dataset("Science/YErrorMeanSystematic", dtype=np.float32,
                                        data=dTmeanMS_1[indrec],compression="gzip",
+                                       shuffle=True)
+        elif channel=='SO':
+            if covariance_cube:
+                hdf5FileOut.create_dataset("Science/YCovariance", dtype=np.float32,
+                                       data=covariance_cube[0],compression="gzip",
                                        shuffle=True)
 
         hdf5FileOut.create_dataset("Science/YTypeFlag", dtype=np.uint16,

@@ -146,6 +146,12 @@ A_aotf = {
     210:28893,
 }
 
+"""aotf frequency to nearest order"""
+def m_aotf(value):
+    res_key, res_val = min(A_aotf.items(), key=lambda x: abs(value - x[1]))
+    return res_key
+
+
 
 def aotf_freq_to_order(aotf_freq):
     """aotf frequency kHz to nearest order"""

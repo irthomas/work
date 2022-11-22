@@ -20,9 +20,6 @@ from datetime import datetime
 
 from nomad_ops.core.psa_transfer.config import PATH_DB_PSA_CAL_LOG, UPLOAD_DATES, LOG_FORMAT_STR
 
-from nomad_ops.core.psa_transfer.functions import \
-    convert_lid_to_short_filename
-
 
 def get_log_list():
     """get all logs"""
@@ -38,70 +35,32 @@ def get_log_list():
 
 def extract_log_info(log_filepath):
     """From list of log filepaths, read in and extract all the required information, saving it to a dictionary
-    Nomenclature: 
-        zip filenames contain one datetime string only with version number: nmd_cal_sc_uvis_20180529-11060000-d_1.0
-        shortened filename is same without version number: nmd_cal_sc_uvis_20180529-11060000-d
-    
-        xml/tab/png filenames are lids with full start/end times: nmd_cal_sc_so_20181007t064522-20181007t073102-a-i-149
+    lids with full start/end times: nmd_cal_sc_so_20181007t064522-20181007t073102-a-i-149
     """
 
     
-    date_string = ("date_string", "S30")
-    zip_filename = ("zip_filename", "S45")
-    short_filename = ("short_filename", "S100")
-    lid_string = ("lid_string", "S100")
-    error_string = ("error_string", "S200")
-    
-    
+     
     #parse all logs into memory
-    log_dict = {
-    }
     
     log_filename = os.path.basename(log_filepath)
     print("Reading", log_filename)
     
-    files_received = np.fromregex(log_filepath, "(\S+\s\S+) INFO  Checking file received: (\S+)[.]zip", [date_string, zip_filename])
-    files_transferred_to_staging = np.fromregex(log_filepath, "(\S+\s\S+) INFO  File (\S+)[.]zip transferred to \S+staging\/(\S+)", [date_string, zip_filename, short_filename])
-    zip_file_expanded = np.fromregex(log_filepath, "(\S+\s\S+) INFO  Expanding zip file: \S+staging\/(\S+)\/(\S+)[.]zip", [date_string, short_filename, zip_filename])
-    validator_pass = np.fromregex(log_filepath, "PASS: \S+Orbit_\d+\/(\S+)[.]xml", [lid_string])
-    validator_fail = np.fromregex(log_filepath, "FAIL: \S+Orbit_\d+\/(\S+)[.]xml", [lid_string])
-    validator_error = np.fromregex(log_filepath, "ERROR: (.+)\S+\n\s+file\S+Orbit_\d+\/(\S+)[.]xml.+", [error_string, lid_string])
-
-
-    zip_filenames_received_temp = [i.decode() for i in files_received["zip_filename"]]
-    zip_filenames_transferred_temp = [i.decode() for i in files_transferred_to_staging["zip_filename"]]
-    zip_filenames_expanded_temp = [i.decode() for i in zip_file_expanded["zip_filename"]]
+    #2022 version 3.0 products: the format of the output log from ESA has changed - extract ingestion time and lid from the logs
+    #all older versions in the logs can be skipped
+    validator_lids_pass_text = np.fromregex(log_filepath, "\[PI_Packager\] NMD: PASS: \S+em16_tgo_nmd-(\d+T\d+)\S+Orbit_\d+\/(\S+)[.]xml", dtype={'names': ('dts', 'lids'), 'formats': ((np.str_,18), (np.str_,100))})
+    validator_lids_fail_text = np.fromregex(log_filepath, "\[PI_Packager\] NMD: FAIL: \S+em16_tgo_nmd-(\d+T\d+)\S+Orbit_\d+\/(\S+)[.]xml", dtype={'names': ('dts', 'lids'), 'formats': ((np.str_,18), (np.str_,100))})
     
-    validator_lids_pass_temp = [i.decode() for i in validator_pass["lid_string"]]
-    validator_lids_fail_temp = [i.decode() for i in validator_fail["lid_string"]]
-    validator_lids_error_temp = [i.decode() for i in validator_error["lid_string"]]
-    validator_errors_temp = [i.decode() for i in validator_error["error_string"]]
-
-    log_dict["zip_filenames_received"] = zip_filenames_received_temp
-    log_dict["zip_filenames_transferred"] = zip_filenames_transferred_temp
-    log_dict["zip_filenames_expanded"] = zip_filenames_expanded_temp
-    log_dict["validator_lids_pass"] = validator_lids_pass_temp
-    log_dict["validator_lids_fail"] = validator_lids_fail_temp
-    log_dict["validator_lids_error"] = validator_lids_error_temp
-    log_dict["validator_errors"] = validator_errors_temp
-
+    pass_dict = {str(s[1]):{"dt":datetime.strptime(s[0][:-3], "%Y%m%dT%H%M%S")} for  s in validator_lids_pass_text}
+    fail_dict = {str(s[1]):{"dt":datetime.strptime(s[0][:-3], "%Y%m%dT%H%M%S")} for  s in validator_lids_fail_text}
+    
+    #add the version number to the dictionary
+    for key in pass_dict.keys():
+        pass_dict[key]["version"] = get_log_version(pass_dict[key]["dt"])
+    for key in fail_dict.keys():
+        fail_dict[key]["version"] = get_log_version(fail_dict[key]["dt"])
+    
         
-    #convert validator lids to short filenames
-    log_dict["validator_short_filenames_pass"] = [convert_lid_to_short_filename(i) for i in log_dict["validator_lids_pass"]]
-    log_dict["validator_short_filenames_fail"] = [convert_lid_to_short_filename(i) for i in log_dict["validator_lids_fail"]]
-    log_dict["validator_short_filenames_error"] = [convert_lid_to_short_filename(i) for i in log_dict["validator_lids_error"]]
-    
-    return log_dict
-
-
-
-def get_versions_from_zip(zip_filenames):
-    
-    regex = re.compile("nmd_cal_sc_\w*_\d*-\d*-\S*_(\d*.\d*)")
-    versions = [regex.findall(i)[0] for i in zip_filenames]
-    unique_versions = sorted(list(set(versions)))
-    
-    return unique_versions
+    return pass_dict, fail_dict
 
 
 
@@ -139,7 +98,7 @@ def last_process_datetime():
         lines = f.readlines()
         #read lines backwards to find a datetime
         for i in range(-1, -100, -1):
-            info_datetime = re.match("(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}) INFO.*", lines[i])
+            info_datetime = re.match("\[PI_Packager\] (\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}) INFO.*", lines[i])
             if info_datetime:
                 log_datetime = datetime.strptime(info_datetime.groups()[0], LOG_FORMAT_STR)
                 return log_datetime
