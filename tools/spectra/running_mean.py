@@ -21,3 +21,21 @@ def running_mean(detector_data, n_spectra_to_mean):
     for rowIndex,indices in enumerate(runningIndices):
         running_mean_data[rowIndex,:]=np.mean(detector_data[indices,:], axis=0)
     return running_mean_data
+
+
+def running_mean_1d(values, n_values_to_mean):
+    """make a running mean of n data points. 
+    detector data output has same length as input"""
+    import numpy as np
+    
+    plus_minus = int((n_values_to_mean - 1) / 2)
+    
+    nSpectra = len(values)
+    runningIndices = np.asarray([np.arange(runningIndexCentre-plus_minus, runningIndexCentre+(plus_minus+1), 1) for runningIndexCentre in np.arange(nSpectra)])
+    runningIndices[runningIndices<0] = 0
+    runningIndices[runningIndices>nSpectra-1] = nSpectra-1
+
+    out = np.zeros_like(values)
+    for rowIndex,indices in enumerate(runningIndices):
+        out[rowIndex]=np.mean(values[indices])
+    return out

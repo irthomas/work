@@ -56,12 +56,13 @@ BAD_FILE_DICTIONARY = {
         "20180529_150145":"Nadir off-planet",
         "20180625_191417":"Nadir off-planet",
         
-#        "20150315_235950":"Wrong day",
+        "20150315_235950":"Wrong day",
         "20180628_235204":"Wrong day",
         "20190130_235926":"Wrong day",
         "20190308_235913":"Wrong day",
         "20190712_235957":"Wrong day",
         "20191016_235331":"Wrong day",
+        "20220103_235931":"Wrong day",
 
         }
 
@@ -193,15 +194,16 @@ def get_file(obspath, file_level, count, model="INFLIGHT", silent=False, open_fi
     if os.path.exists(filename):
         if not silent: print("%i: File %s found" %(count, filename))
     else:
-        if DATASTORE_PATHS["SEARCH_DATASTORE"]:
-            print("File %s not found. Getting from datastore (%s, %s, %s)" %(filename, DATASTORE_PATHS["DATASTORE_SERVER"][0], DATASTORE_PATHS["DATASTORE_SERVER"][1], DATASTORE_DIRECTORY_IN))
-            get_file_from_datastore(file_level, year, month, day, obspath, DATASTORE_PATHS["DATASTORE_SERVER"], DATASTORE_DIRECTORY_IN)
-            if DATASTORE_PATHS["DIRECTORY_STRUCTURE"]:
-                filename = os.path.join(DATA_DIRECTORY_IN, file_level, year, month, day, obspath+".h5") #choose a file
+        if open_files:
+            if DATASTORE_PATHS["SEARCH_DATASTORE"]:
+                print("File %s not found. Getting from datastore (%s, %s, %s)" %(filename, DATASTORE_PATHS["DATASTORE_SERVER"][0], DATASTORE_PATHS["DATASTORE_SERVER"][1], DATASTORE_DIRECTORY_IN))
+                get_file_from_datastore(file_level, year, month, day, obspath, DATASTORE_PATHS["DATASTORE_SERVER"], DATASTORE_DIRECTORY_IN)
+                if DATASTORE_PATHS["DIRECTORY_STRUCTURE"]:
+                    filename = os.path.join(DATA_DIRECTORY_IN, file_level, year, month, day, obspath+".h5") #choose a file
+                else:
+                    filename = os.path.join(DATA_DIRECTORY_IN, obspath+".h5") #choose a file
             else:
-                filename = os.path.join(DATA_DIRECTORY_IN, obspath+".h5") #choose a file
-        else:
-            print("File %s not found." %filename)
+                print("File %s not found." %filename)
     if open_files:
         hdf5_file = h5py.File(filename, "r") #open file
     else:

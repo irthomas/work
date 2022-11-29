@@ -62,7 +62,7 @@ def aotf_peak_nu(aotf_freq, t, channel="so"):
 
 
     aotf_nu  = np.polyval(cfaotf[channel], aotf_freq)
-    aotf_nu += aotfts[channel] * t * aotf_freq
+    aotf_nu += aotfts[channel] * t * aotf_nu
 
     return aotf_nu
 
