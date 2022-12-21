@@ -21,34 +21,50 @@ from instrument.nomad_so_instrument_v03 import m_aotf, aotf_peak_nu, lt22_waven
 
 
 # inflight
+
+# channel = "SO"
+channel = "LNO"
+
 file_level = "hdf5_level_1p0a"
-# regex = re.compile(".*_LNO_.*_CM")
-# regex = re.compile(".*_SO_.*_CM")
-regex = re.compile("20.*_SO_.*_CM")
+regex = re.compile(".*_%s_.*_CM" %channel)
+
+# regex = re.compile("20201010.*_%s_.*_CM" %channel)
+regex = re.compile("20191002.*_%s_.*_CM" %channel)
 
 # #ground
 # file_level = "hdf5_level_0p1a"
 # regex = re.compile("20150404_(08|09|10)...._.*")  #all observations with good lines (CH4 only)
 
 
-# aotf_steppings = [1.0, 2.0, 4.0]
-aotf_steppings = [8.0]
-binnings = [0]
-starting_orders = [188]
+if channel == "SO":
+    aotf_steppings = [8.0]
+    binnings = [0]
+    starting_orders = [188]
+    # dictionary of fft_cutoff for each aotf_stepping
+    fft_cutoff_dict = {
+        1:4,
+        2:15,
+        4:15,
+        8:40,
+        }
+
+elif channel == "LNO":
+    aotf_steppings = [8.0]
+    binnings = [0]
+    starting_orders = [186]
+    # dictionary of fft_cutoff for each aotf_stepping
+    fft_cutoff_dict = {
+        1:160,
+        2:160,
+        4:160,
+        8:160,
+        }
 
 
-# aotf_steppings = [4.0]
-# binnings = [0]
-# starting_orders = [191]
 
 
-#TODO: make dictionary of fft_cutoff for each aotf_stepping
-fft_cutoff_dict = {
-    1:4,
-    2:15,
-    4:15,
-    8:40,
-    }
+illuminated_row_dict = {24:slice(6, 19)}
+
 
 
 #solar line dict
@@ -70,6 +86,9 @@ solar_line_dict = {
     "20210201_111011-188-8":{"left":np.arange(209, 213), "centre":218, "right":np.arange(220, 224)},
     "20210523_001053-188-8":{"left":np.arange(205, 209), "centre":212, "right":np.arange(216, 220)},
     "20221011_132104-188-8":{"left":np.arange(209, 213), "centre":215, "right":np.arange(218, 222)},
+    
+    "20191002_000902-186-8":{"left":np.arange(196, 200), "centre":210, "right":np.arange(220, 224)},
+    "20191002_000902-192-8":{"left":np.arange(203, 207), "centre":214, "right":np.arange(221, 224)},
     }
 
 
@@ -196,47 +215,58 @@ def get_miniscan_data_1p0a(h5_filenames):
 
     d = {}
     for h5 in h5_filenames:
-        if "SO" in h5:
-            good_bins = np.arange(126, 131)
-        elif "LNO" in h5:
-            good_bins = np.arange(150, 155)
+        # if "SO" in h5:
+        #     good_bins = np.arange(126, 131)
+        # elif "LNO" in h5:
+        #     good_bins = np.arange(150, 155)
 
 
         print("Getting data for %s" %h5)
         h5_f = open_hdf5_file(h5)
 
         # observationDatetimes = h5_f["Geometry/ObservationDateTime"][...]
-        bins = h5_f["Science/Bins"][:, 0]
+        # bins = h5_f["Science/Bins"][:, 0]
         y = h5_f["Science/Y"][...]
         t = h5_f["Channel/InterpolatedTemperature"][...]
         aotf_freqs = h5_f["Channel/AOTFFrequency"][...]
-        
-        aotf_freqs = [int(np.round(i)) for i in aotf_freqs]
 
+        #number of bins per aotf_freq
+        n_bins = np.where(np.diff(aotf_freqs) > 0)[0][0] + 1 #first index where diff is nonzero
+        
+        #reshape by bin
+        y = np.reshape(y, (-1, n_bins, 320))
+        t = np.reshape(t, (-1, n_bins))[:, 0]
+        aotf_freqs = np.reshape(aotf_freqs, (-1, n_bins))[:, 0]
+        aotf_freqs = np.array([int(np.round(i)) for i in aotf_freqs])
+
+        illuminated_rows = illuminated_row_dict[n_bins]
+        y_mean = np.mean(y[:, illuminated_rows, :], axis=1) #mean of illuminated rows
+
+        #number of aotf freqs 
         unique_aotf_freqs = sorted(list(set(aotf_freqs)))
+        n_aotf_freqs = len(unique_aotf_freqs)
+        
+        #remove incomplete aotf repetitions
+        n_repetitions = int(np.floor(np.divide(y.shape[0], n_aotf_freqs)))
+        
+        y_rep = np.reshape(y_mean[0:(n_repetitions*n_aotf_freqs), :], (-1, n_aotf_freqs, 320))
+        t_rep = np.reshape(t[0:(n_repetitions*n_aotf_freqs)], (-1, n_aotf_freqs)).T
+
         # unique_bins = sorted(list(set(bins)))
         starting_order = m_aotf(np.min(unique_aotf_freqs))
         aotf_freqs_step = unique_aotf_freqs[1] - unique_aotf_freqs[0]
+        
+
 
         h5_prefix = "%s-%i-%i" %(h5[0:15], starting_order, np.round(aotf_freqs_step))
         
-        d[h5_prefix] = {}
-        for unique_aotf_freq in unique_aotf_freqs:
-            indices = [0]+[i for i, (bin_, aotf_freq) in enumerate(zip(bins, aotf_freqs)) if ((bin_ in good_bins) and (aotf_freq == unique_aotf_freq))]+[9999999]
-            
+        #output mean y for illuminated bins (2D), temperatures (1D) and aotf freqs (1D)
+        #also output truncated arrays containing n repeated aotf freqs: y_rep (3D), t_rep (2D), a_rep(1D)
+        d[h5_prefix] = {"y":y_mean, "t":t, "a":aotf_freqs, "y_rep":y_rep, "t_rep":t_rep, "a_rep":unique_aotf_freqs}
         
         
-            joining_indices = list(np.where(np.diff(indices) > 1)[0])
-            
-            d[h5_prefix][unique_aotf_freq] = {}
-            for i in range(len(joining_indices) - 2):
-                aotf_bin_consec_indices = np.arange(joining_indices[i]+1, joining_indices[i+1]+1, 1)
-                aotf_bin_indices = np.array(indices)[aotf_bin_consec_indices]
-                t_mean = np.mean(t[aotf_bin_indices])
-                
-                y_binned = np.mean(y[aotf_bin_indices, :], axis=0)
-            
-                d[h5_prefix][unique_aotf_freq][t_mean] = y_binned
+        
+        
     
     return d
 
@@ -259,11 +289,13 @@ def remove_oscillations(d, cut_off_inner=True, plot=False):
         fft_cutoff = fft_cutoff_dict[stepping]
 
         
-        miniscan_array = np.zeros((len(d[h5_prefix].keys()), 320))
-        for i, aotf_freq in enumerate(d[h5_prefix].keys()):
+        # miniscan_array = np.zeros((len(d[h5_prefix].keys()), 320))
+        # for i, aotf_freq in enumerate(d[h5_prefix].keys()):
             
-            for temperature in list(d[h5_prefix][aotf_freq].keys())[0:1]:
-                miniscan_array[i, :] = d[h5_prefix][aotf_freq][temperature] #get 2d array for 1st temperature in file
+        #     for temperature in list(d[h5_prefix][aotf_freq].keys())[0:1]:
+        #         miniscan_array[i, :] = d[h5_prefix][aotf_freq][temperature] #get 2d array for 1st temperature in file
+        
+        miniscan_array = d[h5_prefix]["y_rep"][0, :, :]  #get 2d array for 1st repetition in file
         
         #bad pixel correction
         miniscan_array[:, 269] = np.mean(miniscan_array[:, [268, 270]], axis=1)
@@ -294,7 +326,7 @@ def remove_oscillations(d, cut_off_inner=True, plot=False):
 
         ifft = np.fft.ifft2(fft).real
     
-        d2[h5_prefix] = {"array_raw":miniscan_array, "array_corrected":ifft, "aotf":np.asfarray(list(d[h5_prefix].keys())), "t":temperature}
+        d2[h5_prefix] = {"array_raw":miniscan_array, "array_corrected":ifft, "aotf":d[h5_prefix]["a_rep"], "t":np.mean(d[h5_prefix]["t_rep"])}
 
     return d2
 
@@ -494,8 +526,10 @@ def make_aotf_functions(d2, array_name="array_corrected", plot=plot_absorptions)
         array = d2[h5_prefix][array_name]
     
         if plot:
-            fig, ax = plt.subplots()
-            ax.set_title(h5_prefix)
+            fig1, (ax1a, ax1b) = plt.subplots(nrows=2, sharex=True)
+            ax1a.set_title(h5_prefix)
+            ax1a.grid()
+            ax1b.grid()
         
         ixs_left = solar_line_dict[h5_prefix]["left"]
         ixs_right = solar_line_dict[h5_prefix]["right"]
@@ -507,7 +541,11 @@ def make_aotf_functions(d2, array_name="array_corrected", plot=plot_absorptions)
             line = array[row_ix, :]
             
             if plot:
-                abs_depth = band_depth(line, centre_px, ixs_left, ixs_right, ax=ax)
+                abs_depth = band_depth(line, centre_px, ixs_left, ixs_right, ax=ax1b)
+                if abs_depth > 0.1:
+                    cont_pxs = np.arange(ixs_left[0] - 3, ixs_right[-1] + 4)
+                    ax1a.plot(cont_pxs, line[cont_pxs])
+
             else:
                 abs_depth = band_depth(line, centre_px, ixs_left, ixs_right)
             abs_depths.append(abs_depth)
@@ -602,7 +640,7 @@ if __name__ == "__main__":
         extrapolated_blazes = make_blaze_functions(d2, row_offsets, array_name="array_corrected", plot=plot_miniscans)
         mean_blaze = plot_blazes(d2, extrapolated_blazes)
         
-        with open("blaze.tsv", "w") as f:
+        with open("blaze_%s.tsv" %channel.lower(), "w") as f:
             f.write("Pixel number\tBlaze function\n")
             for i, px_blaze in enumerate(mean_blaze):
                 f.write("%i\t%0.4f\n" %(i, px_blaze))
