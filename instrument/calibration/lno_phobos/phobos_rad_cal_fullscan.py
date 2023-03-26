@@ -7,7 +7,7 @@ Created on Thu Oct 13 13:09:47 2022
 PHOBOS FULLSCAN ANALYSIS
 """
 
-import os
+# import os
 import sys
 import numpy as np
 import matplotlib.pyplot as plt
@@ -18,12 +18,15 @@ from instrument.nomad_lno_instrument_v01 import m_aotf
 from instrument.calibration.lno_phobos.solar_inflight_cal import rad_cal_order
 
 from tools.file.hdf5_functions import open_hdf5_file
-from tools.general.normalise_values_to_range import normalise_values_to_range
+# from tools.general.normalise_values_to_range import normalise_values_to_range
 from tools.datasets.get_phobos_crism_data import get_phobos_crism_data
 
-# plot_level = -2
+# plot_level = -2 #find where signal gets too noisy
+# plot_level = -1 #check bad pixels
+
 # plot_level = 0
 # plot_level = 2
+# plot_level = 3
 plot_level = 4
 
 bad_pixel_d = {
@@ -36,6 +39,15 @@ bad_pixel_d = {
     (154, 1):[129, 135, 178, ],
     (155, 1):[125, 232, 308, ],
     
+    #new 60s fullscan with 16 rows
+    (144, 2):[12, 102, 312],
+    (146, 2):[121, 236, 314],
+    (148, 2):[13, 92],
+    (150, 2):[],
+    (152, 2):[37, 40, 245],
+    (154, 2):[],
+    (156, 2):[78],
+    (158, 2):[92, 245],
     
     (146, 3):[188, 228, 121, 236, 294, ],
     (149, 3):[292, 310, 317, 301, 258, ],
@@ -52,18 +64,20 @@ good_indices = ""
 
 
 obs_types = {
-    "Fullscan 1":{"h5":"20221011_024508_0p1a_LNO_1", "good_indices":[*range(20, 106)]},
+    # "Fullscan 1":{"h5":"20221011_024508_0p1a_LNO_1", "good_indices":[*range(20, 106)]},
+    # "Fullscan 3 60s":{"h5":"20230223_011421_0p1a_LNO_1", "good_indices":[*range(0, 59)], "good_row_indices":range(2,4), "orders_crism":[166, 172, 178, 184]},
+    "Fullscan 4 60s":{"h5":"20230225_220121_0p1a_LNO_1", "good_indices":[*range(5, 38)], "good_row_indices":range(2,4), "orders_crism":[166, 172, 178, 184]},
 
-    "Hydration band 1":{"h5":"20220710_200313_0p1a_LNO_1", "good_indices":[*range(20, 149)]},
+    # "Hydration band 1":{"h5":"20220710_200313_0p1a_LNO_1", "good_indices":[*range(20, 149)]},
     # "Hydration band 2":{"h5":"20220713_164911_0p1a_LNO_1", "good_indices":[*range(20, 149)]},
     # "Hydration band 3":{"h5":"20220725_035605_0p1a_LNO_1", "good_indices":[*range(20, 127)]},
     # "Hydration band 4":{"h5":"20220826_031920_0p1a_LNO_1", "good_indices":[*range(21, 97)]},
     # "Hydration band 5":{"h5":"20220826_190220_0p1a_LNO_1", "good_indices":[*range(21, 99)]},
 
-    "Carbonates 1":{"h5":"20220714_004111_0p1a_LNO_1", "good_indices":[*range(20, 113)]},
+    # "Carbonates 1":{"h5":"20220714_004111_0p1a_LNO_1", "good_indices":[*range(20, 113)]},
     # "Carbonates 2":{"h5":"20220719_102309_0p1a_LNO_1", "good_indices":[*range(20, 180)]},
 
-    "Phyllosilicates 1":{"h5":"20220808_223604_0p1a_LNO_1", "good_indices":[*range(27, 130)]},
+    # "Phyllosilicates 1":{"h5":"20220808_223604_0p1a_LNO_1", "good_indices":[*range(27, 130)]},
     # "Phyllosilicates 2":{"h5":"20220823_063050_0p1a_LNO_1", "good_indices":[*range(15, 90)]},
 }
 
@@ -144,6 +158,7 @@ for obs_type in obs_types.keys():
     
     h5 = obs_types[obs_type]["h5"]
     good_indices = obs_types[obs_type]["good_indices"]
+    good_row_indices = obs_types[obs_type]["good_row_indices"]
 
     h5_f = open_hdf5_file(h5, path=r"E:\DATA\hdf5_phobos") #no detector offset!)
 
@@ -164,14 +179,13 @@ for obs_type in obs_types.keys():
     
     
     #add offset?
-    y += 0#6.72
+    # y += 0
     
     
     #correct bad pixels
     for i, unique_bin in enumerate(unique_bins):
         bad_pixels = bad_pixel_d[(unique_bin, binning)]
         y[:, i, bad_pixels] = np.nan
-    
     
     y_spectral_mean = np.nanmean(y[:, :, 100:300], axis=2) #spectral mean
     
@@ -181,8 +195,10 @@ for obs_type in obs_types.keys():
     if subtract_last_bin:
         y_spectral_mean -= np.tile(y_spectral_mean[:, -1], (len(unique_bins), 1)).T #subtract the first bin
     
-    
-    y_column_mean = np.nanmean(y_spectral_mean, axis=1) #mean of rows
+    if good_row_indices == "": #average all rows
+        y_column_mean = np.nanmean(y_spectral_mean[:, :], axis=1) #mean of all rows 
+    else: #mean of selected rows
+        y_column_mean = np.nanmean(y_spectral_mean[:, good_row_indices], axis=1) #mean of some rows 
     
     
     # im = plt.imshow(y_spectral_mean[:, :].T, aspect="auto")
@@ -191,6 +207,7 @@ for obs_type in obs_types.keys():
     
     if plot_level < -1:
         #plot raw data for every bin to check for noisy regions
+        plt.figure(figsize=(14, 8))
         plt.plot(y_spectral_mean)
         sys.exit()
     
@@ -202,7 +219,7 @@ for obs_type in obs_types.keys():
     if plot_level < 0:
         #plot all good spectra for a specific bin
         for bin_ in range(y.shape[1]):
-            plt.figure(figsize=(8, 4))
+            plt.figure(figsize=(14, 8))
             plt.title("Raw spectra for bin %i" %bin_)
             plt.xlabel("Pixel number")
             plt.ylabel("Signal (counts)")
@@ -213,6 +230,7 @@ for obs_type in obs_types.keys():
                     plt.plot(y_spectrum, color="k")
                     print(unique_bins[bin_])
     
+        sys.exit()
     
     
     
@@ -352,7 +370,8 @@ for obs_type in obs_types.keys():
     
     if plot_level < 4:
     
-        fig1, axes1 = plt.subplots(nrows=3)
+        fig1, axes1 = plt.subplots(nrows=3, figsize=(16, 9))
+        fig1.suptitle("%s: Instrument sensitivity correction" %h5)
         axes1[0].plot(cal_d.keys(), [cal_d[order]["y_centre_mean"] for order in cal_d.keys()], label="Solar calibration scalar")
         axes1[0].scatter(cal_d.keys(), [cal_d[order]["y_centre_mean"] for order in cal_d.keys()])
         axes1[0].legend(loc="upper left")
@@ -364,45 +383,70 @@ for obs_type in obs_types.keys():
             axes1[1].errorbar(unique_orders, [counts_d[order]["y_all_spectral_mean"][bin_ix] for order in unique_orders], \
                               yerr=[counts_d[order]["y_all_spectral_std"][bin_ix] for order in unique_orders], capsize=2, label="Y counts spectral and frame mean bin %i" %bin_ix)
         # axes1[1].plot(unique_orders, [counts_d[order]["y_all_column_mean"] for order in unique_orders], color="r", label="Y counts spectral and frame mean all bins")
-        axes1[1].errorbar(unique_orders, [counts_d[order]["y_all_column_mean"] for order in unique_orders], \
-                          yerr=[counts_d[order]["y_all_column_std"] for order in unique_orders], color="k", capsize=2, label="Y counts spectral and frame mean all bins")
+        # axes1[1].errorbar(unique_orders, [counts_d[order]["y_all_column_mean"] for order in unique_orders], \
+        #                   yerr=[counts_d[order]["y_all_column_std"] for order in unique_orders], color="k", capsize=2, label="Y counts spectral and frame mean all bins")
         axes1[1].legend(loc="upper left")
         axes1[1].grid()
         axes1[1].set_ylabel("Counts")
     
     
+        #plot counts, scaled by instrument sensitivity, for each bin separately with error
         for bin_ix in range(len(unique_bins)):
-            # axes1[2].plot(unique_orders, [counts_d[order]["y_all_spectral_solar_scaled_mean"][bin_ix] for order in unique_orders], color="g", label="Y counts mean scaled to solar bin %i" %bin_ix, alpha=0.5, linestyle="dashed")
             axes1[2].errorbar(unique_orders, [counts_d[order]["y_all_spectral_solar_scaled_mean"][bin_ix] for order in unique_orders], \
-                              yerr=[counts_d[order]["y_all_spectral_solar_scaled_std"][bin_ix] for order in unique_orders], color="g", capsize=2, alpha=0.5, label="Y counts mean scaled to solar bin %i" %bin_ix)
+                              yerr=[counts_d[order]["y_all_spectral_solar_scaled_std"][bin_ix] for order in unique_orders], capsize=2, label="Y counts mean scaled to solar bin %i" %bin_ix)
     
         
-        axes1[2].plot(unique_orders, [counts_d[order]["y_all_column_solar_scaled_mean"] for order in unique_orders], color="g", label="Y counts mean scaled to solar")
+        axes1[2].plot(unique_orders, [counts_d[order]["y_all_column_solar_scaled_mean"] for order in unique_orders], color="k", label="Y counts mean scaled to solar")
         # axes1[2].scatter(unique_orders, [counts_d[order]["y_all_column_solar_scaled_mean"] for order in unique_orders], color="g")
         axes1[2].legend(loc="upper left")
         axes1[2].grid()
-        axes1[2].set_ylabel("Counts")
+        axes1[2].set_ylabel("Counts scaled to instrument sensitivity")
         
         axes1[2].set_xlabel("Diffraction order")
+
+
     
     
     #scale solar-corrected counts to CRISM
-    # good_orders = unique_orders[2:]
-    # y_column_mean_norm = {order:normalise_values_to_range([counts_d[order]["y_scaled_all_mean"] for order in good_orders], 0.05, 0.04)[i] for i, order in enumerate(good_orders)}
+    # plot CRISM red and blue first
+    if plot_level < 5:
     
     
+        fig2, ax2a = plt.subplots(figsize=(12, 5))
+        fig2.suptitle("Phobos Radiance Calibration: %s (%s)" %(obs_type, h5))
+        ax2a.scatter(crism_d["x"], crism_d["phobos_red"], color="tab:red", marker="x", alpha=0.7, label="CRISM Phobos red")
+        ax2a.scatter(crism_d["x"], crism_d["phobos_blue"], color="tab:blue", marker="x", alpha=0.7, label="CRISM Phobos blue")
     
+    
+    #for each good row, get the mean and standard deviation
+    good_bin_means = []
+    good_bin_stds = []
+    for bin_ix in good_row_indices:
+        good_bin_means.append([counts_d[order]["y_all_spectral_solar_scaled_mean"][bin_ix] for order in unique_orders])
+        good_bin_stds.append([counts_d[order]["y_all_spectral_solar_scaled_std"][bin_ix] for order in unique_orders])
+
+    good_bin_means = np.array(good_bin_means)
+    good_bin_stds = np.array(good_bin_stds)
+    good_bin_snrs = good_bin_means / good_bin_stds
+    good_bin_snr = np.sqrt(np.sum(good_bin_snrs**2, axis=0))
+
+
     # scale to crism
-    y_column_mean_norm = {order:counts_d[order]["y_all_column_solar_scaled_mean"] for order in unique_orders if counts_d[order]["y_all_column_solar_scaled_mean"]>0}
-    y_column_std_norm = {order:counts_d[order]["y_all_column_solar_scaled_std"] for order in unique_orders if counts_d[order]["y_all_column_solar_scaled_mean"]>0}
-    
-    order_ums = [10000./cal_d[order]["x_mean"] for order in y_column_mean_norm.keys()]
+    #get column-scaled data for each order
+    y_column_mean_norm = {order:counts_d[order]["y_all_column_solar_scaled_mean"] for order in unique_orders}
+    y_column_std_norm = {order:counts_d[order]["y_all_column_solar_scaled_std"] for order in unique_orders}
+
+
+
+    orders_to_scale = np.array(obs_types[obs_type]["orders_crism"])
+    order_ums = [10000./cal_d[order]["x_mean"] for order in orders_to_scale]
+
     
     #calculate scaling factor to calibrate to crism red
     matching_crism_indices = np.where((crism_d["x"] > np.min(order_ums)) & (crism_d["x"] < np.max(order_ums)))[0]
     crism_red_mean = np.mean(crism_d["phobos_red"][matching_crism_indices])
     crism_blue_mean = np.mean(crism_d["phobos_blue"][matching_crism_indices])
-    lno_mean = np.mean([y_column_mean_norm[order] for order in y_column_mean_norm.keys()])
+    lno_mean = np.mean([y_column_mean_norm[order] for order in orders_to_scale])
     
     red_scalar = crism_red_mean / lno_mean
     blue_scalar = crism_blue_mean / lno_mean
@@ -415,27 +459,26 @@ for obs_type in obs_types.keys():
     
     
     if plot_level < 5:
-        # plt.figure()
-        # plt.plot(unique_orders, [y_column_mean_norm[order] for order in unique_orders])
     
     
-        fig2, ax2a = plt.subplots(figsize=(8, 5))
-        fig2.suptitle("Phobos Radiance Calibration: %s (%s)" %(obs_type, h5))
-        ax2a.scatter(crism_d["x"], crism_d["phobos_red"], color="tab:red", marker="x", alpha=0.7, label="CRISM Phobos red")
-        ax2a.scatter(crism_d["x"], crism_d["phobos_blue"], color="tab:blue", marker="x", alpha=0.7, label="CRISM Phobos blue")
-        
-        x_plt = order_ums
+        x_plt = [10000./cal_d[order]["x_mean"] for order in y_column_mean_norm.keys()]
 
-        y_plt = [y_column_mean_norm_red[order] for order in y_column_mean_norm.keys()]
-        y_err = [y_column_std_norm_red[order] for order in y_column_std_norm.keys()]
-        ax2a.plot(x_plt, y_plt, color="darkred", label="LNO scaled to Phobos red")
-        # ax2a.errorbar(x_plt, y=y_plt, yerr=y_err, color="darkred", capsize=2, label="LNO scaled to Phobos red")
+
+        y_plt = np.array([y_column_mean_norm_red[order] for order in y_column_mean_norm.keys()])
+        # y_err = np.array([y_column_std_norm_red[order] for order in y_column_std_norm.keys()])
+        y_err = y_plt / good_bin_snr
+        
+        # ax2a.plot(x_plt, y_plt, color="darkred", label="LNO scaled to Phobos red")
+        ax2a.errorbar(x_plt, y=y_plt, yerr=y_err, color="darkred", capsize=2, label="LNO scaled to Phobos red")
         ax2a.scatter(x_plt, y_plt, color="darkred")
 
-        y_plt = [y_column_mean_norm_blue[order] for order in y_column_mean_norm.keys()]
-        y_err = [y_column_std_norm_blue[order] for order in y_column_std_norm.keys()]
-        ax2a.plot(x_plt, y_plt, color="darkblue", label="LNO scaled to Phobos blue")
-        # ax2a.errorbar(x_plt, y=y_plt, yerr=y_err, color="darkblue", capsize=2, label="LNO scaled to Phobos blue")
+        y_plt = np.array([y_column_mean_norm_blue[order] for order in y_column_mean_norm.keys()])
+        # y_err = np.array([y_column_std_norm_blue[order] for order in y_column_std_norm.keys()])
+        y_err = y_plt / good_bin_snr
+
+
+        # ax2a.plot(x_plt, y_plt, color="darkblue", label="LNO scaled to Phobos blue")
+        ax2a.errorbar(x_plt, y=y_plt, yerr=y_err, color="darkblue", capsize=2, label="LNO scaled to Phobos blue")
         ax2a.scatter(x_plt, y_plt, color="darkblue")
     
         ax2a.grid()

@@ -47,7 +47,7 @@ bad_pixel_d = {
 
 
 
-subtract_last_bin = True #bad
+# subtract_last_bin = True #bad
 subtract_last_bin = False
 
 zero_lhs = True
@@ -56,7 +56,13 @@ zero_lhs = True
 
 obs_types = {
     # "LNO prime Phobos linescan 1":{"h5":"20221113_202115_0p1a_LNO_1", "bins":[2, 3, 4]},
-    "UVIS prime Phobos linescan 1":{"h5":"20221116_170814_0p1a_LNO_1", "bins":[3,4,5,6]},
+    "LNO prime Phobos linescan 2":{"h5":"20221222_050103_0p1a_LNO_1", "bins":[2, 3, 4]},
+    "LNO prime Phobos linescan 3":{"h5":"20230109_230206_0p1a_LNO_1", "bins":[2, 3, 4]},
+    "LNO prime Phobos linescan 4":{"h5":"20230113_034115_0p1a_LNO_1", "bins":[2, 3, 4]},
+    # "LNO prime Phobos linescan 5":{"h5":"2023-02-28T18:59:30_0p1a_LNO_1", "bins":[2, 3, 4]},
+
+    # "UVIS prime Phobos linescan 1":{"h5":"20221116_170814_0p1a_LNO_1", "bins":[3,4,5,6]},
+
 }
 
 
@@ -276,4 +282,4 @@ for obs_type in obs_types.keys():
     # ax2.legend()
     ax2.grid()
     
-    # plt.savefig("LNO_phobos_linescan_%0.2f_arcminute_offset.png" %PHOBOS_OFFSET_ARCMINS)
+    plt.savefig("LNO_phobos_linescan_%s_%0.2f_arcminute_offset.png" %(h5[0:15], PHOBOS_OFFSET_ARCMINS))

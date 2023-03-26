@@ -26,7 +26,7 @@ DATASTORE_PATHS = paths["DATASTORE"]
 if SYSTEM == "Windows":
     print("Running on windows")
     # import getpass
-    import pysftp
+    # import pysftp
 #    import spiceypy as sp
 
 PASSWORD = "" #make global variable so it doesn't ask for pword for every file
@@ -114,37 +114,37 @@ def get_filepath(hdf5_filename):
 
 
 
-def get_files_from_datastore(hdf5_filenames):
+# def get_files_from_datastore(hdf5_filenames):
 
-    for hdf5_filename in hdf5_filenames:
-        file_level = "hdf5_level_%s" %hdf5_filename[16:20]
-        year_in = hdf5_filename[0:4]
-        month_in = hdf5_filename[4:6]
-        day_in = hdf5_filename[6:8]
-        get_file_from_datastore(file_level, year_in, month_in, day_in, hdf5_filename, DATASTORE_PATHS["DATASTORE_SERVER"], DATASTORE_PATHS["DATASTORE_DIRECTORY"])
+#     for hdf5_filename in hdf5_filenames:
+#         file_level = "hdf5_level_%s" %hdf5_filename[16:20]
+#         year_in = hdf5_filename[0:4]
+#         month_in = hdf5_filename[4:6]
+#         day_in = hdf5_filename[6:8]
+#         get_file_from_datastore(file_level, year_in, month_in, day_in, hdf5_filename, DATASTORE_PATHS["DATASTORE_SERVER"], DATASTORE_PATHS["DATASTORE_DIRECTORY"])
     
 
-def get_file_from_datastore(file_level, year_in, month_in, day_in, filename_in, server, server_directory):
-    silent = False
-    global PASSWORD
+# def get_file_from_datastore(file_level, year_in, month_in, day_in, filename_in, server, server_directory):
+#     silent = False
+#     global PASSWORD
 
-    if PASSWORD == "":
-        # PASSWORD = getpass.getpass('Password:')
-        PASSWORD = input('Password:')
+#     if PASSWORD == "":
+#         # PASSWORD = getpass.getpass('Password:')
+#         PASSWORD = input('Password:')
 
-    future_path = os.path.join(paths["DATA_DIRECTORY"], file_level, year_in, month_in, day_in)
-    os.makedirs(future_path, exist_ok=True)
-    os.chdir(future_path)
-    cnopts = pysftp.CnOpts()
-    cnopts.hostkeys = None
-    private_key_path = os.path.join(paths["REFERENCE_DIRECTORY"], "ppk")
+#     future_path = os.path.join(paths["DATA_DIRECTORY"], file_level, year_in, month_in, day_in)
+#     os.makedirs(future_path, exist_ok=True)
+#     os.chdir(future_path)
+#     cnopts = pysftp.CnOpts()
+#     cnopts.hostkeys = None
+#     private_key_path = os.path.join(paths["REFERENCE_DIRECTORY"], "ppk")
 
-    with pysftp.Connection(host=server[0], username=server[1], password=PASSWORD, private_key=private_key_path, cnopts=cnopts) as sftp:
-        with sftp.cd(server_directory+"/"+file_level): # temporarily chdir to public
-            pathToDatastoreFile = "%s/%s/%s/%s/%s/%s.h5" %(server_directory, file_level, year_in, month_in, day_in, filename_in)
-            if not silent: print(pathToDatastoreFile)
-            sftp.get(pathToDatastoreFile) # get a remote file
-    os.chdir(paths["BASE_DIRECTORY"])
+#     with pysftp.Connection(host=server[0], username=server[1], password=PASSWORD, private_key=private_key_path, cnopts=cnopts) as sftp:
+#         with sftp.cd(server_directory+"/"+file_level): # temporarily chdir to public
+#             pathToDatastoreFile = "%s/%s/%s/%s/%s/%s.h5" %(server_directory, file_level, year_in, month_in, day_in, filename_in)
+#             if not silent: print(pathToDatastoreFile)
+#             sftp.get(pathToDatastoreFile) # get a remote file
+#     os.chdir(paths["BASE_DIRECTORY"])
 
 
 
@@ -182,7 +182,7 @@ def get_file(obspath, file_level, count, model="INFLIGHT", silent=False, open_fi
     #        DATASTORE_DIRECTORY_IN = DATASTORE_DIRECTORY_FS
         else:
             DATA_DIRECTORY_IN = paths["DATA_DIRECTORY"]
-            DATASTORE_DIRECTORY_IN = DATASTORE_PATHS["DATASTORE_DIRECTORY"]
+            # DATASTORE_DIRECTORY_IN = DATASTORE_PATHS["DATASTORE_DIRECTORY"]
 
 
     
@@ -194,16 +194,16 @@ def get_file(obspath, file_level, count, model="INFLIGHT", silent=False, open_fi
     if os.path.exists(filename):
         if not silent: print("%i: File %s found" %(count, filename))
     else:
-        if open_files:
-            if DATASTORE_PATHS["SEARCH_DATASTORE"]:
-                print("File %s not found. Getting from datastore (%s, %s, %s)" %(filename, DATASTORE_PATHS["DATASTORE_SERVER"][0], DATASTORE_PATHS["DATASTORE_SERVER"][1], DATASTORE_DIRECTORY_IN))
-                get_file_from_datastore(file_level, year, month, day, obspath, DATASTORE_PATHS["DATASTORE_SERVER"], DATASTORE_DIRECTORY_IN)
-                if DATASTORE_PATHS["DIRECTORY_STRUCTURE"]:
-                    filename = os.path.join(DATA_DIRECTORY_IN, file_level, year, month, day, obspath+".h5") #choose a file
-                else:
-                    filename = os.path.join(DATA_DIRECTORY_IN, obspath+".h5") #choose a file
-            else:
-                print("File %s not found." %filename)
+        # if open_files:
+            # if DATASTORE_PATHS["SEARCH_DATASTORE"]:
+            #     print("File %s not found. Getting from datastore (%s, %s, %s)" %(filename, DATASTORE_PATHS["DATASTORE_SERVER"][0], DATASTORE_PATHS["DATASTORE_SERVER"][1], DATASTORE_DIRECTORY_IN))
+            #     get_file_from_datastore(file_level, year, month, day, obspath, DATASTORE_PATHS["DATASTORE_SERVER"], DATASTORE_DIRECTORY_IN)
+            #     if DATASTORE_PATHS["DIRECTORY_STRUCTURE"]:
+            #         filename = os.path.join(DATA_DIRECTORY_IN, file_level, year, month, day, obspath+".h5") #choose a file
+            #     else:
+            #         filename = os.path.join(DATA_DIRECTORY_IN, obspath+".h5") #choose a file
+            # else:
+        print("File %s not found." %filename)
     if open_files:
         hdf5_file = h5py.File(filename, "r") #open file
     else:

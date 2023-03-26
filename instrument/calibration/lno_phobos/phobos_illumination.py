@@ -35,6 +35,7 @@ from tools.spice.make_perimeter_bounds import make_perimeter_bounds
 from tools.spice.rotation_matrix_from_vectors import rotation_matrix_from_vectors
 
 
+bin_numbers = [1,2,3]
 
 
 LNO_DETECTOR_CENTRE_LINE = 152
@@ -172,20 +173,25 @@ def make_obs_point_dict(ets, new_vectors):
 
 
 if __name__ == "__main__":
-    h5 = "20220710_200313_0p3a_LNO_1_P_148"
+    # h5 = "20220710_200313_0p3a_LNO_1_P_148"
     # h5 = "20220713_164911_0p3a_LNO_1_P_148"
+    h5 = "20230225_220121_0p1a_LNO_1"
+    # h5_f = open_hdf5_file(h5)
     
-    h5_f = open_hdf5_file(h5)
+    h5_f = open_hdf5_file(h5, path=r"E:\DATA\hdf5_phobos")
     
     obs_dt_strs_all = h5_f["Geometry/ObservationDateTime"][...]
     
-    
-    bins = h5_f["Science/Bins"][:, 0] #detector row of top of each bin
+    if "0p1a" in h5:
+        bins = np.ndarray.flatten(h5_f["Science/Bins"][:, :, 0]) #detector row of top of each bin
+    else:
+        bins = h5_f["Science/Bins"][:, 0] #detector row of top of each bin
+
     bin_height = h5_f["Channel/Binning"][0] + 1 #number of arcminutes per bin
     unique_bins = sorted(list(set(bins)))
     
     
-    for bin_number in [0,1,2,3]:
+    for bin_number in bin_numbers:
         # bin_number = 0
         bin_top = unique_bins[bin_number]
         
@@ -207,7 +213,10 @@ if __name__ == "__main__":
         bin_indices = np.where(bin_top == bins)
         # stop()
         
-        obs_dt_strs = obs_dt_strs_all[bin_indices]
+        if "0p1a" in h5:
+            obs_dt_strs = obs_dt_strs_all[:]
+        else:
+            obs_dt_strs = obs_dt_strs_all[bin_indices]
         
         
         d = make_obs_dict(obs_dt_strs)

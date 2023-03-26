@@ -5,13 +5,36 @@ Created on Mon Apr  6 20:43:33 2020
 @author: iant
 """
 import numpy as np
+import os
 
-
-from instrument.nomad_lno_instrument import nu_mp, spec_res_order, F_blaze, F_aotf_goddard19draft
+from instrument.nomad_lno_instrument_v01 import nu_mp, spec_res_order, F_blaze, F_aotf_goddard19draft
 from tools.spectra.solar_spectrum import get_solar_hr
 from tools.spectra.nu_hr_grid import nu_hr_grid
+from scipy.ndimage import gaussian_filter1d
 
+from tools.file.paths import paths
+
+
+def get_solar_spectrum_hr(nu_hr):
+
+    #high res solar line
+    solar_spectrum_filename = "pfsolspec_hr.dat"
+    # solar_spectrum_filename = "Solar_irradiance_ACESOLSPEC_2015.dat"
+    ss_file = os.path.join(paths["RETRIEVALS"]["SOLAR_DIR"], solar_spectrum_filename)
+    I0_solar_hr = get_solar_hr(nu_hr, solspec_filepath=ss_file)
+    #normalise
+    I0_solar_hr /= np.max(I0_solar_hr)
+    return I0_solar_hr
+
+
+def smooth_solar_spectrum(I0_solar_hr, g_fil=199):
     
+    solar_lr = gaussian_filter1d(I0_solar_hr, g_fil)
+    return solar_lr
+
+
+
+
 def solar_hr_orders(diffraction_order, adj_orders, instrument_temperature, solspec_file):
     """get high res solar spectrum for given diffraction order +- n adjacent orders"""
     nu_hr, dnu = nu_hr_grid(diffraction_order, adj_orders, instrument_temperature)

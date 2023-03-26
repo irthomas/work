@@ -43,7 +43,10 @@ def progress_bar(iterable, prefix = '', suffix = '', decimals = 1, length = 50, 
     print()
     
     
-def progress(iterable, length=50):
+def progress(iterable):
+    """generic progress bar e.g. for i in progress(iterable):"""
+    
+    length=50
     total = len(iterable)
 
     def printProgressBar (iteration):

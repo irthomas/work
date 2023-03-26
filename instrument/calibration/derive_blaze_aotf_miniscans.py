@@ -22,14 +22,14 @@ from instrument.nomad_so_instrument_v03 import m_aotf, aotf_peak_nu, lt22_waven
 
 # inflight
 
-# channel = "SO"
-channel = "LNO"
+channel = "SO"
+# channel = "LNO"
 
 file_level = "hdf5_level_1p0a"
 regex = re.compile(".*_%s_.*_CM" %channel)
 
 # regex = re.compile("20201010.*_%s_.*_CM" %channel)
-regex = re.compile("20191002.*_%s_.*_CM" %channel)
+# regex = re.compile("20191002.*_%s_.*_CM" %channel)
 
 # #ground
 # file_level = "hdf5_level_0p1a"
@@ -37,9 +37,11 @@ regex = re.compile("20191002.*_%s_.*_CM" %channel)
 
 
 if channel == "SO":
-    aotf_steppings = [8.0]
+    # aotf_steppings = [8.0]
+    aotf_steppings = [4.0]
     binnings = [0]
-    starting_orders = [188]
+    # starting_orders = [188]
+    starting_orders = [191]
     # dictionary of fft_cutoff for each aotf_stepping
     fft_cutoff_dict = {
         1:4,
@@ -69,8 +71,9 @@ illuminated_row_dict = {24:slice(6, 19)}
 
 #solar line dict
 solar_line_dict = {
-    # "20181206_171850-191-4":{"left":np.arange(215, 222), "centre":229, "right":np.arange(234, 245)},
-    # "20211105_155547-191-4":{"left":np.arange(208, 215), "centre":222, "right":np.arange(227, 238)},
+    "20181206_171850-191-4":{"left":np.arange(215, 222), "centre":229, "right":np.arange(234, 245)}, #6.4C
+    "20211105_155547-191-4":{"left":np.arange(208, 215), "centre":222, "right":np.arange(227, 238)}, #-2.1C
+    "20230112_084925-191-4":{"left":np.arange(201, 208), "centre":215, "right":np.arange(220, 231)}, #-8.3C
 
     # "20181206_171850":{"left":np.arange(144, 148), "centre":149, "right":np.arange(153, 157)},
     # "20211105_155547":{"left":np.arange(137, 141), "centre":142, "right":np.arange(146, 150)},
@@ -82,13 +85,16 @@ solar_line_dict = {
     # "20210717_072315-194-1":{"left":np.arange(205, 209), "centre":217, "right":np.arange(223, 227)},
     # "20220120_125011-194-1":{"left":np.arange(209, 213), "centre":221, "right":np.arange(227, 231)},
 
-    "20201010_113533-188-8":{"left":np.arange(209, 213), "centre":221, "right":np.arange(227, 231)},
-    "20210201_111011-188-8":{"left":np.arange(209, 213), "centre":218, "right":np.arange(220, 224)},
-    "20210523_001053-188-8":{"left":np.arange(205, 209), "centre":212, "right":np.arange(216, 220)},
-    "20221011_132104-188-8":{"left":np.arange(209, 213), "centre":215, "right":np.arange(218, 222)},
+    # "20201010_113533-188-8":{"left":np.arange(209, 213), "centre":221, "right":np.arange(227, 231)},
+    # "20210201_111011-188-8":{"left":np.arange(209, 213), "centre":218, "right":np.arange(220, 224)},
+    # "20210523_001053-188-8":{"left":np.arange(205, 209), "centre":212, "right":np.arange(216, 220)},
+    # "20221011_132104-188-8":{"left":np.arange(209, 213), "centre":215, "right":np.arange(218, 222)},
     
-    "20191002_000902-186-8":{"left":np.arange(196, 200), "centre":210, "right":np.arange(220, 224)},
-    "20191002_000902-192-8":{"left":np.arange(203, 207), "centre":214, "right":np.arange(221, 224)},
+    # "20191002_000902-186-8":{"left":np.arange(196, 200), "centre":210, "right":np.arange(220, 224)},
+    # "20200812_135659-186-8":{"left":np.arange(196, 200), "centre":210, "right":np.arange(220, 224)},
+    # "20210606_021551-186-8":{"left":np.arange(196, 200), "centre":210, "right":np.arange(220, 224)},
+
+    # "20191002_000902-192-8":{"left":np.arange(203, 207), "centre":214, "right":np.arange(221, 224)},
     }
 
 
@@ -102,8 +108,8 @@ plot_miniscans = True
 # plot_miniscans = False
 
 
-plot_fft = True
-# plot_fft = False
+# plot_fft = True
+plot_fft = False
 
 plot_blaze = True
 # plot_blaze = False
