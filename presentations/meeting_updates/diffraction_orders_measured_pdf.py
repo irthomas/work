@@ -43,9 +43,10 @@ planning_db_path = r"C:/Users/iant/Documents/PROGRAMS/nomad_obs/planning.db"
 
 
 
-LIST_ONLY = True
-# LIST_ONLY = False
+# LIST_ONLY = True
+LIST_ONLY = False
 
+N_MONTHS = 2
 
 
 def connect_db(db_path):
@@ -191,8 +192,8 @@ for channel in ["so", "lno"]:
             month_d[unique_time]["obs"][obs_name] += 100. / len(month_ixs)
         
     
-    #sort obs names based on the last 6 months
-    end_unique_times = unique_times[-6:]
+    #sort obs names based on the last N months
+    end_unique_times = unique_times[-N_MONTHS:]
     
     end_obs_freqs = []
     for unique_ir_observation_name in unique_ir_observation_names:
@@ -231,10 +232,10 @@ for channel in ["so", "lno"]:
             if len(orders) == 1: #skip fullscans and weird observations
                 continue
             
-            mean_6_months = np.mean(obs_freqs[-6:])
-            sum_6_months = np.round(np.sum([month_d[t]["obs"][unique_ir_observation_name]/100 * month_d[t]["n_obs"] for t in unique_times[-6:]]))
+            mean_n_months = np.mean(obs_freqs[-N_MONTHS:])
+            sum_n_months = np.round(np.sum([month_d[t]["obs"][unique_ir_observation_name]/100 * month_d[t]["n_obs"] for t in unique_times[-N_MONTHS:]]))
             
-            if mean_6_months == 0: #if not measured in last 6 months
+            if mean_n_months == 0: #if not measured in last N months
                 continue
             
             #check for orders in observation dict and get the name
@@ -289,10 +290,10 @@ for channel in ["so", "lno"]:
                     plt.close()
                     continue
                 
-                mean_6_months = np.mean(obs_freqs[-6:])
-                sum_6_months = np.round(np.sum([month_d[t]["obs"][unique_ir_observation_name]/100 * month_d[t]["n_obs"] for t in unique_times[-6:]]))
+                mean_n_months = np.mean(obs_freqs[-N_MONTHS:])
+                sum_n_months = np.round(np.sum([month_d[t]["obs"][unique_ir_observation_name]/100 * month_d[t]["n_obs"] for t in unique_times[-N_MONTHS:]]))
                 
-                if mean_6_months == 0: #if not measured in last 6 months
+                if mean_n_months == 0: #if not measured in last N months
                     plt.close()
                     continue
                 
@@ -315,8 +316,8 @@ for channel in ["so", "lno"]:
                 ax1a.set_yticks(range(y_lim+1))
         
                 
-                ax1a.axhline(y=mean_6_months, color="k", linestyle="--")
-                ax1a.text(0, mean_6_months+0.1, "Mean %% of observations in the last 6 months\n(%i observations in 6 months)" %sum_6_months)
+                ax1a.axhline(y=mean_n_months, color="k", linestyle="--")
+                ax1a.text(0, mean_n_months+0.1, "Mean %% of observations in the last %i months\n(%i observations in %i months)" %(N_MONTHS, sum_n_months, N_MONTHS))
                 
                 for order2 in orders2:
                     rect = ax1b.add_patch(

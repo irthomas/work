@@ -22,7 +22,7 @@ temperature_p0 = -Q0/Q1
 
 
 
-#updated for LNO
+#updated for LNO Jan 2023
 F0=22.471896082567795
 F1=0.0005612789704190822
 F2=3.942616548909985e-09
@@ -170,6 +170,24 @@ def F_aotf_goddard19draft(m, nu, t, A=None, nu0=None, iG=IG, i0=I0, w0=W0, sigma
     return F
 
 
+
+def F_aotf_sinc(m, nu, t, A=None, nu0=None, w0=W0):
+    """calculate aotf function from order and high resolution wavenumber grid covering all required orders"""
+    if A is None:
+        A = A_aotf[m]
+    if nu0 is None:
+        nu0 = nu0_aotf(A)
+
+    # sin (pi x)/(pi x)
+    # x = np.pi * (nu-nu0)/w0
+    # F = (np.sin(x)/x)**2
+
+    #sinc function
+    F = np.sinc((nu-nu0)/w0)**2
+
+    return F
+
+
 def spec_res_nu_old(nu0):
     """use values from figure in Liuzzi 2019 (resolution too good for LNO)"""
     spectralResolution = np.polyval(np.array([5.80952381e-05, 2.76190476e-03]), nu0) #LNO from Liuzzi et al 2019 figure
@@ -201,4 +219,14 @@ def spec_res_order(order):
 
 
 
+#for testing
+# import matplotlib.pyplot as plt
+# t = 0.0
+# p = np.arange(320.)
+# aotf_nu0 = nu_mp(193., 160., t)
 
+# for m in [192., 193., 194.]:
+#     nu = nu_mp(m, p, t)
+#     aotf = F_aotf_sinc(m, nu, t, nu0=aotf_nu0)
+    
+#     plt.plot(nu, aotf)

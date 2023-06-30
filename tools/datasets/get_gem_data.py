@@ -76,7 +76,7 @@ def get_gem_data(myear, ls, lat, lon, lst, plot=False):
     url = f"https://gem-mars.aeronomie.be/vespa-gem?myear={myear}&lat={lat:#0.2f}&lon={lon:#0.2f}&ls={ls:#0.2f}&lst={lst:#0.3f}"
     
     
-
+    print(url)
     
     response = requests.get(url)
     soup = BeautifulSoup(response.content, 'lxml')
@@ -172,8 +172,29 @@ def get_gem_data_from_h5(h5_f, tangent_altitude=50.0, index=None, plot=False):
     return get_gem_data(myear, ls, lat, lon, lst, plot=plot)
     
     
+
+
+def get_gem_tpvmr(molecule, alt_grid, myear, ls, lat, lon, lst, plot=False):
+    """get temperature, pressure, mol ppmv and co2 ppmv for given altitude(s), time and location"""
+    
+    gem_d = get_gem_data(myear, ls, lat, lon, lst, plot=plot)
+    
+    t = np.interp(alt_grid, gem_d["z"][::-1], gem_d["t"][::-1])
+    pressure = np.interp(alt_grid, gem_d["z"][::-1], gem_d["p"][::-1]) / 101300. #pa to atmosphere
+    mol_ppmv = np.interp(alt_grid, gem_d["z"][::-1], gem_d[molecule.lower()][::-1]) #ppmv
+    co2_ppmv = np.interp(alt_grid, gem_d["z"][::-1], gem_d["co2"][::-1]) #ppmv
+
+    return t, pressure, mol_ppmv, co2_ppmv
+
+
+
+
+
     
     
 # example run
 # atmos_dict = get_gem_data(36, 180.0, 0.0, 0.0, 12.0, plot=True)
 
+# import h5py
+# h5_f = h5py.File("20180424_111248_1p0a_SO_E_S.h5", "r")
+# get_gem_data_from_h5(h5_f, tangent_altitude=50.0, index=None, plot=True)

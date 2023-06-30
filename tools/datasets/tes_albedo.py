@@ -6,6 +6,10 @@ Created on Tue Jun 16 15:06:48 2020
 
 LNO - TES ALBEDO FUNCTIONS
 
+
+
+
+
 """
 import os
 import numpy as np
@@ -35,3 +39,24 @@ def get_albedo(lons_in, lats_in, albedo_map):
     latIndexFloat[latIndexFloat==1440] = 0
     albedos_out = np.asfarray([albedo_map[lat, lon] for lon, lat in zip(lonIndexFloat, latIndexFloat)])
     return albedos_out
+
+
+#code for plotting
+
+# albedoMap, albedoMapExtents = get_TES_albedo_map()
+
+# #cut off top and bottom like NOMAD. 8px per degree => 16 deg cutoff = 128 points
+# albedoMap = albedoMap[128:(1440-128), :]
+# albedoMapExtents = [-180, 180, -74, 74]
+# fig1, ax1 = plt.subplots(figsize=(FIG_X+5, FIG_Y+2))
+# albedoPlot = ax1.imshow(albedoMap, extent=albedoMapExtents, vmin=0.05, vmax=0.5)
+
+# ax1.set_title("MGS/TES Albedo Global Mosaic")
+# ax1.set_xlabel("Longitude")
+# ax1.set_ylabel("Latitude")
+# ax1.set_xlim((-180, 180))
+# ax1.set_ylim((-90, 90))
+# cb1 = fig1.colorbar(albedoPlot)
+# cb1.set_label("MGS/TES albedo, scaled to reflectance factor", rotation=270, labelpad=10)
+# ax1.grid()
+# fig1.tight_layout()

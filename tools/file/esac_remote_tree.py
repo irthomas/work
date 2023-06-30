@@ -4,7 +4,7 @@ Created on Thu Feb  3 13:41:11 2022
 
 @author: iant
 
-GET EXM LIST FROM ESAC SERVER (VIA HERA)
+GET EXM LIST FROM ESAC SERVER (VIA HERA - CAN BE RUN REMOTELY IF NECESSARY)
 """
 
 import os
@@ -26,7 +26,7 @@ def get_esac_tree_filenames(user, level, host="hera.oma.be"):
     p.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     p.connect(host, port=22, username=user, password=passwords["hera"])
     
-    print("Connecting to ESAC")
+    print("Connecting to ESAC and getting filenames; this may take some minutes")
     
     if level in DIRS.keys():
         dir_name = DIRS[level]
@@ -42,9 +42,12 @@ def get_esac_tree_filenames(user, level, host="hera.oma.be"):
 
 
 # print("Running command")
-# stdin, stdout, stderr = vm3.exec_command('find farc_nmd/ -name "*_2022-002T*"') #edited#
+# stdin, stdout, stderr = p.exec_command('find farc_nmd/ -name "*_2022-002T*"') #edited#
 # #
 # print(stdout.read())
 
 
 
+# user = "iant"
+# level = "spacewire"
+# host="hera.oma.be"

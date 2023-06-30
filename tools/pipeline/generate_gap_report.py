@@ -59,14 +59,15 @@ d_itl = get_itl_dict(os.path.join(SHARED_DIR_PATH, "db", "obs_type.db"))
 esac = get_esac_tree_filenames("iant", "spacewire")
 esac_filenames = sorted([s.replace(".EXM","") for s in esac])
 
+print("%i EXM files found on ESAC server" %len(esac_filenames))
 
 
 #check for mismatch between ESAC and spacewire cache.db
-def return_not_matching(a, b):
-    """compare list 1 to list 2 and return non matching entries"""
-    return [[x for x in a if x not in b], [x for x in b if x not in a]]
+# def return_not_matching(a, b):
+#     """compare list 1 to list 2 and return non matching entries"""
+#     return [[x for x in a if x not in b], [x for x in b if x not in a]]
 
-a,b = return_not_matching(cache_spacewire_filenames, esac_filenames)
+# a,b = return_not_matching(cache_spacewire_filenames, esac_filenames)
 
 
 
@@ -100,7 +101,7 @@ off_periods = [
     [datetime(2020, 3, 28, 17, 0, 0), datetime(2020, 4, 11, 12, 0, 0), "Covid-19 at MOC", True],
     [datetime(2020, 6, 21, 10, 0, 0), datetime(2020, 6, 21, 11, 0, 0), "MITL change, data received", False],
     [datetime(2020, 6, 23, 9, 0, 0), datetime(2020, 6, 23, 10, 0, 0), "MITL change, data received", False],
-] 
+]   
 
 
 #go through itl observations
@@ -230,6 +231,7 @@ for missing_dt in missing_dts.keys():
 
     reason = ""
     pdhu_filenames = ["",""]
+    colour = "#FFFFFF"
 
     #check for known off-periods
     include = True
@@ -255,25 +257,28 @@ for missing_dt in missing_dts.keys():
         ]
         
         #if neither string is found in cache or at ESAC
-        if (len(strings1[0]) == 0 and len(strings1[1]) == 0) and (len(strings2[0]) == 0 and len(strings2[0]) == 0):
+        if (len(strings1[0]) == 0 and len(strings1[1]) == 0) and (len(strings2[0]) == 0 and len(strings2[1]) == 0):
             reason = "EXM not found in datastore or on ESAC server"
+            colour = "#DD0000"
 
         #if neither string is found in cache but one is found at ESAC
-        elif (len(strings1[0]) == 0 and len(strings1[1]) == 0) and (len(strings2[0]) == 1 or len(strings2[0]) == 1):
+        elif (len(strings1[0]) == 0 and len(strings1[1]) == 0) and (len(strings2[0]) == 1 or len(strings2[1]) == 1):
             reason = "EXM not found in datastore but is present on ESAC server"
 
         #if neither string is found in cache but two or more are found at ESAC
-        elif (len(strings1[0]) == 0 and len(strings1[1]) == 0) and (len(strings2[0]) > 1 or len(strings2[0]) > 1):
+        elif (len(strings1[0]) == 0 and len(strings1[1]) == 0) and (len(strings2[0]) > 1 or len(strings2[1]) > 1):
             reason = "EXM not found in datastore but multiple versions are present on ESAC server"
 
         #if either string is found in cache
         elif (len(strings1[0]) == 1 or len(strings1[1]) == 1):
             reason = "EXM file received, HDF5s not generated due to another error"
+            pdhu_filenames = ["",""] #don't include in PDHU column
 
         #if either string is found in cache multiple times
         elif (len(strings1[0]) > 1 or len(strings1[1]) > 1):
             reason = "Multiple EXM files found in datastore, HDF5s not generated due to another error"
-            print(missing_dt, strings1)
+            pdhu_filenames = ["",""] #don't include in PDHU column
+            print("Multiple files for observation", missing_dt, strings1)
 
         else:
             reason = "Another error occurred"
@@ -281,7 +286,7 @@ for missing_dt in missing_dts.keys():
 
     if include:
         channels = missing_dts[missing_dt]["channels"]
-        h += "<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>\n" %(missing_dt, ", ".join(channels), reason, pdhu_filenames[0])
+        h += "<tr><td>%s</td><td>%s</td><td>%s</td><td style='color:%s'>%s</td></tr>\n" %(missing_dt, ", ".join(channels), reason, colour, pdhu_filenames[0])
         
     missing_dts[missing_dt]["reason"] = reason
 
@@ -307,5 +312,3 @@ with open("missing_%s_commands.txt" %level, "w") as f:
 
 
 
-
-#now check if available on ESAC server
