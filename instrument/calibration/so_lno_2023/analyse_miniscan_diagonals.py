@@ -3,6 +3,11 @@
 Created on Wed May 24 12:13:08 2023
 
 @author: iant
+
+
+DEFINE THE SOLAR LINES IN THE CORRECTED MINISCAN ARRAYS
+ANALYSE THE AOTF AND BLAZE FUNCTIONS AND SAVE THEM TO A FILE
+
 """
 
 import os
@@ -18,10 +23,16 @@ from instrument.nomad_so_instrument_v03 import aotf_peak_nu
 from instrument.nomad_lno_instrument_v02 import nu0_aotf
 
 
+from instrument.calibration.so_lno_2023.fit_absorption_miniscan_array import trap_absorption
+
+
 MINISCAN_PATH = os.path.normcase(r"C:\Users\iant\Documents\DATA\miniscans")
 
-AOTF_OUTPUT_PATH = os.path.normcase(r"C:\Users\iant\Dropbox\NOMAD\Python\aotfs.txt")
-BLAZE_OUTPUT_PATH = os.path.normcase(r"C:\Users\iant\Dropbox\NOMAD\Python\blazes.txt")
+channel = "so"
+# channel = "lno"
+
+AOTF_OUTPUT_PATH = os.path.normcase(r"C:\Users\iant\Dropbox\NOMAD\Python\%s_aotfs.txt" %channel)
+BLAZE_OUTPUT_PATH = os.path.normcase(r"C:\Users\iant\Dropbox\NOMAD\Python\%s_blazes.txt" %channel)
 
 
 # define_edges = True #for defining the coefficients for new miniscans
@@ -29,56 +40,60 @@ define_edges = False #for running through the data
 
 plot = []
 
+
+sinc_apriori = {"a":150000.0, "b":30000.0, "c":0.0, "d":0.5, "e":-8.0}
+
+
 #solar line dict
 solar_line_dict = {
-    "LNO-20200201-001633-194-4":[
-        {"arr_region_rows":[0, -1], "arr_region_cols":[1500, 2500], "abs_region_rows":[300, -1], "abs_region_cols":[1859, 1944], "cutoffs":[0.98, 0.98], "smfac":25},
-        {"blaze_rows":[]}
-    ],
-    "LNO-20181021-064022-125-4":[
-        {"arr_region_rows":[0, -1], "arr_region_cols":[500, 1000], "abs_region_rows":[0, -1], "abs_region_cols":[700, 810], "cutoffs":[0.93, 0.93], "smfac":25},
-        {"arr_region_rows":[0, -1], "arr_region_cols":[2900, 3199], "abs_region_rows":[0, -1], "abs_region_cols":[2950, 3090], "cutoffs":[0.93, 0.93], "smfac":25},
-        {"blaze_rows":[580, 970, 1360]}
-    ],
-    "LNO-20181021-064022-140-4":[
-        {"arr_region_rows":[0, -1], "arr_region_cols":[400, 700], "abs_region_rows":[0, -1], "abs_region_cols":[450, 580], "cutoffs":[0.97, 0.97], "smfac":25},
-        {"arr_region_rows":[0, -1], "arr_region_cols":[700, 1000], "abs_region_rows":[0, -1], "abs_region_cols":[800, 900], "cutoffs":[0.97, 0.97], "smfac":25},
-        {"arr_region_rows":[0, -1], "arr_region_cols":[2100, 2500], "abs_region_rows":[0, -1], "abs_region_cols":[2230, 2360], "cutoffs":[0.97, 0.97], "smfac":25},
-        {"arr_region_rows":[0, -1], "arr_region_cols":[2300, 2600], "abs_region_rows":[0, -1], "abs_region_cols":[2390, 2490], "cutoffs":[0.97, 0.97], "smfac":25},
-        {"blaze_rows":[950, 1350, 1710]}
-        ],
+    # "LNO-20200201-001633-194-4":[
+    #     {"arr_region_rows":[0, -1], "arr_region_cols":[1500, 2500], "abs_region_rows":[300, -1], "abs_region_cols":[1859, 1944], "cutoffs":[0.98, 0.98], "smfac":25},
+    #     {"blaze_rows":[]}
+    # ],
+    # "LNO-20181021-064022-125-4":[
+    #     {"arr_region_rows":[0, -1], "arr_region_cols":[500, 1000], "abs_region_rows":[0, -1], "abs_region_cols":[700, 810], "cutoffs":[0.93, 0.93], "smfac":25},
+    #     {"arr_region_rows":[0, -1], "arr_region_cols":[2900, 3199], "abs_region_rows":[0, -1], "abs_region_cols":[2950, 3090], "cutoffs":[0.93, 0.93], "smfac":25},
+    #     {"blaze_rows":[580, 970, 1360]}
+    # ],
+    # "LNO-20181021-064022-140-4":[
+    #     {"arr_region_rows":[0, -1], "arr_region_cols":[400, 700], "abs_region_rows":[0, -1], "abs_region_cols":[450, 580], "cutoffs":[0.97, 0.97], "smfac":25},
+    #     {"arr_region_rows":[0, -1], "arr_region_cols":[700, 1000], "abs_region_rows":[0, -1], "abs_region_cols":[800, 900], "cutoffs":[0.97, 0.97], "smfac":25},
+    #     {"arr_region_rows":[0, -1], "arr_region_cols":[2100, 2500], "abs_region_rows":[0, -1], "abs_region_cols":[2230, 2360], "cutoffs":[0.97, 0.97], "smfac":25},
+    #     {"arr_region_rows":[0, -1], "arr_region_cols":[2300, 2600], "abs_region_rows":[0, -1], "abs_region_cols":[2390, 2490], "cutoffs":[0.97, 0.97], "smfac":25},
+    #     {"blaze_rows":[950, 1350, 1710]}
+    #     ],
 
 
-    "LNO-20181021-071529-167-4":[
-        {"arr_region_rows":[0, -1], "arr_region_cols":[850, 1300], "abs_region_rows":[0, 1700], "abs_region_cols":[990, 1250], "cutoffs":[0.95, 0.95], "smfac":25},
-        {"arr_region_rows":[0, -1], "arr_region_cols":[1400, 1700], "abs_region_rows":[0, 1700], "abs_region_cols":[1520, 1600], "cutoffs":[0.95, 0.95], "smfac":25},
-        {"arr_region_rows":[0, -1], "arr_region_cols":[2300, 2700], "abs_region_rows":[0, -1], "abs_region_cols":[2420, 2540], "cutoffs":[0.95, 0.95], "smfac":25},
-        {"blaze_rows":[850]}
-        ],
+    # "LNO-20181021-071529-167-4":[
+    #     {"arr_region_rows":[0, -1], "arr_region_cols":[850, 1300], "abs_region_rows":[0, 1700], "abs_region_cols":[990, 1250], "cutoffs":[0.95, 0.95], "smfac":25},
+    #     {"arr_region_rows":[0, -1], "arr_region_cols":[1400, 1700], "abs_region_rows":[0, 1700], "abs_region_cols":[1520, 1600], "cutoffs":[0.95, 0.95], "smfac":25},
+    #     {"arr_region_rows":[0, -1], "arr_region_cols":[2300, 2700], "abs_region_rows":[0, -1], "abs_region_cols":[2420, 2540], "cutoffs":[0.95, 0.95], "smfac":25},
+    #     {"blaze_rows":[850]}
+    #     ],
 
-    "LNO-20181021-071529-194-4":[
-        {"arr_region_rows":[0, -1], "arr_region_cols":[1800, 2100], "abs_region_rows":[0, -1], "abs_region_cols":[1910, 2000], "cutoffs":[0.95, 0.95], "smfac":25},
-        {"blaze_rows":[]}
-        ],
+    # "LNO-20181021-071529-194-4":[
+    #     {"arr_region_rows":[0, -1], "arr_region_cols":[1800, 2100], "abs_region_rows":[0, -1], "abs_region_cols":[1910, 2000], "cutoffs":[0.95, 0.95], "smfac":25},
+    #     {"blaze_rows":[]}
+    #     ],
     
-    "LNO-20181106-192332-146-4":[
-        {"arr_region_rows":[0, -1], "arr_region_cols":[150, 350], "abs_region_rows":[0, -1], "abs_region_cols":[220, 280], "cutoffs":[0.95, 0.95], "smfac":25},
-        {"arr_region_rows":[0, -1], "arr_region_cols":[1050, 1350], "abs_region_rows":[0, -1], "abs_region_cols":[1110, 1200], "cutoffs":[0.95, 0.95], "smfac":25},
-        {"arr_region_rows":[0, -1], "arr_region_cols":[2300, 2600], "abs_region_rows":[0, -1], "abs_region_cols":[2410, 2500], "cutoffs":[0.95, 0.95], "smfac":25},
-        {"arr_region_rows":[0, -1], "arr_region_cols":[2800, 3100], "abs_region_rows":[0, -1], "abs_region_cols":[2910, 2980], "cutoffs":[0.95, 0.95], "smfac":25},
-        {"blaze_rows":[150, 1310]}
-        ],
+    # "LNO-20181106-192332-146-4":[
+    #     {"arr_region_rows":[0, -1], "arr_region_cols":[150, 350], "abs_region_rows":[0, -1], "abs_region_cols":[220, 280], "cutoffs":[0.95, 0.95], "smfac":25},
+    #     {"arr_region_rows":[0, -1], "arr_region_cols":[1050, 1350], "abs_region_rows":[0, -1], "abs_region_cols":[1110, 1200], "cutoffs":[0.95, 0.95], "smfac":25},
+    #     {"arr_region_rows":[0, -1], "arr_region_cols":[2300, 2600], "abs_region_rows":[0, -1], "abs_region_cols":[2410, 2500], "cutoffs":[0.95, 0.95], "smfac":25},
+    #     {"arr_region_rows":[0, -1], "arr_region_cols":[2800, 3100], "abs_region_rows":[0, -1], "abs_region_cols":[2910, 2980], "cutoffs":[0.95, 0.95], "smfac":25},
+    #     {"blaze_rows":[150, 1310]}
+    #     ],
     
-    "LNO-20181106-192332-161-4":[
-        {"arr_region_rows":[0, -1], "arr_region_cols":[100, 400], "abs_region_rows":[0, 1600], "abs_region_cols":[210, 280], "cutoffs":[0.98, 0.98], "smfac":25},
-        {"arr_region_rows":[0, -1], "arr_region_cols":[300, 550], "abs_region_rows":[0, -1], "abs_region_cols":[380, 470], "cutoffs":[0.98, 0.98], "smfac":25},
-        {"arr_region_rows":[0, -1], "arr_region_cols":[700, 1000], "abs_region_rows":[0, -1], "abs_region_cols":[840, 930], "cutoffs":[0.98, 0.98], "smfac":25},
-        {"arr_region_rows":[0, -1], "arr_region_cols":[2000, 2200], "abs_region_rows":[0, -1], "abs_region_cols":[2040, 2140], "cutoffs":[0.98, 0.98], "smfac":25},
-        {"arr_region_rows":[0, -1], "arr_region_cols":[2200, 2400], "abs_region_rows":[0, -1], "abs_region_cols":[2260, 2340], "cutoffs":[0.98, 0.98], "smfac":25},
-        {"arr_region_rows":[0, -1], "arr_region_cols":[2300, 2500], "abs_region_rows":[0, -1], "abs_region_cols":[2340, 2420], "cutoffs":[0.98, 0.98], "smfac":25},
-        {"arr_region_rows":[0, -1], "arr_region_cols":[2520, 2850], "abs_region_rows":[0, 1300], "abs_region_cols":[2530, 2610], "cutoffs":[0.98, 0.98], "smfac":25},
-        {"blaze_rows":[1250]}
-        ],
+    # "LNO-20181106-192332-161-4":[
+    #     {"arr_region_rows":[0, -1], "arr_region_cols":[100, 400], "abs_region_rows":[0, 1600], "abs_region_cols":[210, 280], "cutoffs":[0.98, 0.98], "smfac":25},
+    #     {"arr_region_rows":[0, -1], "arr_region_cols":[300, 550], "abs_region_rows":[0, -1], "abs_region_cols":[380, 470], "cutoffs":[0.98, 0.98], "smfac":25},
+    #     {"arr_region_rows":[0, -1], "arr_region_cols":[700, 1000], "abs_region_rows":[0, -1], "abs_region_cols":[840, 930], "cutoffs":[0.98, 0.98], "smfac":25},
+    #     {"arr_region_rows":[0, -1], "arr_region_cols":[2000, 2200], "abs_region_rows":[0, -1], "abs_region_cols":[2040, 2140], "cutoffs":[0.98, 0.98], "smfac":25},
+    #     {"arr_region_rows":[0, -1], "arr_region_cols":[2200, 2400], "abs_region_rows":[0, -1], "abs_region_cols":[2260, 2340], "cutoffs":[0.98, 0.98], "smfac":25},
+    #     {"arr_region_rows":[0, -1], "arr_region_cols":[2300, 2500], "abs_region_rows":[0, -1], "abs_region_cols":[2340, 2420], "cutoffs":[0.98, 0.98], "smfac":25},
+    #     {"arr_region_rows":[0, -1], "arr_region_cols":[2520, 2850], "abs_region_rows":[0, 1300], "abs_region_cols":[2530, 2610], "cutoffs":[0.98, 0.98], "smfac":25},
+    #     {"blaze_rows":[1250]}
+    #     ],
     
     
     # "LNO-20181106-195839-170-4":[
@@ -254,14 +269,86 @@ solar_line_dict = {
     #         {"arr_region_rows":[0, -1], "arr_region_cols":[0, -1], "abs_region_rows":[0, -1], "abs_region_cols":[0, -1], "cutoffs":[0.98, 0.98], "smfac":25},
     #         ],
 
+
+
+
+    # "SO-20180716-000706-178-4":[
+    #         {"arr_region_rows":[0, -1], "arr_region_cols":[500, 900], "abs_region_rows":[0, -1], "abs_region_cols":[680, 750], "cutoffs":[0.97, 0.97], "smfac":25},
+    #         {"arr_region_rows":[0, -1], "arr_region_cols":[1000, 1400], "abs_region_rows":[0, -1], "abs_region_cols":[1220, 1290], "cutoffs":[0.97, 0.97], "smfac":25},
+    #         {"blaze_rows":[1100, 1500]}
+    #         ],
+    
+    "SO-20181010-084333-184-4":[
+            {"arr_region_rows":[0, -1], "arr_region_cols":[1200, 1600], "abs_region_rows":[0, -1], "abs_region_cols":[1310, 1420], "cutoffs":[0.97, 0.97], "smfac":25},
+            {"arr_region_rows":[0, -1], "arr_region_cols":[1300, 1800], "abs_region_rows":[0, -1], "abs_region_cols":[1440, 1520], "cutoffs":[0.97, 0.97], "smfac":25},
+            {"blaze_rows":[1500]}
+            ],
+            
+    # "SO-20181114-084251-186-4":[
+    #         {"arr_region_rows":[0, -1], "arr_region_cols":[800, 1200], "abs_region_rows":[0, -1], "abs_region_cols":[940, 1020], "cutoffs":[0.98, 0.98], "smfac":25},
+    #         {"arr_region_rows":[0, -1], "arr_region_cols":[1200, 1600], "abs_region_rows":[0, -1], "abs_region_cols":[1330, 1410], "cutoffs":[0.98, 0.98], "smfac":25},
+    #         {"arr_region_rows":[0, -1], "arr_region_cols":[1300, 1700], "abs_region_rows":[0, -1], "abs_region_cols":[1440, 1515], "cutoffs":[0.98, 0.98], "smfac":25},
+    #         {"arr_region_rows":[0, -1], "arr_region_cols":[2700, 3200], "abs_region_rows":[0, -1], "abs_region_cols":[2930, 3030], "cutoffs":[0.98, 0.98], "smfac":25},
+    #         {"blaze_rows":[]}
+    #         ],
+    
+
+    # "SO-20181206-171850-181-4":[
+    #         {"arr_region_rows":[0, -1], "arr_region_cols":[0, 400], "abs_region_rows":[0, -1], "abs_region_cols":[170, 260], "cutoffs":[0.98, 0.98], "smfac":25},
+    #         {"arr_region_rows":[0, -1], "arr_region_cols":[2000, 2500], "abs_region_rows":[0, -1], "abs_region_cols":[2220, 2350], "cutoffs":[0.98, 0.98], "smfac":25},
+    #         {"blaze_rows":[390]}
+    #         ],
+
+    
+    # "SO-20190416-024455-184-4":[
+    #         {"arr_region_rows":[0, -1], "arr_region_cols":[1100, 1500], "abs_region_rows":[0, -1], "abs_region_cols":[1240, 1340], "cutoffs":[0.98, 0.98], "smfac":25},
+    #         {"arr_region_rows":[0, -1], "arr_region_cols":[1200, 1600], "abs_region_rows":[0, -1], "abs_region_cols":[1360, 1430], "cutoffs":[0.98, 0.98], "smfac":25},
+    #         {"arr_region_rows":[0, -1], "arr_region_cols":[1700, 2200], "abs_region_rows":[0, -1], "abs_region_cols":[1910, 2020], "cutoffs":[0.98, 0.98], "smfac":25},
+    #         {"blaze_rows":[1500]}
+    #         ],
+
+    # "SO-20210226-085144-175-4":[
+    #         {"arr_region_rows":[0, -1], "arr_region_cols":[0, -1], "abs_region_rows":[0, -1], "abs_region_cols":[0, -1], "cutoffs":[0.98, 0.98], "smfac":25},
+    #         {"blaze_rows":[]}
+    #         ],
+
+    # "SO-20210226-085144-178-4":[
+    #         {"arr_region_rows":[0, -1], "arr_region_cols":[0, -1], "abs_region_rows":[0, -1], "abs_region_cols":[0, -1], "cutoffs":[0.98, 0.98], "smfac":25},
+    #         {"blaze_rows":[]}
+    #         ],
+
+    # "SO-20211105-155547-178-4":[
+    #         {"arr_region_rows":[0, -1], "arr_region_cols":[0, -1], "abs_region_rows":[0, -1], "abs_region_cols":[0, -1], "cutoffs":[0.98, 0.98], "smfac":25},
+    #         {"blaze_rows":[]}
+    #         ],
+
+    # "SO-20211105-155547-181-4":[
+    #         {"arr_region_rows":[0, -1], "arr_region_cols":[1900, 2400], "abs_region_rows":[0, -1], "abs_region_cols":[2090, 2300], "cutoffs":[0.98, 0.98], "smfac":25},
+    #         {"blaze_rows":[390]}
+    #         ],
+    
+    # "SO-20230112-084925-178-4":[
+    #         {"arr_region_rows":[0, -1], "arr_region_cols":[0, -1], "abs_region_rows":[0, -1], "abs_region_cols":[0, -1], "cutoffs":[0.98, 0.98], "smfac":25},
+    #         {"blaze_rows":[]}
+    #         ],
+    
+    # "SO-20230112-084925-181-4":[
+    #         {"arr_region_rows":[0, -1], "arr_region_cols":[1200, 1500], "abs_region_rows":[0, -1], "abs_region_cols":[1320, 1400], "cutoffs":[0.98, 0.98], "smfac":25},
+    #         {"arr_region_rows":[0, -1], "arr_region_cols":[1900, 2400], "abs_region_rows":[0, -1], "abs_region_cols":[2070, 2230], "cutoffs":[0.98, 0.98], "smfac":25},
+    #         {"blaze_rows":[360]}
+    #         ],    
+
 }
 
 
 
-# code to make the dictionary above
-# for f in [f for f in os.listdir(os.path.join(MINISCAN_PATH, "lno")) if ".h5" in f]:
+# # code to make the dictionary above
+# channel = "so"
+# # channel = "lno"
+# for f in [f for f in os.listdir(os.path.join(MINISCAN_PATH, channel)) if "-4.h5" in f]:
 #     s = '''"%s":[
 #         {"arr_region_rows":[0, -1], "arr_region_cols":[0, -1], "abs_region_rows":[0, -1], "abs_region_cols":[0, -1], "cutoffs":[0.98, 0.98], "smfac":25},
+#         {"blaze_rows":[]}
 #         ],''' %(os.path.splitext(f)[0])
     
 #     print(s)
@@ -270,9 +357,11 @@ solar_line_dict = {
 
 
 def sinefunction(x, a, b, c, d, e):
-    return a + (b * np.sin(x*np.pi/180.0 + c + e*x)) + d*x
+    """modified sine function for fitting to corrected miniscan columns"""
+    return a + (b * np.sin(x*np.pi/180.0 + c*x + d)) + e*x
 
 def index(list_, value):
+    """get index of value in the list, or -1 if not in list"""
     try:
         ix = list_.index(value)
     except ValueError:
@@ -281,12 +370,12 @@ def index(list_, value):
 
 
 if define_edges:
-    plot = ["uncorrected array", "residual array", "corrected array", "corrected array 2"]
+    plot = ["fit coeffs", "uncorrected array", "residual array", "corrected array", "corrected array 2"]
     naxes = [2,2]
 
-# else:
-#     plot = ["absorptions"]
-#     naxes = [1,1]
+else:
+    plot = ["absorptions"]
+    naxes = [1,1]
 
 #clear files
 with open(AOTF_OUTPUT_PATH, "w") as f:
@@ -311,14 +400,18 @@ for h5_prefix, solar_line_data_all in solar_line_dict.items(): #loop through fil
     aotf_solar_line_data = [solar_line_data for solar_line_data in solar_line_data_all if "arr_region_rows" in solar_line_data.keys()]
     blaze_solar_line_data = [solar_line_data for solar_line_data in solar_line_data_all if "blaze_rows" in solar_line_data.keys()][0]
     
-    for solar_line_data in aotf_solar_line_data: #loop through list of dictionaries
     
-        arr_region_rows = solar_line_data["arr_region_rows"]
-        arr_region_cols = solar_line_data["arr_region_cols"]
-        abs_region_rows = solar_line_data["abs_region_rows"]
-        abs_region_cols = solar_line_data["abs_region_cols"]
-        cutoffs = solar_line_data["cutoffs"]
-        smfac = solar_line_data["smfac"]
+    if define_edges: #just run through once to define edges
+        aotf_solar_line_data = aotf_solar_line_data[0:1]
+    
+    for solar_line_data in aotf_solar_line_data: #loop through list of dictionaries, one per absorption line
+    
+        arr_region_rows = solar_line_data["arr_region_rows"][:]
+        arr_region_cols = solar_line_data["arr_region_cols"][:]
+        abs_region_rows = solar_line_data["abs_region_rows"][:]
+        abs_region_cols = solar_line_data["abs_region_cols"][:]
+        cutoffs = solar_line_data["cutoffs"][:]
+        smfac = solar_line_data["smfac"] #smoothing factor
     
     
     
@@ -332,6 +425,11 @@ for h5_prefix, solar_line_data_all in solar_line_dict.items(): #loop through fil
             abs_region_rows[1] = np.min([a.shape[0] for a in arrs])
         if abs_region_cols[1] == -1 or define_edges:
             abs_region_cols[1] = np.min([a.shape[1] for a in arrs])
+        if define_edges:
+            arr_region_rows[0] = 0
+            arr_region_cols[0] = 0
+            abs_region_rows[0] = 0
+            abs_region_cols[0] = 0
         
     
         #cut the unwanted edges from the array to speed up sine fitting
@@ -366,6 +464,8 @@ for h5_prefix, solar_line_data_all in solar_line_dict.items(): #loop through fil
             
             
             
+        
+            
             if define_edges:
                 fits = np.zeros((5, arr.shape[1]))
                 residual = np.copy(arr)
@@ -377,7 +477,8 @@ for h5_prefix, solar_line_data_all in solar_line_dict.items(): #loop through fil
                     
                     
                     smodel = Model(sinefunction)
-                    result = smodel.fit(y, x=x, a=0, b=30000, c=0, d=0, e=0)
+                    result = smodel.fit(y, x=x, a=sinc_apriori["a"], b=sinc_apriori["b"], c=sinc_apriori["c"], d=sinc_apriori["d"], e=sinc_apriori["e"])
+                    # print(result.best_values)
                     
                     yfit = result.best_fit
                     # print(result.fit_report())
@@ -393,7 +494,8 @@ for h5_prefix, solar_line_data_all in solar_line_dict.items(): #loop through fil
                     
                 ix = index(plot, "residual array")
                 if ix > -1:
-                    im = ax1[ix].imshow(residual, aspect="auto")
+                    vmax = np.min((np.nanmax(residual), 1.2))
+                    im = ax1[ix].imshow(residual, aspect="auto", vmax=vmax)
                     plt.colorbar(im, ax=ax1[ix]) 
                     ax1[ix].set_title("Corrected 1 miniscan residuals")
                     
@@ -420,7 +522,7 @@ for h5_prefix, solar_line_data_all in solar_line_dict.items(): #loop through fil
                     
                     
                     smodel = Model(sinefunction)
-                    result = smodel.fit(y, x=x, nan_policy="omit", a=0, b=30000, c=0, d=0, e=0)
+                    result = smodel.fit(y, x=x, nan_policy="omit", a=sinc_apriori["a"], b=sinc_apriori["b"], c=sinc_apriori["c"], d=sinc_apriori["d"], e=sinc_apriori["e"])
                     
                     yfit = result.best_fit
                 
@@ -442,6 +544,34 @@ for h5_prefix, solar_line_data_all in solar_line_dict.items(): #loop through fil
                     for j in range(5):
                         axes1[j].set_title("Fit 2 coefficient %i" %j)
                         axes1[j].plot(fits2[j, :])
+                        
+                
+                """temp code to plot first coeff and smooth"""
+                plt.figure()
+                plt.plot(fits2[0, :])
+                smooth = savgol_filter(fits2[0, :], 99, 1)
+                plt.plot(smooth)
+                print([fits2[0, i] for i in solar_line_data["abs_region_cols"]])
+                print([smooth[i] for i in solar_line_data["abs_region_cols"]])
+                
+                #save blaze to file
+                np.savetxt("%s_fit_coeff0.txt" %h5_prefix, smooth)
+
+                plt.figure()
+                plt.plot(fits2[4, :])
+                smooth = savgol_filter(fits2[4, :], 899, 1)
+                plt.plot(smooth)
+                print([fits2[4, i] for i in solar_line_data["abs_region_cols"]])
+                print([smooth[i] for i in solar_line_data["abs_region_cols"]])
+
+
+
+
+
+
+
+
+
                 
                 ix = index(plot, "residual array 2")
                 if ix > -1:
@@ -461,53 +591,124 @@ for h5_prefix, solar_line_data_all in solar_line_dict.items(): #loop through fil
                     plt.colorbar(im, ax=ax1[ix]) 
                     ax1[ix].set_title("Corrected 2 miniscan array cutoff=%0.3f" %cutoff)
                     
-                #find rows with nans and plot some of them
-                nan_row_ixs = np.where(np.isnan(np.mean(arr3, axis=1)))[0]
+                # #find rows with nans and plot some of them - replaced by normalised flattened spectra
+                # nan_row_ixs = np.where(np.isnan(np.mean(arr3, axis=1)))[0]
+                # plt.figure()
+                # for i in np.linspace(0, len(nan_row_ixs)-1, num=10):
+                #     plt.plot(np.arange(arr_region_cols[0], arr_region_cols[1]), arr3[nan_row_ixs[int(i)], :], label=nan_row_ixs[int(i)])
+                # plt.legend()
+                
+                #make normalised rows
+                nanmax = np.nanmax(arr3, axis=1)
+                arr3_norm = arr3 / np.repeat(nanmax, arr3.shape[1]).reshape((-1, arr3.shape[1]))
+                arr3_norm_mean = np.nanmean(arr3_norm, axis=0)
+                
+                arr4 = arr3 / arr3_norm_mean
+                # plot horizontally normalised spectra i.e. blaze function removed
+                # plt.figure()
+                # plt.imshow(arr4)
+
+                #find rows with nans and plot some of them - plot flattened (blaze removed) normalised spectra
+                nan_row_ixs = np.where(np.isnan(np.mean(arr4, axis=1)))[0]
                 plt.figure()
                 for i in np.linspace(0, len(nan_row_ixs)-1, num=10):
-                    plt.plot(np.arange(arr_region_cols[0], arr_region_cols[1]), arr3[nan_row_ixs[int(i)], :], label=nan_row_ixs[int(i)])
+                    plt.plot(np.arange(arr_region_cols[0], arr_region_cols[1]), arr4[nan_row_ixs[int(i)], :]/np.nanmean(arr4[nan_row_ixs[int(i)], :]), label=nan_row_ixs[int(i)])
                 plt.legend()
-                
+                plt.ylim((0.8, 1.2))
             
     
-            else:        
-                arr4 = np.zeros_like(arr)
-                for i in range(arr.shape[1]):
-                    arr4[:, i] = savgol_filter(arr[:, i], smfac, 1)
+            else:       
+                # #get subset of arr, make an emtpy copy
+                # arr4 = np.zeros_like(arr)
                 
+                # #smooth each column with sav gol filter
+                # for i in range(arr.shape[1]):
+                #     arr4[:, i] = savgol_filter(arr[:, i], smfac, 1)
                 
-                col_edges = [abs_region_cols[0]-arr_region_cols[0], abs_region_cols[1]-arr_region_cols[0]]
-                row_edges = [abs_region_rows[0]-arr_region_rows[0], abs_region_rows[1]-arr_region_rows[0]]
-                col_abs = range(col_edges[0], col_edges[1])
-                row_abs = range(row_edges[0], row_edges[1])
+                # #get indices of edges within the subarray
+                # col_edges = [abs_region_cols[0]-arr_region_cols[0], abs_region_cols[1]-arr_region_cols[0]]
+                # row_edges = [abs_region_rows[0]-arr_region_rows[0], abs_region_rows[1]-arr_region_rows[0]]
+                # col_abs = range(col_edges[0], col_edges[1])
+                # row_abs = range(row_edges[0], row_edges[1])
                 
-                col_side_values = np.array([arr[i, (col_edges[0], col_edges[1])] for i in row_abs])
+                # #N x 2 array containing the first and last columns of the subarray
+                # #need to use loop to convert range to indices for 2d indexing
+                # col_side_values = np.array([arr[i, (col_edges[0], col_edges[1])] for i in row_abs])
                 
-                arr_cont = np.array([np.interp(col_abs, col_edges, col_side_values[i, :]) for i in range(col_side_values.shape[0])])
-                arr_abs = np.array(arr4[row_edges[0]:(row_edges[1]), col_edges[0]:(col_edges[1])])
+                # #arr of continuum rows
+                # arr_cont = np.array([np.interp(col_abs, col_edges, col_side_values[i, :]) for i in range(col_side_values.shape[0])])
+                # #arr of rows containing the absorption
+                # arr_abs = np.array(arr4[row_edges[0]:(row_edges[1]), col_edges[0]:(col_edges[1])])
                 
-                arr_sub = arr_cont - arr_abs
+                # #subtract to leave the continuum-corrected absorption
+                # arr_sub = arr_cont - arr_abs
                 
-                traps = integrate.trapezoid(arr_sub, axis=1)
+                # #integrate under the curve
+                # traps = integrate.trapezoid(arr_sub, axis=1)
                 
-                #get aotf frequency and wavenumbers
-                max_abs_col_ix = np.argmax(np.mean(arr_sub, axis=0)) #column ix with deepest absorption
-                aotf_peak_col = aotf_cut[:, max_abs_col_ix + col_edges[0]]
+                # #get aotf frequency and wavenumbers
+                # max_abs_col_ix = np.argmax(np.mean(arr_sub, axis=0)) #column ix with deepest absorption
+                # aotf_peak_col = aotf_cut[:, max_abs_col_ix + col_edges[0]]
                 
-                if channel == "lno":
-                    aotf_nu = [nu0_aotf(A) for A in aotf_peak_col[row_abs]]
-                if channel == "so":
-                    aotf_nu = [aotf_peak_nu(A) for A in aotf_peak_col[row_abs]] #needs temperature
+                # if channel == "lno":
+                #     aotf_nu = [nu0_aotf(A) for A in aotf_peak_col[row_abs]]
+                # if channel == "so":
+                #     aotf_nu = [aotf_peak_nu(A, 0.0) for A in aotf_peak_col[row_abs]] #needs temperature
+                    
+                # #test: fit sine to edges, try to fit first onto second
+                # #two steps: multiply by blaze from coefficient 0, then correct for small slope difference (coeff 4)
+                # plt.figure()
+                # xs = []
+                # ys = []
+                # for i in range(2):
+                #     y = col_side_values[:, i]
+                #     x = np.arange(len(y))
                     
                     
+                #     if i == 0:
+                #         coeff4 = [-0.725064, 413.378]#-5.429171805988111
+                #         scaler = 89954.07674925645 / 77807.4163744896
+                #     if i == 1:
+                #         coeff4 = [0.0]#-5.098763716017966
+                #         scaler = 1.0
+                #     slope = np.polyval(coeff4, x)
+                #     y *= scaler #from smoothed coeff 0
+                #     y -= slope
                     
+                #     # smodel = Model(sinefunction)
+                #     # result = smodel.fit(y, x=x, a=sinc_apriori["a"], b=sinc_apriori["b"], c=sinc_apriori["c"], d=sinc_apriori["d"], e=sinc_apriori["e"])
+                #     # yfit = result.best_fit
 
+                #     plt.plot(x, y)
+                #     # plt.plot(x, yfit)
+                #     plt.title("Fit vs raw columns %i and %i" %(solar_line_data["abs_region_cols"][0], solar_line_data["abs_region_cols"][1]))
+                    
+                #     xs.append(x)
+                #     ys.append(y)
+                    
+                # xs = np.asarray(xs)
+                # ys = np.asarray(ys)
+                # plt.figure()
+                # plt.plot(xs[0, :], ys[0, :]-ys[1, :])
 
-                savgol = savgol_filter(traps, 125, 2)
+                # coeffs = np.polyfit(xs[0, :], ys[0, :]-ys[1, :], 1)
+                # polyval = np.polyval(coeffs, xs[0, :])
+                # plt.plot(xs[0, :], polyval)
+
+                # #assume slope difference between columns is linear
+                # # find slope difference from linear polyfit to plt.plot(col_side_values[:, 1]-col_side_values[:, 0])
+                
+    
+
+                # savgol = savgol_filter(traps, 125, 2)
+                
+                aotf_nu, traps, savgol = trap_absorption(arr, aotf_cut, channel, h5_prefix, abs_region_cols, abs_region_rows, arr_region_cols, arr_region_rows)
                 
                 if "absorptions" in plot:
                     ax1[0][0].plot(aotf_nu, traps)
                     ax1[0][0].plot(aotf_nu, savgol)
+                    
+                # stop()
                 
                 aotf_max = np.max(savgol)
                 line = "\t".join(["%0.4f" %i for i in aotf_nu]) + "\t" + "\t".join(["%0.6f" %(i/aotf_max) for i in savgol])
@@ -515,60 +716,54 @@ for h5_prefix, solar_line_data_all in solar_line_dict.items(): #loop through fil
                     f.write(line+"\n")
 
     #find blaze functions
-    blaze_row_indices = blaze_solar_line_data["blaze_rows"]
-    for blaze_row_index in blaze_row_indices:
-        for rep, arr in enumerate(arrs):
-            blaze_hr = arr[blaze_row_index, :]
-    
-            savgol = savgol_filter(blaze_hr, 125, 2)
-            blaze_max = np.max(savgol)
-            
-            
-            aotf_central_col = aotf[blaze_row_index, int(aotf.shape[1]/2)]
-            
-            line = "%0.4f\t" %aotf_central_col + "\t".join(["%0.6f" %(i/blaze_max) for i in savgol])
-            with open(BLAZE_OUTPUT_PATH, "a") as f:
-                f.write(line+"\n")
+    if not define_edges:
+        blaze_row_indices = blaze_solar_line_data["blaze_rows"]
+        for blaze_row_index in blaze_row_indices:
+            for rep, arr in enumerate(arrs):
+                blaze_hr = arr[blaze_row_index, :]
+        
+                savgol = savgol_filter(blaze_hr, 125, 2)
+                blaze_max = np.max(savgol)
+                
+                
+                aotf_central_col = aotf[blaze_row_index, int(aotf.shape[1]/2)]
+                
+                line = "%0.4f\t" %aotf_central_col + "\t".join(["%0.6f" %(i/blaze_max) for i in savgol])
+                with open(BLAZE_OUTPUT_PATH, "a") as f:
+                    f.write(line+"\n")
 
     
                         
+# from tools.plotting.colours import get_colours
 
 
-#read in AOTFs
-aotfs = {"nu":[], "aotf":[]}
-with open(AOTF_OUTPUT_PATH, "r") as f:
-    lines = f.readlines()
-    
-for line in lines:
-    line_split = line.split("\t")
-    n_nus = int(len(line_split)/2)
-    aotfs["nu"].append(np.asfarray(line_split[0:n_nus]))
-    aotfs["aotf"].append(np.asfarray(line_split[n_nus:]))
-    
-plt.figure()
-plt.title("AOTF functions")
-plt.xlabel("Wavenumber")
-plt.ylabel("AOTF transmittance")
-plt.grid()
-for nu, aotf in zip(aotfs["nu"], aotfs["aotf"]):
-    plt.plot(nu, aotf)
+# arr_sec = arr[:, 650:800]
+# max_row = np.max(arr_sec, axis=1)
+# min_row = np.min(arr_sec, axis=1)
 
-#read in blazes
-blazes = {"aotf":[], "blaze":[]}
-with open(BLAZE_OUTPUT_PATH, "r") as f:
-    lines = f.readlines()
-    
-for line in lines:
-    line_split = line.split("\t")
-    blazes["aotf"].append(line_split[0])
-    blazes["blaze"].append(np.asfarray(line_split[1:]))
-    
-plt.figure()
-plt.title("Blaze functions")
-plt.xlabel("Pixel number")
-plt.ylabel("Blaze function")
-plt.grid()
-for aotf_freq, blaze in zip(blazes["aotf"], blazes["blaze"]):
-    plt.plot(np.linspace(0., 320., num=len(blaze)), blaze, label=aotf_freq)
+# max_row_rep = np.repeat(max_row, arr_sec.shape[1]).reshape((-1, arr_sec.shape[1]))
+# min_row_rep = np.repeat(min_row, arr_sec.shape[1]).reshape((-1, arr_sec.shape[1]))
 
-plt.legend()
+# arr_norm = (arr_sec - min_row_rep) / (max_row_rep - min_row_rep)
+# arr_norm_mean = np.mean(arr_norm, axis=0)
+
+# start_ixs = np.arange(0, 30)
+# end_ixs = np.arange(120, 150)
+# cont_ixs = np.concatenate((start_ixs, end_ixs))
+
+# polyfit = np.polyfit(cont_ixs, arr_norm_mean[cont_ixs], 2)
+# polyval = np.polyval(polyfit, np.arange(150))
+
+
+# colours = get_colours(arr_sec.shape[0])
+# for i, row in enumerate(arr_norm):
+#     plt.plot(row, alpha=0.1, color=colours[i])
+# plt.plot(polyval, "k")
+
+
+
+# plt.scatter(arr_norm.T, alpha=0.1, color=np.asarray(colours))
+
+
+# for arr_s in arr_sec:
+#     plt.plot(arr_s / max(arr_s), alpha=0.1)

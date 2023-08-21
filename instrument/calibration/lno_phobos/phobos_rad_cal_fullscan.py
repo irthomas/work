@@ -21,6 +21,12 @@ from tools.file.hdf5_functions import open_hdf5_file
 # from tools.general.normalise_values_to_range import normalise_values_to_range
 from tools.datasets.get_phobos_crism_data import get_phobos_crism_data
 
+"""decide what to plot: 
+    on first run, select -2 to show where spectra get noisy, then add good_indices to obs_type dictionary
+    then select -1 to check for bad pixels. If spikes are observed, add to bad_pixel_d
+    then 0 runs through the full calibration plotting everything
+    to just plot the final result, select option 4"""
+
 # plot_level = -2 #find where signal gets too noisy
 # plot_level = -1 #check bad pixels
 
@@ -47,12 +53,12 @@ bad_pixel_d = {
     (152, 2):[37, 40, 245],
     (154, 2):[],
     (156, 2):[78],
-    (158, 2):[92, 245],
+    (158, 2):[92, 105, 203, 245],
     
-    (146, 3):[188, 228, 121, 236, 294, ],
-    (149, 3):[292, 310, 317, 301, 258, ],
-    (152, 3):[5, 245, 129, 135, 178, ],
-    (155, 3):[125, 232, 308, 78, 254, 294, 291, ],
+    (146, 3):[13, 188, 228, 121, 151, 236, 294, 314, ],
+    (149, 3):[1, 3, 46, 92, 292, 296, 310, 317, 301, 258, ],
+    (152, 3):[5, 37, 40, 49, 129, 135, 178, 245, 266, ],
+    (155, 3):[125, 232, 308, 78, 181, 209, 254, 294, 291, ],
 
 }
 
@@ -63,10 +69,25 @@ subtract_last_bin = True
 good_indices = ""
 
 
+"""observation name:{"h5":hdf5 filename, "good_indices":frames with best signal and least noise, "good_row_indices":bins with highest signal, "orders_crism":orders to fit to CRISM spectra}"""
 obs_types = {
+    "Gap 2 orders 1 60s":{"h5":"20230713_092806_0p1a_LNO_1", "good_indices":[*range(40, 96)], "good_row_indices":[1], "orders_crism":[160, 168, 170]},
+    "Gap 3 orders 1 60s":{"h5":"20230716_061435_0p1a_LNO_1", "good_indices":[*range(1, 100)], "good_row_indices":[1], "orders_crism":[160, 169, 172]}, #frames 1-100 are good, but low signal on 1-50
+
+    "Hydration band 10":{"h5":"20230320_122418_0p1a_LNO_1", "good_indices":[*range(2, 100)], "good_row_indices":[1], "orders_crism":[158, 170, 177]},
+    "Hydration band 11":{"h5":"20230323_011917_0p1a_LNO_1", "good_indices":[*range(2, 115)], "good_row_indices":[1], "orders_crism":[158, 170, 177]},
+    "Hydration band 12":{"h5":"20230323_091017_0p1a_LNO_1", "good_indices":[*range(2, 116)], "good_row_indices":[1], "orders_crism":[158, 170, 177]},
+    "Hydration band 13":{"h5":"20230701_222009_0p1a_LNO_1", "good_indices":[*range(5, 60)], "good_row_indices":[1], "orders_crism":[158, 170, 177]},
+    "Hydration band 14":{"h5":"20230703_193210_0p1a_LNO_1", "good_indices":[*range(5, 85)], "good_row_indices":[1], "orders_crism":[158, 170, 177]},
+
+    "Carbonates 6":{"h5":"20230429_181516_0p1a_LNO_1", "good_indices":[*range(0, 94)], "good_row_indices":[1], "orders_crism":[174, 175, 176, 190, 191, 192]},
+    "Carbonates 7":{"h5":"20230505_114846_0p1a_LNO_1", "good_indices":[*range(0, 91)], "good_row_indices":[0,1], "orders_crism":[174, 175, 176, 190, 191, 192]},
+    "Carbonates 8":{"h5":"20230511_131415_0p1a_LNO_1", "good_indices":[*range(0, 80)], "good_row_indices":[1], "orders_crism":[174, 175, 176, 190, 191, 192]},
+
+
     # "Fullscan 1":{"h5":"20221011_024508_0p1a_LNO_1", "good_indices":[*range(20, 106)]},
     # "Fullscan 3 60s":{"h5":"20230223_011421_0p1a_LNO_1", "good_indices":[*range(0, 59)], "good_row_indices":range(2,4), "orders_crism":[166, 172, 178, 184]},
-    "Fullscan 4 60s":{"h5":"20230225_220121_0p1a_LNO_1", "good_indices":[*range(5, 38)], "good_row_indices":range(2,4), "orders_crism":[166, 172, 178, 184]},
+    # "Fullscan 4 60s":{"h5":"20230225_220121_0p1a_LNO_1", "good_indices":[*range(5, 38)], "good_row_indices":range(2,4), "orders_crism":[166, 172, 178, 184]},
 
     # "Hydration band 1":{"h5":"20220710_200313_0p1a_LNO_1", "good_indices":[*range(20, 149)]},
     # "Hydration band 2":{"h5":"20220713_164911_0p1a_LNO_1", "good_indices":[*range(20, 149)]},
@@ -79,70 +100,26 @@ obs_types = {
 
     # "Phyllosilicates 1":{"h5":"20220808_223604_0p1a_LNO_1", "good_indices":[*range(27, 130)]},
     # "Phyllosilicates 2":{"h5":"20220823_063050_0p1a_LNO_1", "good_indices":[*range(15, 90)]},
+
+
 }
 
 
-#fullscan
-# h5 = "20221011_024508_0p1a_LNO_1"; good_indices = [*range(20, 106)]
-
-
-#hydration
-# h5 = "20220710_200313_0p1a_LNO_1"#; good_indices = [*range(20, 149)]
-# h5 = "20220713_164911_0p1a_LNO_1"; good_indices = [*range(20, 149)]
-# h5 = "20220725_035605_0p1a_LNO_1"; good_indices = [*range(20, 127)]
-# h5 = "20220826_031920_0p1a_LNO_1"
-# h5 = "20220826_190220_0p1a_LNO_1"
-
-# #carbonates
-# h5 = "20220714_004111_0p1a_LNO_1"; good_indices = [*range(20, 113)]
-# h5 = "20220719_102309_0p1a_LNO_1"; good_indices = [*range(20, 180)]
-
-#phylo
-# h5 = "20220808_223604_0p1a_LNO_1"; good_indices = [*range(27, 130)]
-# h5 = "20220823_063050_0p1a_LNO_1"
 
 
 
 
 
-
-colour_order_dict = {
-    142:{"colour":"C0"},
-    148:{"colour":"C1"},
-    153:{"colour":"C2"},
-    154:{"colour":"C2"},
-    158:{"colour":"C3"},
-    160:{"colour":"C3"},
-    164:{"colour":"C4"},
-    166:{"colour":"C4"},
-    170:{"colour":"C5"},
-    172:{"colour":"C5"},
-    177:{"colour":"C6"},
-    178:{"colour":"C6"},
-    184:{"colour":"C7"},
-
-    174:{"colour":"C1"},
-    175:{"colour":"C2"},
-    176:{"colour":"C3"},
-    189:{"colour":"C4"},
-    190:{"colour":"C5"},
-    191:{"colour":"C6"},
-
-    192:{"colour":"C1"},
-    193:{"colour":"C2"},
-    201:{"colour":"C3"},
-}
-
-colour_bin_dict = {
-    148:{"colour":"C0"},
-    149:{"colour":"C1"},
-    150:{"colour":"C2"},
-    151:{"colour":"C3"},
-    152:{"colour":"C4"},
-    153:{"colour":"C5"},
-    154:{"colour":"C6"},
-    155:{"colour":"C7"},
-}
+# colour_bin_dict = {
+#     148:{"colour":"C0"},
+#     149:{"colour":"C1"},
+#     150:{"colour":"C2"},
+#     151:{"colour":"C3"},
+#     152:{"colour":"C4"},
+#     153:{"colour":"C5"},
+#     154:{"colour":"C6"},
+#     155:{"colour":"C7"},
+# }
 
 ls_bin_dict = {
     146:"solid",
@@ -177,6 +154,7 @@ for obs_type in obs_types.keys():
     
     print(obs_type, "orders:", ", ".join([str(i) for i in unique_orders]))
     
+    colour_order_dict = {order:{"colour":"C%i" %i} for i, order in enumerate(unique_orders)}
     
     #add offset?
     # y += 0
@@ -220,17 +198,17 @@ for obs_type in obs_types.keys():
         #plot all good spectra for a specific bin
         for bin_ in range(y.shape[1]):
             plt.figure(figsize=(14, 8))
-            plt.title("Raw spectra for bin %i" %bin_)
+            plt.title("Raw spectra for bin %i (detector row %i; binning %i)" %(bin_, unique_bins[bin_], binning))
             plt.xlabel("Pixel number")
             plt.ylabel("Signal (counts)")
             for i, y_spectrum in enumerate(y[good_indices, bin_, :]):
                 colour = colour_order_dict[orders[i]]["colour"]
                 plt.plot(y_spectrum, alpha=0.3, color=colour)
-                if np.any(y_spectrum > 100):
-                    plt.plot(y_spectrum, color="k")
-                    print(unique_bins[bin_])
+                # if np.any(y_spectrum > 100):
+                #     plt.plot(y_spectrum, color="k")
+                #     print(unique_bins[bin_])
     
-        sys.exit()
+        sys.exit() #stop execution
     
     
     
@@ -248,6 +226,7 @@ for obs_type in obs_types.keys():
     
     # stop()
     
+    """get solar calibration info from an LNO solar cal fullscan. This gives the sensitivity of the instrument in each order"""
     cal_h5 = "20201222_114725_1p0a_LNO_1_CF"
     # cal_d = {order:rad_cal_order(cal_h5, order, centre_indices=None) for order in unique_orders}
     cal_d = {order:rad_cal_order(cal_h5, order, centre_indices=range(100, 300)) for order in unique_orders}
@@ -456,7 +435,7 @@ for obs_type in obs_types.keys():
     y_column_std_norm_red = {order:y_column_std_norm[order]*red_scalar for order in y_column_std_norm.keys()}
     y_column_std_norm_blue = {order:y_column_std_norm[order]*blue_scalar for order in y_column_std_norm.keys()}
     
-    
+    print("SNRs per order:", good_bin_snr)
     
     if plot_level < 5:
     

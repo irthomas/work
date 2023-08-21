@@ -11,7 +11,13 @@ NUMPY ARRAY MANIPULATIONS
 import numpy as np
 
 
-#1d N rows to 2d repeated N rows x n columns each row the same
+#1d N rows to 2d repeated N rows x nreps columns each row the same
 def arr1d_2d_same_rows(arr, nreps):
     
     return np.repeat(arr, nreps).reshape((-1, nreps))
+
+
+#1d N columns to 2d repeated N columns x nreps rows each column the same
+def arr1d_2d_same_cols(arr, nreps):
+    
+    return np.tile(arr, (nreps, 1)).T

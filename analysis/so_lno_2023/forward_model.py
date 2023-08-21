@@ -14,23 +14,17 @@ import matplotlib.pyplot as plt
 
 
 from analysis.so_lno_2023.functions.deconvolve_hapi_trans import reduce_resolution
-from analysis.so_lno_2023.functions.h5 import read_h5
-from analysis.so_lno_2023.calibration import get_calibration
 from analysis.so_lno_2023.functions.aotf_blaze_ils import make_ils
-from analysis.so_lno_2023.functions.geometry import make_path_lengths
-
-from tools.datasets.get_gem_data import get_gem_tpvmr
 from tools.spectra.hapi_functions import get_abs_coeff, hapi_transmittance
-from tools.spectra.baseline_als import baseline_als
 
-clear_hapi = True
-# clear_hapi = False
+# clear_hapi = True
+clear_hapi = False
 
 nu_step = 0.001 #cm-1
 pxs = np.arange(320)
 orders = np.arange(184, 190)
 
-plot = ["fit"]
+plot = ["fit", "cont"]
 
 
 def forward(params, channel, cal_d, h5_d, molecule_d, y_flat):

@@ -20,6 +20,10 @@ import io
 PARAMETER_GROUPS = ['Voigt_CO2']
 ISO_IDS = {"H2O":[1, 2, 3, 4, 5, 6, 129], "CO2":[7, 8, 9, 10, 11, 12, 13, 14, 121, 15, 120, 122], "O3":[], "CO":[26, 27, 28, 29, 30, 31], "CH4":[32, 33, 34, 35], "HCL":[52, 53, 107, 108]}
 
+MOL_H5 = "mol_lut.h5"
+
+LUT = True
+LUT = False
 
 def make_table_name(molecule, pressure):
     table_name = "tmp/%s_%011i" %(molecule, int(pressure*1e9))
@@ -28,9 +32,9 @@ def make_table_name(molecule, pressure):
 
 def hapi_fetch(molecule, pressure, nu_range, clear=False):
     #TODO: check why Voigt_CO2 doesn't work with H2O
+    """fetch main isotopes for each molecule"""
     
     
-    """fetch main isotope for each molecule"""
     table_name = make_table_name(molecule, pressure)
     
     
@@ -43,7 +47,8 @@ def hapi_fetch(molecule, pressure, nu_range, clear=False):
         hapi.fetch_by_ids(table_name, iso_codes, nu_range[0], nu_range[1])#, ParameterGroups=PARAMETER_GROUPS)
         # print(table_name)
         # hapi.describeTable(table_name)
-
+    elif table_name in hapi.tableList():
+        print("Table name %s found in hapi tableList" %table_name)
 
 def hapi_transmittance(nu, coef, path_length_km, t, spec_res=None):
 
@@ -78,25 +83,34 @@ def hapi_gem_trans(molecule, altitude, nu_range, nu_step, isos=[1,2,3,4,5], path
     return nu, trans
     
     
+    
+    
+    
+    
 
-def get_hapi_nu_range(molecule):
-    if molecule not in hapi.tableList():
-        return [0., 0.]
+# def get_hapi_nu_range(molecule):
+#     if molecule not in hapi.tableList():
+#         return [0., 0.]
 
-    old_stdout = sys.stdout # Memorize the default stdout stream
-    sys.stdout = buffer = io.StringIO()
+#     old_stdout = sys.stdout # Memorize the default stdout stream
+#     sys.stdout = buffer = io.StringIO()
     
     
-    hapi.select(molecule)
+#     hapi.select(molecule)
     
-    sys.stdout = old_stdout
+#     sys.stdout = old_stdout
     
-    s = buffer.getvalue().split("\n")
-    s[:] = [x for x in s if x]
-    nu_start = np.float32(s[1].split()[1])
-    nu_end = np.float32(s[-1].split()[1])
+#     s = buffer.getvalue().split("\n")
+#     s[:] = [x for x in s if x]
+#     nu_start = np.float32(s[1].split()[1])
+#     nu_end = np.float32(s[-1].split()[1])
     
-    return nu_start, nu_end
+#     return nu_start, nu_end
+
+
+
+
+
 
 
 
@@ -140,11 +154,11 @@ def get_abs_coeff(molecule, nu_range, nu_step, mol_ppmv, co2_ppmv, t, pressure, 
 """examples"""
 if __name__ == "__main__":
     
-    level = 1
+#     level = 1
     
     
-    if level == 0:
-        #test basics
+#     if level == 0:
+#         #test basics
         molecule = "H2O"
         altitude = 50.
         nu_range = [3745, 3835]
@@ -155,35 +169,35 @@ if __name__ == "__main__":
         lst=12.
         t, pressure, mol_ppmv, co2_ppmv = get_gem_tpvmr(molecule, altitude, myear, ls, lat, lon, lst)
         
-        hapi_fetch(molecule, pressure, nu_range, clear=True)
-        print(hapi.tableList())
+#         hapi_fetch(molecule, pressure, nu_range, clear=True)
+#         print(hapi.tableList())
     
-        # hapi_fetch("H2O", pressure, [3745, 3835], clear=True)
-        # hapi_fetch("CO2", pressure, [3745, 3835])
-        # hapi_fetch("CO", pressure, [4000, 4500])
+#         # hapi_fetch("H2O", pressure, [3745, 3835], clear=True)
+#         # hapi_fetch("CO2", pressure, [3745, 3835])
+#         # hapi_fetch("CO", pressure, [4000, 4500])
 
-    if level == 1:    
-        molecule = "H2O"
-        altitude = 50.
-        nu_range = [3745, 3835]
-        # nu_range = [3057.02, 3081.44] #order 136
-        nu_step = 0.001
+#     if level == 1:    
+#         molecule = "H2O"
+#         altitude = 50.
+#         nu_range = [3745, 3835]
+#         # nu_range = [3057.02, 3081.44] #order 136
+#         nu_step = 0.001
         
-        # molecule = "CO"
-        # altitude = 50.
-        # nu_range = [4100, 4300]
-        # nu_step = 0.001
+#         # molecule = "CO"
+#         # altitude = 50.
+#         # nu_range = [4100, 4300]
+#         # nu_step = 0.001
         
-        # molecule = "CO2"
-        # altitude = 50.
-        # nu_range = [3349.24, 3375.99]
-        # nu_step = 0.001
+#         # molecule = "CO2"
+#         # altitude = 50.
+#         # nu_range = [3349.24, 3375.99]
+#         # nu_step = 0.001
         
-        # get gem data for given altitude and generic lat/lon/my/lst then 
-        occ_sim_nu, occ_sim = hapi_gem_trans(molecule, altitude, nu_range, nu_step, spec_res=None, isos=[1], clear=True)
-        plt.figure()
-        plt.plot(occ_sim_nu, occ_sim)
+#         # get gem data for given altitude and generic lat/lon/my/lst then 
+#         occ_sim_nu, occ_sim = hapi_gem_trans(molecule, altitude, nu_range, nu_step, spec_res=None, isos=[1], clear=True)
+#         plt.figure()
+#         plt.plot(occ_sim_nu, occ_sim)
         
-        # occ_sim_nu, occ_sim = hapi_gem_trans(molecule, altitude, nu_range, nu_step, spec_res=None, isos=[2,3,4,5], clear=True)
-        # plt.figure()
-        # plt.plot(occ_sim_nu, occ_sim)
+#         # occ_sim_nu, occ_sim = hapi_gem_trans(molecule, altitude, nu_range, nu_step, spec_res=None, isos=[2,3,4,5], clear=True)
+#         # plt.figure()
+#         # plt.plot(occ_sim_nu, occ_sim)

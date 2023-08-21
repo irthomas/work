@@ -5,6 +5,8 @@ Created on Tue Oct 25 11:13:26 2022
 @author: iant
 
 INVESTIGATE BLAZE FUNCTION VS TEMPERATURE FROM MINISCANS
+USE THIS TO CHECK THE CALIBRATION AND FITS, NOT FOR CONVERTING FILES
+USE correct_miniscan_diagonals.py TO MAKE DIAGONALLY CORRECTED H5 FILES
 """
 
 # import sys
@@ -55,28 +57,29 @@ elif channel == "LNO":
     from instrument.nomad_lno_instrument_v02 import m_aotf
 
 
-if channel == "SO":
-    # aotf_steppings = [8.0]
-    aotf_steppings = [4.0]
-    binnings = [0]
-    # starting_orders = [188]
-    starting_orders = [191]
-    # dictionary of fft_cutoff for each aotf_stepping
-    fft_cutoff_dict = {
-        1:4,
-        2:15,
-        4:15,
-        8:40,
-        }
-
-elif channel == "LNO":
-    # aotf_steppings = [8.0]
-    aotf_steppings = [4.0, 8.0]
-    binnings = [0]
-    starting_orders = [194]
-    # dictionary of fft_cutoff for each aotf_stepping
-    fft_cutoff_dict = {} #don't apply FFT - no ringing
-
+if __name__ == "__main__":
+    if channel == "SO":
+        # aotf_steppings = [8.0]
+        aotf_steppings = [4.0]
+        binnings = [0]
+        # starting_orders = [188]
+        starting_orders = [191]
+        # dictionary of fft_cutoff for each aotf_stepping
+        fft_cutoff_dict = {
+            1:4,
+            2:15,
+            4:15,
+            8:40,
+            }
+    
+    elif channel == "LNO":
+        # aotf_steppings = [8.0]
+        aotf_steppings = [4.0, 8.0]
+        binnings = [0]
+        starting_orders = [194]
+        # dictionary of fft_cutoff for each aotf_stepping
+        fft_cutoff_dict = {} #don't apply FFT - no ringing
+    
 
 
 
@@ -315,7 +318,7 @@ def get_miniscan_data_1p0a(h5_filenames):
 
 
 
-def remove_oscillations(d, cut_off=["inner"], plot=False):
+def remove_oscillations(d, fft_cutoff_dict, cut_off=["inner"], plot=False):
     """make dictionary of miniscan arrays before and after oscillation removal
     input: dictionary of raw miniscan data,
     fft_cutoff: index to start setting fft to zero (symmetrical from centre)
@@ -335,38 +338,48 @@ def remove_oscillations(d, cut_off=["inner"], plot=False):
         #     for temperature in list(d[h5_prefix][aotf_freq].keys())[0:1]:
         #         miniscan_array[i, :] = d[h5_prefix][aotf_freq][temperature] #get 2d array for 1st temperature in file
         
-        miniscan_array = d[h5_prefix]["y_rep"][0, :, :]  #get 2d array for 1st repetition in file
+        # miniscan_array = d[h5_prefix]["y_rep"][0, :, :]  #get 2d array for 1st repetition in file
+
+        n_reps = d[h5_prefix]["y_rep"].shape[0]
+        d2[h5_prefix] = {}
+        d2[h5_prefix]["nreps"] = n_reps
+        d2[h5_prefix]["aotf"] = d[h5_prefix]["a_rep"]
+        d2[h5_prefix]["t"] = np.mean(d[h5_prefix]["t_rep"])
         
         #bad pixel correction
-        miniscan_array[:, 269] = np.mean(miniscan_array[:, [268, 270]], axis=1)
+        for rep_ix in range(n_reps):
+            miniscan_array = d[h5_prefix]["y_rep"][rep_ix, :, :]  #get 2d array for 1st repetition in file
+            miniscan_array[:, 269] = np.mean(miniscan_array[:, [268, 270]], axis=1)
+            # d2[h5_prefix]["array_raw%i" %(rep_ix)] = miniscan_array
         
 
-        fft = np.fft.fft2(miniscan_array)
-        
-        if plot:
-            fig, ax = plt.subplots()
-            ax.set_title(h5_prefix)
-            ax.plot(fft.real[:, 200])
-            # ax.plot(fft.imag[:, 200])
-        
-        if "inner" in cut_off:
-            fft.real[fft_cutoff:(256-fft_cutoff), :] = 0.0
-            fft.imag[fft_cutoff:(256-fft_cutoff), :] = 0.0
+            fft = np.fft.fft2(miniscan_array)
             
-        if "outer" in cut_off:
-            fft.real[0:fft_cutoff, :] = 0.0
-            fft.real[(256-fft_cutoff):, :] = 0.0
-            fft.imag[0:fft_cutoff, :] = 0.0
-            fft.imag[(256-fft_cutoff):, :] = 0.0
-
-        if plot:
-            ax.plot(fft.real[:, 200], linestyle=":")
-            # ax.plot(fft.imag[:, 200])
-
-
-        ifft = np.fft.ifft2(fft).real
+            if plot:
+                fig, ax = plt.subplots()
+                ax.set_title(h5_prefix)
+                ax.plot(fft.real[:, 200])
+                # ax.plot(fft.imag[:, 200])
+            
+            if "inner" in cut_off:
+                fft.real[fft_cutoff:(256-fft_cutoff), :] = 0.0
+                fft.imag[fft_cutoff:(256-fft_cutoff), :] = 0.0
+                
+            if "outer" in cut_off:
+                fft.real[0:fft_cutoff, :] = 0.0
+                fft.real[(256-fft_cutoff):, :] = 0.0
+                fft.imag[0:fft_cutoff, :] = 0.0
+                fft.imag[(256-fft_cutoff):, :] = 0.0
     
-        d2[h5_prefix] = {"array_raw":miniscan_array, "array":ifft, "aotf":d[h5_prefix]["a_rep"], "t":np.mean(d[h5_prefix]["t_rep"])}
+            if plot:
+                ax.plot(fft.real[:, 200], linestyle=":")
+                # ax.plot(fft.imag[:, 200])
+    
+    
+            ifft = np.fft.ifft2(fft).real
+    
+            d2[h5_prefix]["array%i" %(rep_ix)] = ifft
+        
 
     return d2
 
@@ -717,7 +730,7 @@ if __name__ == "__main__":
     
         
     if channel == "SO":
-        d2 = remove_oscillations(d, cut_off=["inner"], plot=plot_fft)
+        d2 = remove_oscillations(d, fft_cutoff_dict, cut_off=["inner"], plot=plot_fft)
 
 
     elif channel == "LNO":

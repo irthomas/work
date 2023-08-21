@@ -11,7 +11,7 @@ Created on Wed Jun 28 21:29:24 2023
 
 
 import numpy as np
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 
 
 from analysis.so_lno_2023.functions.h5 import read_h5
@@ -25,8 +25,10 @@ from tools.spectra.baseline_als import baseline_als
 from lmfit import minimize, Parameters
 
 
-clear_hapi = True
-# clear_hapi = False
+# clear_hapi = True
+clear_hapi = False
+
+
 
 """SO"""
 h5 = "20220301_114833_1p0a_SO_A_I_186"
@@ -49,6 +51,10 @@ mol_scaler = 0.3409
 
 
 plot = ["fit"]
+
+
+
+
 
 """LNO"""
 
@@ -114,8 +120,8 @@ for molecule in molecules.keys():
 
 
 params = Parameters()
-params.add('mol_scaler', value=0.8)
+params.add('mol_scaler', value=mol_scaler)
 
-out = minimize(forward, params, args=(channel, cal_d, h5_d, molecule_d, y_flat))
+out = minimize(forward, params, args=(channel, cal_d, h5_d, molecule_d, y_flat), max_nfev=1)
 
 out.params.pretty_print()
