@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 Created on Wed Jun 28 15:57:11 2023
@@ -19,17 +20,17 @@ from tools.general.progress_bar import progress_bar
 
 
 
-regex = re.compile("20230509_04.*_SO_.*")
+regex = re.compile("20(18|19|20|21|22|23)...._.*_SO_.*")
 
 
-_, h5s, _= make_filelist(regex, "hdf5_level_0p1a", open_files=False, silent=True, path=r"C:\Users\iant\Documents\DATA\hdf5")
+_, h5s, _= make_filelist(regex, "hdf5_level_0p1a", open_files=False, silent=True)
 
 problem = {}
 
 #loop on h5 filenames
-for h5 in progress_bar(h5s):
+for h5 in h5s: #progress_bar(h5s):
     
-    h5_f = open_hdf5_file(h5, path=r"C:\Users\iant\Documents\DATA\hdf5")
+    h5_f = open_hdf5_file(h5)
 
     # bins = h5_f["Science/Bins"][:, 0]
     aotfs = h5_f["Channel/AOTFFrequency"][...]
@@ -63,5 +64,6 @@ for h5 in progress_bar(h5s):
 
     if not good:
         n_found = int(np.ceil(np.sum(np.abs(1.0e6 - ms_diff) > 10000.0) / 2.0))
+        ixs_error = np.where(np.abs(1.0e6 - ms_diff) > 10000.0)[0]
         
-        print("%s: %i errors found" %(h5, n_found))
+        print("%s: %i errors found" %(h5, n_found), ms_min, ms_max)
