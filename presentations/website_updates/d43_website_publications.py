@@ -119,7 +119,7 @@ def get_bira_pubs_by_year(year):
 
 
 
-author_name = "Vandaele" #search for this author
+author_names = ["Vandaele", "Mahieux"] #search for these authors
 
 
 html_lists = {}
@@ -132,18 +132,29 @@ for year in YEARS:
     #sort by author name
     bira_pubs = sorted(bira_pubs, key = lambda item: item['authors'])
     
-    
+    found_items = []
     
     #make html list
     h = "<h2>Publications in %i</h2><br>\n" %year
     h += "<ul>\n"
     for pub_dict in bira_pubs:
-        if author_name in pub_dict["authors"]:
-            h += "<li>\n"
-            h += "<p><b>%s</b></p>\n" % pub_dict['title']
-            h += "<p>%s</p>\n" % pub_dict['authors']
-            h += "<p>%s, Vol. %s, issue %s, %s (%i), DOI: %s</p>\n" %(pub_dict['journal'], pub_dict['volume'], pub_dict['issue'], pub_dict['pages'], year, pub_dict['doi'])
-            h += "</li><br>\n"
+        for author_name in author_names:
+            if author_name in pub_dict["authors"]:
+                
+                #check if already added
+                if pub_dict in found_items:
+                    continue
+                
+                #else add it to the list
+                else:
+                    h += "<li>\n"
+                    h += "<p><b>%s</b></p>\n" % pub_dict['title']
+                    h += "<p>%s</p>\n" % pub_dict['authors']
+                    h += "<p>%s, Vol. %s, issue %s, %s (%i), DOI: %s</p>\n" %(pub_dict['journal'], pub_dict['volume'], pub_dict['issue'], pub_dict['pages'], year, pub_dict['doi'])
+                    h += "</li><br>\n"
+                    
+                    found_items.append(pub_dict)
+                    
     h += "</ul>\n"
             
     html_lists[year] = h
