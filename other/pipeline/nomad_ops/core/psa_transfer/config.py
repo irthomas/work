@@ -16,44 +16,44 @@ windows = platform.system() == "Windows"
 
 
 
-PSA_CAL_VERSION = "3.0"
-OLD_CAL_VERSIONS = ["2.0", "1.0"]
+PSA_CAL_VERSION = "3.1"
+OLD_CAL_VERSIONS = ["3.0", "2.0", "1.0"]
 
 
 #logs to ignore. When a version is old, add the log filenames to this list
 #not yet implemented
-LOGS_TO_IGNORE = [
-    'nmd-pi-delivery.log.20200610',
-    'nmd-pi-delivery.log.20200612',
-    'nmd-pi-delivery.log.20200616',
-    'nmd-pi-delivery.log.20200617',
-    'nmd-pi-delivery.log.20200618',
-    'nmd-pi-delivery.log.20200620',
-    'nmd-pi-delivery.log.20200621',
-    'nmd-pi-delivery.log.20200622',
-    'nmd-pi-delivery.log.20200623',
-    'nmd-pi-delivery.log.20200624',
-    'nmd-pi-delivery.log.20200625',
-    'nmd-pi-delivery.log.20200626',
-    'nmd-pi-delivery.log.20200627',
-    'nmd-pi-delivery.log.20200628',
-    'nmd-pi-delivery.log.20200827',
-    'nmd-pi-delivery.log.20200828',
-    'nmd-pi-delivery.log.20200829',
-    'nmd-pi-delivery.log.20200830',
-    'nmd-pi-delivery.log.20200831',
-    'nmd-pi-delivery.log.20200901',
-    'nmd-pi-delivery.log.20200902',
-    'nmd-pi-delivery.log.20201008',
-    'nmd-pi-delivery.log.20210106',
-    'nmd-pi-delivery.log.20210107',
-    'nmd-pi-delivery.log.20210108',
-    'nmd-pi-delivery.log.20210109',
-    'nmd-pi-delivery.log.20210115',
-    'nmd-pi-delivery.log.20210116',
-    'nmd-pi-delivery.log.20210119',
-    'nmd-pi-delivery.log.20210120'
- ]
+# LOGS_TO_IGNORE = [
+#     'nmd-pi-delivery.log.20200610',
+#     'nmd-pi-delivery.log.20200612',
+#     'nmd-pi-delivery.log.20200616',
+#     'nmd-pi-delivery.log.20200617',
+#     'nmd-pi-delivery.log.20200618',
+#     'nmd-pi-delivery.log.20200620',
+#     'nmd-pi-delivery.log.20200621',
+#     'nmd-pi-delivery.log.20200622',
+#     'nmd-pi-delivery.log.20200623',
+#     'nmd-pi-delivery.log.20200624',
+#     'nmd-pi-delivery.log.20200625',
+#     'nmd-pi-delivery.log.20200626',
+#     'nmd-pi-delivery.log.20200627',
+#     'nmd-pi-delivery.log.20200628',
+#     'nmd-pi-delivery.log.20200827',
+#     'nmd-pi-delivery.log.20200828',
+#     'nmd-pi-delivery.log.20200829',
+#     'nmd-pi-delivery.log.20200830',
+#     'nmd-pi-delivery.log.20200831',
+#     'nmd-pi-delivery.log.20200901',
+#     'nmd-pi-delivery.log.20200902',
+#     'nmd-pi-delivery.log.20201008',
+#     'nmd-pi-delivery.log.20210106',
+#     'nmd-pi-delivery.log.20210107',
+#     'nmd-pi-delivery.log.20210108',
+#     'nmd-pi-delivery.log.20210109',
+#     'nmd-pi-delivery.log.20210115',
+#     'nmd-pi-delivery.log.20210116',
+#     'nmd-pi-delivery.log.20210119',
+#     'nmd-pi-delivery.log.20210120'
+#  ]
 
 
 UPLOAD_DATES = [
@@ -61,7 +61,8 @@ UPLOAD_DATES = [
     [datetime(2020, 11, 1), datetime(2021, 1, 20), "2.0"],
     [datetime(2021, 1, 20), datetime(2021, 1, 21), "1.0"],
     [datetime(2021, 1, 21), datetime(2021, 4, 1), "2.0"],
-    [datetime(2022, 9, 1), datetime(2030, 1, 1), "3.0"],
+    [datetime(2022, 9, 1), datetime(2022, 11, 1), "3.0"],
+    [datetime(2023, 6, 1), datetime(2030, 1, 1), "3.1"],
     ]
 
 
@@ -102,4 +103,4 @@ ESA_PSA_CAL_URL = ESA_URL + "nmd/tmp0/"
 LOG_FORMAT_STR = "%Y-%m-%d %H:%M:%S"
 
 
-N_FILES_PER_ZIP = 200
+N_FILES_PER_ZIP = 500

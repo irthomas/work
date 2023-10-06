@@ -7,25 +7,28 @@ Created on Tue Oct 25 11:13:26 2022
 INVESTIGATE BLAZE FUNCTION VS TEMPERATURE FROM MINISCANS
 USE THIS TO CHECK THE CALIBRATION AND FITS, NOT FOR CONVERTING FILES
 USE correct_miniscan_diagonals.py TO MAKE DIAGONALLY CORRECTED H5 FILES
+THE FUNCTIONS HERE ARE STILL USED, DO NOT DELETE
+
 """
 
 # import sys
 import os
 import re
 import numpy as np
-from scipy.interpolate import RegularGridInterpolator
+# from scipy.interpolate import RegularGridInterpolator
 import h5py
 
 import matplotlib.pyplot as plt
-from scipy.interpolate import splrep, splev, BSpline
+# from scipy.interpolate import splrep, splev, BSpline
 
 from tools.file.hdf5_functions import make_filelist, open_hdf5_file
 from tools.general.cprint import cprint
-from tools.spectra.running_mean import running_mean_1d
+# from tools.spectra.running_mean import running_mean_1d
 
 from instrument.nomad_so_instrument_v03 import aotf_peak_nu, lt22_waven
 from instrument.nomad_lno_instrument_v02 import nu0_aotf, nu_mp
 
+from instrument.calibration.so_lno_2023.make_hr_array import make_hr_array
 
 
 
@@ -690,25 +693,6 @@ def get_diagonal_blaze_indices(px_peaks, px_ixs):
 
 
 
-def make_hr_array(array, aotfs):
-    
-    
-    array_shape = array.shape
-    x = np.arange(array_shape[0])
-    y = np.arange(array_shape[1])
-    
-    interp = RegularGridInterpolator((x, y), array,
-                                 bounds_error=False, fill_value=None, method="linear")
-    x_hr = np.arange(0, array_shape[0], 1.0/HR_SCALER)
-    y_hr = np.arange(0, array_shape[1], 1.0/HR_SCALER)
-    X, Y = np.meshgrid(x_hr, y_hr, indexing='ij')
-    
-    array_hr = interp((X, Y))
-    
-    #interpolate aotf freqs onto same grid
-    aotf_hr = np.interp(x_hr, x, aotfs)
-
-    return array_hr, aotf_hr
 
 
 #find absorptions in 2d grid
@@ -726,7 +710,6 @@ if __name__ == "__main__":
             if h5_prefixes != list(d.keys()):
                 d = get_miniscan_data_1p0a(h5_filenames)
     
-    # h5_prefixes = h5_prefixes[0:1] #TODO: remove
     
         
     if channel == "SO":
@@ -796,7 +779,7 @@ if __name__ == "__main__":
             
             #interpolate onto high res grid
             array = d2[h5_prefix]["array%i" %rep]
-            array_hr, aotf_hr = make_hr_array(array, aotfs)
+            array_hr, aotf_hr = make_hr_array(array, aotfs, HR_SCALER)
             d2[h5_prefix]["array%i_hr" %rep] = array_hr
             
             

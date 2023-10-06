@@ -3,15 +3,24 @@
 Created on Fri Feb  3 09:56:59 2023
 
 @author: iant
+
+
+WRITE HTML CODE TO ADD TO BIRA PLANETARY WEBSITE PUBLICATION LIST
+
+ADAPTED FROM PAGE: https://wiki.aeronomie.be/index.php/UV-Vis:Extract_data_from_the_ORFEO_publication_database
+
+COPY CONTENTS OF FILES ONTO EACH YEAR'S PAGE WHEN IN THE CODE EDITOR VIEW
+
+
 """
 
 import requests
 import json
  
-'''
-Purpose: produce a formatted list of all publications from BIRA-IASB for
-the current year.
-'''
+
+#list of years to get publications for
+YEARS = [2019, 2020, 2021, 2022, 2023]
+
 
 def make_publication_dict(metadata):
     '''
@@ -114,7 +123,7 @@ author_name = "Vandaele" #search for this author
 
 
 html_lists = {}
-for year in [2019, 2020, 2021, 2022, 2023]:
+for year in YEARS:
     print("Getting publications for %i" %year)
 
     #get BIRA publications
@@ -138,3 +147,8 @@ for year in [2019, 2020, 2021, 2022, 2023]:
     h += "</ul>\n"
             
     html_lists[year] = h
+
+print("Writing html output to files")
+for year, html_list in html_lists.items():
+    with open("publications_%s.txt" %year, "w", encoding="utf-8") as f:
+        f.write(html_list)

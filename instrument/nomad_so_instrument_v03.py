@@ -108,7 +108,7 @@ def aotf_func(aotf_nu, aotf_range=200.0, step_nu=0.1):
         sinc = sinc_gd(dx, width, lobe, asym, offset)
         return sinc
     
-    #2nd october slack
+    #from github
     aotfwc  = [-1.66406991e-07,  7.47648684e-04,  2.01730360e+01] # Sinc width [cm-1 from AOTF frequency cm-1]
     aotfsc  = [ 8.10749274e-07, -3.30238496e-03,  4.08845247e+00] # sidelobes factor [scaler from AOTF frequency cm-1]
     aotfac  = [-1.54536176e-07,  1.29003715e-03, -1.24925395e+00] # Asymmetry factor [scaler from AOTF frequency cm-1]

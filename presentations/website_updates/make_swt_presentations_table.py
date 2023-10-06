@@ -50,10 +50,11 @@ header_dict = {
     21:"SWT21: Virtual Meeting (29-31 March 2022)",
     22:"SWT22: BIRA-IASB, Brussels (8-10 November 2022)",
     23:"SWT23: Matsushima, Japan (14-17 March 2023)",
+    24:"SWT24: Potenza, Italy (5-7 September 2023)",
     }
 
 # swt_numbers = [20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6]
-swt_numbers = [23]
+swt_numbers = [24]
 dir_list = os.listdir(meeting_dir)
 
 
@@ -179,8 +180,11 @@ for swt_number in swt_numbers:
     h += "</table>\n"
     h += "<br>\n"
     h += "<br>\n"
+    h += "Made with presentations.website_updates.make_swt_presentations_table.py"
 # h += "</body></html>\n"
     
 with open("swt_presentations.html", "w", encoding="utf-8") as f:
     for i, line in enumerate(h):
         f.write(line)
+        
+print("Html written to swt_presentations.html")

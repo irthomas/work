@@ -13,6 +13,7 @@ from datetime import datetime
 import subprocess
 from urllib.parse import urlparse
 import shutil
+import tarfile
 
 from nomad_ops.core.psa_transfer.config import \
     MAKE_PSA_LOG_DIR, PSA_CAL_VERSION, OLD_CAL_VERSIONS, ESA_PSA_CAL_URL
@@ -93,8 +94,6 @@ def n_products_in_queue():
     return n_files
 
 
-
-
 def make_big_zip_filename(zip_filepaths, version):
     
     zip_filenames = sorted([os.path.basename(s).replace("_%s.zip" %version,"") for s in zip_filepaths])
@@ -107,10 +106,15 @@ def make_big_zip_filename(zip_filepaths, version):
     
     obs_types = []
     for zip_filename in zip_filenames:
-        if "nmd_cal_sc_so" in zip_filename:
+        if "-c" in zip_filename:
+            obs_type = "c"
+        elif "nmd_cal_sc_so" in zip_filename:
             obs_type = zip_filename.split("-")[3]
         else:
             obs_type = zip_filename.split("-")[2]
+        
+        if obs_type[0] == "1":
+            print(zip_filename)
             
         obs_types.append(obs_type[0])
     
@@ -119,3 +123,50 @@ def make_big_zip_filename(zip_filepaths, version):
     big_zip_filename = f"nmd_cal_sc_{channel_text}_{first_file_dt}-{last_file_dt}-{obs_type_text}"
 
     return big_zip_filename
+
+
+
+def transfer_files(big_zip_filepaths):
+    
+    
+    
+    #transfer big zip files to ESA tmp directory
+    esa_p_url = urlparse(ESA_PSA_CAL_URL)
+        
+    # Run a 'tar' on ESA server
+    tar_cmd =  "tar xz -b 32 -C %s" % (esa_p_url.path)
+    ssh_cmd = ["ssh", esa_p_url.netloc, tar_cmd]
+    # Run a 'tar' extract on ESA server
+    with subprocess.Popen(ssh_cmd,
+                    shell=False,
+                    stdin=subprocess.PIPE,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE) as ssh:
+        # Create a tar stream connected to the tar-extract @ ESA
+        tar = tarfile.open(fileobj=ssh.stdin, mode="w|gz", bufsize=32*512)
+        # Write files to the stream
+        for path in big_zip_filepaths:
+            n = os.path.getsize(path)
+            arcname = os.path.basename(path)
+            tar.add(path, arcname)
+            print("File added to TAR archive: %s (%.1f kB)" %(arcname, n/1000))
+            psaTransferLog(arcname)
+        tar.close()
+        print("Transfer completed")
+
+
+
+
+def move_zip_files_on_esac_server(big_zip_filepaths):
+
+    #transfer big zip files to ESA tmp directory
+    esa_p_url = urlparse(ESA_PSA_CAL_URL)
+    
+    
+    print("Moving files from /nmd/tmp0 to nmd/ directory")
+    ssh_cmd2 = ["ssh", esa_p_url.netloc, "mv nmd/tmp0/* nmd/"]
+    subprocess.Popen(ssh_cmd2,
+        shell=False,
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE)

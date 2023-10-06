@@ -4,9 +4,12 @@ Created on Mon Jun  5 12:52:02 2023
 
 @author: iant
 
-MINISCAN DIAGONAL CORRECTIONS:
+STEP 1: MINISCAN DIAGONAL CORRECTIONS:
+    SEARCH THROUGH MINISCAN OBSERVATIONS
     APPLY FFT CORRECTIONS
     GENERATE H5 FILES WITH CORRECTED DIAGONALS
+    
+    TODO: GET IT WORKING FOR 1KHZ SCANS
 
 """
 
@@ -27,8 +30,10 @@ from tools.general.progress_bar import progress
 # from instrument.nomad_so_instrument_v03 import aotf_peak_nu, lt22_waven
 # from instrument.nomad_lno_instrument_v02 import nu0_aotf, nu_mp
 
-from instrument.calibration.so_lno_2023.derive_blaze_aotf_miniscans import list_miniscan_data_1p0a, get_miniscan_data_1p0a, remove_oscillations, find_peak_aotf_pixel, get_diagonal_blaze_indices, make_hr_array
+from instrument.calibration.so_lno_2023.derive_blaze_aotf_miniscans import list_miniscan_data_1p0a, \
+    get_miniscan_data_1p0a, remove_oscillations, find_peak_aotf_pixel, get_diagonal_blaze_indices
 
+from instrument.calibration.so_lno_2023.make_hr_array import make_hr_array
 
 # inflight
 
@@ -39,8 +44,8 @@ channel = "SO"
 file_level = "hdf5_level_1p0a"
 # regex = re.compile(".*_%s_.*_CM" %channel)
 
-regex = re.compile("20.*_%s_.*_CM" %channel)
-# regex = re.compile("20191002.*_%s_.*_CM" %channel)
+regex = re.compile("20.*_%s_.*_CM" %channel) #search all files
+# regex = re.compile("20180716.*_%s_.*_CM" %channel) #search specific file
 
 # #ground
 # file_level = "hdf5_level_0p1a"
@@ -54,13 +59,12 @@ MINISCAN_PATH = os.path.normcase(r"C:\Users\iant\Documents\DATA\miniscans")
 
 
 if channel == "SO":
-    # aotf_steppings = [8.0]
     aotf_steppings = [4.0]
+    # aotf_steppings = [2.0]
     binnings = [0]
 
     starting_orders = list(range(178, 210))
     # starting_orders = [188]
-    # starting_orders = [175, 178, 181, 184, 186]
 
     # dictionary of fft_cutoff for each aotf_stepping
     fft_cutoff_dict = {
@@ -69,6 +73,8 @@ if channel == "SO":
         4:15,
         8:40,
         }
+
+
 
 elif channel == "LNO":
     # aotf_steppings = [8.0]
@@ -147,15 +153,14 @@ if __name__ == "__main__":
             
             #interpolate onto high res grid
             array = d2[h5_prefix]["array%i" %rep]
-            array_hr, aotf_hr = make_hr_array(array, aotfs)
+            array_hr, aotf_hr = make_hr_array(array, aotfs, HR_SCALER)
             d2[h5_prefix]["array%i_hr" %rep] = array_hr
-            
             
         d2[h5_prefix]["aotf_hr"] = aotf_hr
 
 
-        t_rep = [np.mean(d[h5_prefix]["t_rep"][:, rep]) for rep in range(n_reps)]
-        d2[h5_prefix]["t"] = t_rep
+        d2[h5_prefix]["t"] = [np.mean(d[h5_prefix]["t_rep"][:, rep]) for rep in range(n_reps)]
+        d2[h5_prefix]["t_range"] = [[np.min(d[h5_prefix]["t_rep"][:, rep]), np.max(d[h5_prefix]["t_rep"][:, rep])] for rep in range(n_reps)]
 
 
         
@@ -187,11 +192,14 @@ if __name__ == "__main__":
                 if np.all(blaze_diagonal_ixs < d2[h5_prefix]["array%i_hr" %rep].shape[0]):
                     diagonals.append(d2[h5_prefix]["array%i_hr" %rep][blaze_diagonal_ixs, px_ixs])
                     diagonals_aotf.append(d2[h5_prefix]["aotf_hr"][blaze_diagonal_ixs])
-
+                    
             diagonals = np.asarray(diagonals)
             diagonals_aotf = np.asarray(diagonals_aotf)
             d2[h5_prefix]["array_diag%i_hr" %rep] = diagonals
             d2[h5_prefix]["aotf_diag%i_hr" %rep] = diagonals_aotf
+            
+            # print("Diagonal shape: ", diagonals.shape)
+            # print("Diagonal AOTF shape: ", diagonals_aotf.shape)
 
     
         """Save figures and files"""
@@ -200,8 +208,10 @@ if __name__ == "__main__":
             for rep in range(d2[h5_prefix]["nreps"]):
                 f.create_dataset("array%02i" %rep, dtype=np.float32, data=d2[h5_prefix]["array_diag%i_hr" %rep], \
                                  compression="gzip", shuffle=True)
-            f.create_dataset("aotf", dtype=np.float32, data=d2[h5_prefix]["aotf_diag%i_hr" %rep], \
-                             compression="gzip", shuffle=True)
+                f.create_dataset("aotf%02i" %rep, dtype=np.float32, data=d2[h5_prefix]["aotf_diag%i_hr" %rep], \
+                                 compression="gzip", shuffle=True)
+                f.create_dataset("t%02i" %rep, dtype=np.float32, data=d2[h5_prefix]["t_range"][rep], \
+                                 compression="gzip", shuffle=True)
                 
         #save miniscan png
         plt.figure(figsize=(8, 5), constrained_layout=True)

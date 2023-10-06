@@ -46,7 +46,7 @@ planning_db_path = r"C:/Users/iant/Documents/PROGRAMS/nomad_obs/planning.db"
 # LIST_ONLY = True
 LIST_ONLY = False
 
-N_MONTHS = 2
+N_MONTHS = 4
 
 
 def connect_db(db_path):

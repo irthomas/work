@@ -93,15 +93,20 @@ def get_log_version(log_datetime):
 
 def last_process_datetime():
     """get last datetime from PSA log file contents"""
-    open_log_path = os.path.join(PATH_DB_PSA_CAL_LOG, "nmd-pi-delivery.log")
-    with open(open_log_path, "r") as f:
-        lines = f.readlines()
-        #read lines backwards to find a datetime
-        for i in range(-1, -100, -1):
-            info_datetime = re.match("\[PI_Packager\] (\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}) INFO.*", lines[i])
-            if info_datetime:
-                log_datetime = datetime.strptime(info_datetime.groups()[0], LOG_FORMAT_STR)
-                return log_datetime
-        print("Error: datetime not found in log file %s" %open_log_path)
-        return False
+    ongoing_log_filepath = os.path.join(PATH_DB_PSA_CAL_LOG, "nmd-pi-delivery.log")
+    
+    if os.path.exists(ongoing_log_filepath):
+        with open(ongoing_log_filepath, "r") as f:
+            lines = f.readlines()
+            #read lines backwards to find a datetime
+            #new ESA log format for 2022 version 3.0 onwards
+            for i in range(-1, -100, -1):
+                info_datetime = re.match("\[PI_Packager\] (\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}) INFO.*", lines[i])
+                if info_datetime:
+                    log_datetime = datetime.strptime(info_datetime.groups()[0], LOG_FORMAT_STR)
+                    return log_datetime
+            print("Error: datetime not found in log file %s" %ongoing_log_filepath)
+            return False
+    else:
+        print("Log file not found %s, continuing" %ongoing_log_filepath)
         

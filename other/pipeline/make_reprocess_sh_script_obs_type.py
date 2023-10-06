@@ -30,8 +30,9 @@ HDF5_FILENAME_FORMAT = "%Y%m%d_%H%M%S"
 
 #get list of file datetimes to reprocess from ITL db or from a hdf5 level cache.db?
 # source = "ITL"
+# source = "hdf5_level_0p1a"
 source = "hdf5_level_0p2a"
-source = "hdf5_level_1p0a"
+# source = "hdf5_level_1p0a"
 
 hdf5_filter = ".*(_SO|_LNO)_._S.*"
 # hdf5_filter = ".*_C.*"
@@ -39,8 +40,8 @@ hdf5_filter = ".*(_SO|_LNO)_._S.*"
 # hdf5_filter = ".*_UVIS_GI.*"
 
 
-# transfer_db = True
-transfer_db = False
+transfer_db = True
+# transfer_db = False
 
 start_dt = datetime(2018, 4, 21, 12, 0, 0)
 
@@ -48,7 +49,7 @@ start_dt = datetime(2018, 4, 21, 12, 0, 0)
 levels = [
     # {"in":"inserted",  "out":"raw",       "filter":""},
     # {"in":"raw",       "out":"hdf5_l01a", "filter":""},
-    # {"in":"hdf5_l01a", "out":"hdf5_l01d", "filter":".*(SO|LNO).*"},
+    {"in":"hdf5_l01a", "out":"hdf5_l01d", "filter":".*(SO|LNO).*"},
     # {"in":"hdf5_l01d", "out":"hdf5_l01e", "filter":".*(SO|LNO).*"},
     # {"in":"hdf5_l01e", "out":"hdf5_l02a", "filter":".*(SO|LNO).*"},
     # {"in":"hdf5_l01a", "out":"hdf5_l02a", "filter":".*UVIS.*"},
@@ -60,7 +61,7 @@ levels = [
     # {"in":"hdf5_l03a", "out":"hdf5_l10a", "filter":".*(SO|LNO).*"},
 
 
-    {"in":"hdf5_l01a", "out":"hdf5_l10b", "filter":".*(_SO|_LNO).*"},
+    # {"in":"hdf5_l01a", "out":"hdf5_l10b", "filter":".*(_SO|_LNO).*"},
     # {"in":"hdf5_l01a", "out":"hdf5_l10b", "filter":".*_UVIS.*"},
 
 
