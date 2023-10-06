@@ -19,7 +19,10 @@ import json
  
 
 #list of years to get publications for
-YEARS = [2019, 2020, 2021, 2022, 2023]
+YEARS = [2018, 2019, 2020, 2021, 2022, 2023]
+
+#search for these authors
+AUTHOR_NAMES = ["Vandaele", "Mahieux", "Daerden", "Vanhellemont"] 
 
 
 def make_publication_dict(metadata):
@@ -119,7 +122,6 @@ def get_bira_pubs_by_year(year):
 
 
 
-author_names = ["Vandaele", "Mahieux"] #search for these authors
 
 
 html_lists = {}
@@ -138,7 +140,7 @@ for year in YEARS:
     h = "<h2>Publications in %i</h2><br>\n" %year
     h += "<ul>\n"
     for pub_dict in bira_pubs:
-        for author_name in author_names:
+        for author_name in AUTHOR_NAMES:
             if author_name in pub_dict["authors"]:
                 
                 #check if already added
