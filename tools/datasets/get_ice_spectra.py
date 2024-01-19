@@ -17,11 +17,13 @@ from tools.plotting.colours import get_colours
 ref_dir = paths["REFERENCE_DIRECTORY"]
 
 
-h2o_filename = "hri_waterice_warren_ice.txt"#"hri_waterice_afcrl_ice.txt"
+h2o_filename = "hri_waterice_warren_ice.txt" #"hri_waterice_afcrl_ice.txt"
 co2_filename = "gsfc_co2ice_hansen.txt"
 
 h2o_filepath = os.path.join(ref_dir, h2o_filename)
 co2_filepath = os.path.join(ref_dir, co2_filename)
+
+
 
 def get_snicar_output(size_um, ice, slab_cm=10, um_range=[2., 3.8]):
     

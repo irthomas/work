@@ -8,6 +8,10 @@ Created on Wed May 18 14:08:21 2022
 READ GEM MARS DATA FROM WEBSERVER
 
 E.G. https://gem-mars.aeronomie.be/vespa-gem?myear=35&lat=-56.5&lon=111.4&ls=123.4&lst=0.6
+
+TODO: read in json version instead: 
+https://gem-mars.aeronomie.be/vespa-gem?jmyear=35&lat=-56.5&lon=111.4&ls=123.4&lst=0.6
+
 """
 import numpy as np
 import requests
@@ -15,6 +19,12 @@ from bs4 import BeautifulSoup
 from datetime import datetime
 
 import matplotlib.pyplot as plt
+
+
+#remove the annoying warning about xhtml
+from bs4.builder import XMLParsedAsHTMLWarning
+import warnings
+warnings.filterwarnings('ignore', category=XMLParsedAsHTMLWarning)
 
 
 
@@ -79,7 +89,7 @@ def get_gem_data(myear, ls, lat, lon, lst, plot=False):
     print(url)
     
     response = requests.get(url)
-    soup = BeautifulSoup(response.content, 'lxml')
+    soup = BeautifulSoup(response.content, features="lxml")
     
     header_data = soup.find_all("field")
     table_data = soup.find_all("td")

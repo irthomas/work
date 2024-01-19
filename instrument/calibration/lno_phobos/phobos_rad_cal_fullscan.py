@@ -11,7 +11,7 @@ PHOBOS FULLSCAN ANALYSIS
 import sys
 import numpy as np
 import matplotlib.pyplot as plt
-
+import json
 
 
 from instrument.nomad_lno_instrument_v01 import m_aotf
@@ -71,18 +71,23 @@ good_indices = ""
 
 """observation name:{"h5":hdf5 filename, "good_indices":frames with best signal and least noise, "good_row_indices":bins with highest signal, "orders_crism":orders to fit to CRISM spectra}"""
 obs_types = {
-    "Gap 2 orders 1 60s":{"h5":"20230713_092806_0p1a_LNO_1", "good_indices":[*range(40, 96)], "good_row_indices":[1], "orders_crism":[160, 168, 170]},
+    "Gap 2 orders 3 60s":{"h5":"20230903_022613_0p1a_LNO_1", "good_indices":[*range(1, 84)], "good_row_indices":[1], "orders_crism":[160, 168, 170]},
+
+    "Gap 2 orders 2 60s":{"h5":"20230828_010044_0p1a_LNO_1", "good_indices":[*range(0, 104)], "good_row_indices":[1], "orders_crism":[160, 168, 170]},
+    "Gap 3 orders 2 60s":{"h5":"20230830_060414_0p1a_LNO_1", "good_indices":[*range(1, 100)], "good_row_indices":[1], "orders_crism":[160, 169, 172]}, #frames 1-100 are good, but low signal on 1-50
+
+    "Gap 2 orders 1 60s":{"h5":"20230713_092806_0p1a_LNO_1", "good_indices":[*range(1, 96)], "good_row_indices":[1], "orders_crism":[160, 168, 170]},
     "Gap 3 orders 1 60s":{"h5":"20230716_061435_0p1a_LNO_1", "good_indices":[*range(1, 100)], "good_row_indices":[1], "orders_crism":[160, 169, 172]}, #frames 1-100 are good, but low signal on 1-50
 
-    "Hydration band 10":{"h5":"20230320_122418_0p1a_LNO_1", "good_indices":[*range(2, 100)], "good_row_indices":[1], "orders_crism":[158, 170, 177]},
-    "Hydration band 11":{"h5":"20230323_011917_0p1a_LNO_1", "good_indices":[*range(2, 115)], "good_row_indices":[1], "orders_crism":[158, 170, 177]},
-    "Hydration band 12":{"h5":"20230323_091017_0p1a_LNO_1", "good_indices":[*range(2, 116)], "good_row_indices":[1], "orders_crism":[158, 170, 177]},
-    "Hydration band 13":{"h5":"20230701_222009_0p1a_LNO_1", "good_indices":[*range(5, 60)], "good_row_indices":[1], "orders_crism":[158, 170, 177]},
-    "Hydration band 14":{"h5":"20230703_193210_0p1a_LNO_1", "good_indices":[*range(5, 85)], "good_row_indices":[1], "orders_crism":[158, 170, 177]},
+    # "Hydration band 10":{"h5":"20230320_122418_0p1a_LNO_1", "good_indices":[*range(2, 100)], "good_row_indices":[1], "orders_crism":[158, 170, 177]},
+    # "Hydration band 11":{"h5":"20230323_011917_0p1a_LNO_1", "good_indices":[*range(2, 115)], "good_row_indices":[1], "orders_crism":[158, 170, 177]},
+    # "Hydration band 12":{"h5":"20230323_091017_0p1a_LNO_1", "good_indices":[*range(2, 116)], "good_row_indices":[1], "orders_crism":[158, 170, 177]},
+    # "Hydration band 13":{"h5":"20230701_222009_0p1a_LNO_1", "good_indices":[*range(5, 60)], "good_row_indices":[1], "orders_crism":[158, 170, 177]},
+    # "Hydration band 14":{"h5":"20230703_193210_0p1a_LNO_1", "good_indices":[*range(5, 85)], "good_row_indices":[1], "orders_crism":[158, 170, 177]},
 
-    "Carbonates 6":{"h5":"20230429_181516_0p1a_LNO_1", "good_indices":[*range(0, 94)], "good_row_indices":[1], "orders_crism":[174, 175, 176, 190, 191, 192]},
-    "Carbonates 7":{"h5":"20230505_114846_0p1a_LNO_1", "good_indices":[*range(0, 91)], "good_row_indices":[0,1], "orders_crism":[174, 175, 176, 190, 191, 192]},
-    "Carbonates 8":{"h5":"20230511_131415_0p1a_LNO_1", "good_indices":[*range(0, 80)], "good_row_indices":[1], "orders_crism":[174, 175, 176, 190, 191, 192]},
+    # "Carbonates 6":{"h5":"20230429_181516_0p1a_LNO_1", "good_indices":[*range(0, 94)], "good_row_indices":[1], "orders_crism":[174, 175, 176, 190, 191, 192]},
+    # "Carbonates 7":{"h5":"20230505_114846_0p1a_LNO_1", "good_indices":[*range(0, 91)], "good_row_indices":[0,1], "orders_crism":[174, 175, 176, 190, 191, 192]},
+    # "Carbonates 8":{"h5":"20230511_131415_0p1a_LNO_1", "good_indices":[*range(0, 80)], "good_row_indices":[1], "orders_crism":[174, 175, 176, 190, 191, 192]},
 
 
     # "Fullscan 1":{"h5":"20221011_024508_0p1a_LNO_1", "good_indices":[*range(20, 106)]},
@@ -130,6 +135,8 @@ ls_bin_dict = {
 
 crism_d = get_phobos_crism_data()
 
+
+json_d = {}
 
 for obs_type in obs_types.keys():
     
@@ -443,22 +450,22 @@ for obs_type in obs_types.keys():
         x_plt = [10000./cal_d[order]["x_mean"] for order in y_column_mean_norm.keys()]
 
 
-        y_plt = np.array([y_column_mean_norm_red[order] for order in y_column_mean_norm.keys()])
+        y_plt1 = np.array([y_column_mean_norm_red[order] for order in y_column_mean_norm.keys()])
         # y_err = np.array([y_column_std_norm_red[order] for order in y_column_std_norm.keys()])
-        y_err = y_plt / good_bin_snr
+        y_err1 = y_plt1 / good_bin_snr
         
-        # ax2a.plot(x_plt, y_plt, color="darkred", label="LNO scaled to Phobos red")
-        ax2a.errorbar(x_plt, y=y_plt, yerr=y_err, color="darkred", capsize=2, label="LNO scaled to Phobos red")
-        ax2a.scatter(x_plt, y_plt, color="darkred")
+        # ax2a.plot(x_plt, y_pl1t, color="darkred", label="LNO scaled to Phobos red")
+        ax2a.errorbar(x_plt, y=y_plt1, yerr=y_err1, color="darkred", capsize=2, label="LNO scaled to Phobos red")
+        ax2a.scatter(x_plt, y_plt1, color="darkred")
 
-        y_plt = np.array([y_column_mean_norm_blue[order] for order in y_column_mean_norm.keys()])
+        y_plt2 = np.array([y_column_mean_norm_blue[order] for order in y_column_mean_norm.keys()])
         # y_err = np.array([y_column_std_norm_blue[order] for order in y_column_std_norm.keys()])
-        y_err = y_plt / good_bin_snr
+        y_err2 = y_plt2 / good_bin_snr
 
 
-        # ax2a.plot(x_plt, y_plt, color="darkblue", label="LNO scaled to Phobos blue")
-        ax2a.errorbar(x_plt, y=y_plt, yerr=y_err, color="darkblue", capsize=2, label="LNO scaled to Phobos blue")
-        ax2a.scatter(x_plt, y_plt, color="darkblue")
+        # ax2a.plot(x_plt, y_plt2, color="darkblue", label="LNO scaled to Phobos blue")
+        ax2a.errorbar(x_plt, y=y_plt2, yerr=y_err2, color="darkblue", capsize=2, label="LNO scaled to Phobos blue")
+        ax2a.scatter(x_plt, y_plt2, color="darkblue")
     
         ax2a.grid()
         ax2a.legend()
@@ -467,3 +474,17 @@ for obs_type in obs_types.keys():
         ax2a.set_ylabel("CRISM Phobos I/F (Fraeman 2014)")
         fig2.subplots_adjust(bottom=0.15)
         fig2.savefig("phobos_radcal_%s.png" %h5)
+        
+        # lines = []
+        json_d[h5]= {
+            "orders":[int(i) for i in y_column_mean_norm.keys()],
+            "um":x_plt,
+            "norm_vals":[float(f) for f in y_column_mean_norm.values()],
+            "norm_stds":[float(f) for f in y_column_std_norm.values()],
+            "red_scaled":[float(f) for f in y_plt1],
+            "blue_scaled":[float(f) for f in y_plt2],
+        }
+        
+    
+with open("lno_phobos_output.json", "w", encoding="utf-8") as f:
+    json.dump(json_d, f, ensure_ascii=False, indent=4)

@@ -48,16 +48,16 @@ def aotf_peak_nu(aotf_freq, t, channel="so"):
 
 
 
-def get_orders(channel, orders, t):
+def get_orders_nu(channel, orders, t, px_ixs=np.arange(320)):
     
     orders_d = {}
     for order in orders:
         if channel == "so":
-            px_nus = lt22_waven(order, t)
+            px_nus = lt22_waven(order, t)[px_ixs]
         if channel == "lno":
-            px_nus = nu_mp(order, np.arange(320.), t)
+            px_nus = nu_mp(order, px_ixs, t)
         
-        orders_d[order] = {"px_nus":px_nus}
+        orders_d[order] = {"px_nus":px_nus, "px_ixs":px_ixs}
 
     return orders_d
 

@@ -62,7 +62,7 @@ h = ""
 # h = "<html><head></head><body>\n"
 
 for swt_number in swt_numbers:
-    print(swt_number)
+    print("Running SWT number %i" %swt_number)
 
 
     swt_dirname = [v for v in dir_list if "SWT%i" %(swt_number) in v][0]

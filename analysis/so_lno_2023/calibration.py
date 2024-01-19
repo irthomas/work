@@ -12,75 +12,104 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-# blaze_from_file = True
-blaze_from_file = False
 
-# aotf_from_file = True
-aotf_from_file = False
+from analysis.so_lno_2023.functions.aotf_blaze_ils import get_aotf_file
+from analysis.so_lno_2023.functions.aotf_blaze_ils import get_aotf_sinc_gaussian
 
-
-if aotf_from_file:
-    from analysis.so_lno_2023.functions.aotf_blaze_ils import get_aotf_file as get_aotf
-else:
-    from analysis.so_lno_2023.functions.aotf_blaze_ils import get_aotf_sinc_gaussian as get_aotf
-
-if blaze_from_file:
-    from analysis.so_lno_2023.functions.aotf_blaze_ils import get_blaze_file as get_blaze
-else:
-    from analysis.so_lno_2023.functions.aotf_blaze_ils import get_blaze_sinc as get_blaze
+from analysis.so_lno_2023.functions.aotf_blaze_ils import get_blaze_file
+from analysis.so_lno_2023.functions.aotf_blaze_ils import get_blaze_sinc
 
 
 
 from analysis.so_lno_2023.functions.aotf_blaze_ils import get_ils_coeffs
-from analysis.so_lno_2023.functions.spectral_cal import get_orders, aotf_peak_nu, nu0_aotf
+from analysis.so_lno_2023.functions.spectral_cal import get_orders_nu, aotf_peak_nu, nu0_aotf
 
 
 
+def get_aotf(channel, aotf_freq, aotf_t, aotf={"type":"sinc_gauss"}):
 
-
-
-def get_calibration(channel, aotf_freq, centre_order, orders, nomad_t, plot=False):
-
-    cal_d = {}
-    
-    
     if channel == "so":
-        aotf_nu_centre = aotf_peak_nu(aotf_freq, nomad_t)
+        aotf_nu_centre = aotf_peak_nu(aotf_freq, aotf_t)
     elif channel == "lno":
         aotf_nu_centre = nu0_aotf(aotf_freq)
-        
-        
-    cal_d["aotf"] = get_aotf(channel, aotf_nu_centre=aotf_nu_centre)
-    
-    # cal_d["aotf"]["aotf_nus"] -= 1.5 #offset wavenumbers 
-    aotf_nu_centre = cal_d["aotf"]["aotf_nu_centre"]
 
+    if aotf["type"] == "sinc_gauss":
+        if "aotf_d" not in aotf.keys():
+            aotf_d = get_aotf_sinc_gaussian(channel, aotf_nu_centre=aotf_nu_centre, aotf_d={})
+        else:
+            aotf_d = get_aotf_sinc_gaussian(channel, aotf_nu_centre=aotf_nu_centre, aotf_d=aotf["aotf_d"])
+
+    elif aotf["type"] == "file":
+        if "filename" not in aotf.keys():
+            aotf_d = get_aotf_file(channel, aotf_nu_centre=aotf_nu_centre)
+        else:
+            aotf_d = get_aotf_file(channel, aotf_nu_centre=aotf_nu_centre, filename=aotf["filename"])
+
+    aotf_d["nu_centre"] = aotf_nu_centre
+    
+    return aotf_d
+
+
+def get_blaze_orders(channel, orders, aotf_nu_centre, grat_t, px_ixs=np.arange(320), blaze={"type":"sinc"}):
+    
+    orders_d = get_orders_nu(channel, orders, grat_t, px_ixs=px_ixs)
+    
+    if blaze["type"] == "sinc":
+        for order in orders:
+            px_nus = orders_d[order]["px_nus"]
+            
+            blazec = blaze.get("blazec", -1)
+            blazew = blaze.get("blazew", -1)
+            orders_d[order]["F_blaze"] = get_blaze_sinc(channel, px_nus, aotf_nu_centre, order, grat_t, blazec=blazec, blazew=blazew)
+
+    elif blaze["type"] == "file":
+        blaze = get_blaze_file(channel)["F_blaze"][px_ixs]
+        for order in orders:
+            orders_d[order]["F_blaze"] = blaze
+
+    return orders_d
+
+
+def get_calibration(channel, centre_order, aotf_d, orders_d, plot=[]):
+
+    cal_d = {}
+    cal_d["centre_order"] = centre_order
+    
+    orders = list(orders_d.keys())
+    
+    aotf_nu_centre = aotf_d["nu_centre"]
+    
+    
+    cal_d["aotf"] = aotf_d
 
 
     cal_d["ils"] = get_ils_coeffs(channel, aotf_nu_centre)
-    cal_d["orders"] = get_orders(channel, orders, nomad_t)
-    
-    if blaze_from_file:
-        blaze = get_blaze(channel)["F_blaze"]
-        for order in orders:
-            cal_d["orders"][order]["F_blaze"] = blaze
-        
-    
-    
-    
+    cal_d["orders"] = orders_d
+
+
+
+                
     #convolve AOTF function to wavenumber of each pixel in each order
     for order in orders:
-        
         px_nus = cal_d["orders"][order]["px_nus"]
         cal_d["orders"][order]["F_aotf"] = np.interp(px_nus, cal_d["aotf"]["aotf_nus"], cal_d["aotf"]["F_aotf"])
  
-        if not blaze_from_file:
-            cal_d["orders"][order]["F_blaze"] = get_blaze(channel, px_nus, aotf_nu_centre, order, nomad_t)
-            
-              
+    
+
+    
+    if "aotf" in plot:
+        fig, ax = plt.subplots(constrained_layout=True)
+        ax.set_xlabel("Wavenumber cm-1")
+        ax.set_ylabel("AOTF function")
+        ax.plot(cal_d["aotf"]["aotf_nus"], cal_d["aotf"]["F_aotf"], color="k")
+        text = ["%s=%0.04f\n" %(k, cal_d["aotf"][k]) for k in ["aotfa""aotfg","aotfgw","aotfo","aotfs","aotfw"] if k in cal_d["aotf"].keys()]
+        ax.text(0.1, 0.6, "".join(text), transform=ax.transAxes)
+        ax.text(0.1, 0.02, "Central wavenumber=%0.2fcm-1" %aotf_nu_centre, transform=ax.transAxes)
+        ax.grid()
+    
     
                
-    if plot:
+    if "aotf_blaze" in plot:
         plt.figure(constrained_layout=True)
         plt.xlabel("Wavenumber cm-1")
         plt.ylabel("Line transmittance / normalised response")

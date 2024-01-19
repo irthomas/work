@@ -13,17 +13,33 @@ import os
 from datetime import datetime, timedelta
 import sqlite3
 import re
+import platform
 
 from tools.sql.read_itl_db import get_itl_dict
 from tools.file.passwords import passwords
 
 
-# command = "./scripts/run_as_nomadr ./scripts/run_pipeline.py --log INFO make --from %s --to %s --beg %s --end %s --filter='%s' --n_proc=8 --all\n"
-command = "scripts/run_pipeline.py --profile ian --log WARNING make --from %s --to %s --beg %s --end %s --filter='%s' --n_proc=8 --all\n"
+#dev
+# nomadr = False
+# profile = "ian_0p1d"
+
+#prod
+nomadr = True
+profile = ""
+
+log_level = "INFO"
+# log_level = "WARNING"
+
+
+if nomadr:
+    command = f"./scripts/run_as_nomadr ./scripts/run_pipeline.py --log {log_level} make --from %s --to %s --beg %s --end %s --filter='%s' --n_proc=8 --all\n"
+else:
+    command = "scripts/run_pipeline.py --profile {profile} --log {log_level} make --from %s --to %s --beg %s --end %s --filter='%s' --n_proc=8 --all\n"
 
 SHARED_DIR_PATH = r"C:\Users\iant\Documents\PROGRAMS\web_dev\shared"
 REMOTE_DATA_PATH = "/bira-iasb/data/SATELLITE/TRACE-GAS-ORBITER/NOMAD/hdf5/"
 HDF5_FILENAME_FORMAT = "%Y%m%d_%H%M%S"
+
 
 
 
@@ -34,7 +50,8 @@ HDF5_FILENAME_FORMAT = "%Y%m%d_%H%M%S"
 source = "hdf5_level_0p2a"
 # source = "hdf5_level_1p0a"
 
-hdf5_filter = ".*(_SO|_LNO)_._S.*"
+# hdf5_filter = ".*(_SO|_LNO)_._S.*"
+hdf5_filter = ".*_SO_._S.*"
 # hdf5_filter = ".*_C.*"
 # hdf5_filter = ".*_LNO_._CM.*"
 # hdf5_filter = ".*_UVIS_GI.*"
@@ -49,7 +66,7 @@ start_dt = datetime(2018, 4, 21, 12, 0, 0)
 levels = [
     # {"in":"inserted",  "out":"raw",       "filter":""},
     # {"in":"raw",       "out":"hdf5_l01a", "filter":""},
-    {"in":"hdf5_l01a", "out":"hdf5_l01d", "filter":".*(SO|LNO).*"},
+    # {"in":"hdf5_l01a", "out":"hdf5_l01d", "filter":".*(SO|LNO).*"},
     # {"in":"hdf5_l01d", "out":"hdf5_l01e", "filter":".*(SO|LNO).*"},
     # {"in":"hdf5_l01e", "out":"hdf5_l02a", "filter":".*(SO|LNO).*"},
     # {"in":"hdf5_l01a", "out":"hdf5_l02a", "filter":".*UVIS.*"},
@@ -60,6 +77,8 @@ levels = [
     # {"in":"hdf5_l02a", "out":"hdf5_l03a", "filter":".*(SO|LNO).*"},
     # {"in":"hdf5_l03a", "out":"hdf5_l10a", "filter":".*(SO|LNO).*"},
 
+
+    {"in":"hdf5_l01a", "out":"hdf5_l10a", "filter":".*(SO|LNO).*"},
 
     # {"in":"hdf5_l01a", "out":"hdf5_l10b", "filter":".*(_SO|_LNO).*"},
     # {"in":"hdf5_l01a", "out":"hdf5_l10b", "filter":".*_UVIS.*"},
@@ -231,3 +250,12 @@ elif "hdf5" in source:
 
     s += 'python3 scripts/pipeline_log.py "Reprocessing done, filter=%s"\n' %(hdf5_filter)
     s += 'python3 scripts/check_pipeline_log.py\n'
+
+
+if platform.system() == "Windows":
+    shell_output_path = "reprocessing_script_obstype.sh"
+else:
+    shell_output_path = "/home/iant/reprocessing_script_obstype.sh"
+    
+with open(shell_output_path, "w") as f:
+    f.write(s)

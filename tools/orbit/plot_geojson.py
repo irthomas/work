@@ -25,7 +25,11 @@ from other.pipeline.nomad_ops.core.footprints.db_functions import get_h5s_from_c
 
 
 # regex = re.compile("2023010[1-5]_......_...._LNO_1_D._193")
-regex = re.compile("2023010[1-5]_......_...._LNO_1_D._.*")
+# regex = re.compile("2023010[1-5]_......_...._LNO_1_D._.*")
+# regex = re.compile("20230524_025254_...._LNO_1_D._.*")
+
+regex = re.compile("2018...._......_...._LNO_1_D._189")
+
 
 h5_path = os.path.join(paths["DATASTORE_ROOT_DIRECTORY"], "hdf5", )
 h5_level = "hdf5_level_1p0a"
@@ -69,7 +73,7 @@ colours = get_colours(80) #orders 120-200
 
 # file_path = os.path.normcase(r"C:/Users/iant/Documents/DATA/footprints/v01/2023/01/01/20230101_034107_1p0a_LNO_1_DP_167_00000.geojson")
 
-fig, ax = plt.subplots(constrained_layout=True)
+fig, ax = plt.subplots(figsize=(15, 12), constrained_layout=True)
 ax.grid()
 ax.set_xlabel("Longitude (degrees)")
 ax.set_ylabel("Latitude (degrees)")
@@ -82,5 +86,6 @@ for footprint_path in footprints_list:
     order = int(split[-2])
     
     df_places = gpd.read_file(footprint_path)
+    if np.min([np.min(df_places["geometry"][i].exterior.coords.xy[0]) for i in range(df_places["geometry"].shape[0])]) > -990.0:
 
-    df_places.plot(ax=ax, color=colours[order-120])
+        df_places.plot(ax=ax, color=colours[order-120])

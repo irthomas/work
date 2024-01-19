@@ -20,10 +20,10 @@ import io
 PARAMETER_GROUPS = ['Voigt_CO2']
 ISO_IDS = {"H2O":[1, 2, 3, 4, 5, 6, 129], "CO2":[7, 8, 9, 10, 11, 12, 13, 14, 121, 15, 120, 122], "O3":[], "CO":[26, 27, 28, 29, 30, 31], "CH4":[32, 33, 34, 35], "HCL":[52, 53, 107, 108]}
 
-MOL_H5 = "mol_lut.h5"
+# MOL_H5 = "mol_lut.h5"
 
-LUT = True
-LUT = False
+# LUT = True
+# LUT = False
 
 def make_table_name(molecule, pressure):
     table_name = "tmp/%s_%011i" %(molecule, int(pressure*1e9))

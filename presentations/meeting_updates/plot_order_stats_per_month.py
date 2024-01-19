@@ -3,6 +3,8 @@
 Created on Thu Jan 13 10:53:13 2022
 
 @author: iant
+
+PLOT NUMBER OF TIMES A DIFFRACTION ORDER IS MEASURED PER MONTH
 """
 
 import os
@@ -17,11 +19,15 @@ import matplotlib.pyplot as plt
 
 
 
-SHARED_DIR_PATH = r"C:\Users\iant\Dropbox\NOMAD\Python\web_dev\shared"
+SHARED_DIR_PATH = r"C:\Users\iant\Documents\PROGRAMS\web_dev\shared"
 
+START_YEAR = 2018
+END_YEAR = 2023
+ORDERS_TO_PLOT = [119, 121, 129, 132, 134, 136]
+# ORDERS_TO_PLOT = range(119, 137)
 
 level = "hdf5_level_1p0a"
-regex = re.compile("(....)(..).._......_1p0a_SO_._(?:\w_(\d*)|\w)\.h5")
+regex = re.compile("(....)(..).._......_1p0a_SO_._(?:\w_(\d*)|\w|\w\w)\.h5")
 
 
 def connect_db(db_path):
@@ -66,17 +72,18 @@ filenames_split = [[int(i) for i in s] for s in regexes if s[2]]
 unique_orders = sorted(list(set([s[2] for s in filenames_split])))
 
 labels = []
-for year in range(2018, 2022):
+for year in range(START_YEAR, END_YEAR+1):
     for month in range(1, 13):
         # print(month, year)
         labels.append("%02i/%04i" %(month, year))
 
 obs = {}
 for unique_order in unique_orders:
+    print(unique_order)
     
     obs[unique_order] = []
 
-    for year in range(2018, 2023):
+    for year in range(START_YEAR, END_YEAR+1):
         for month in range(1, 13):
             # print(month, year)
             
@@ -87,14 +94,13 @@ for unique_order in unique_orders:
 
 max_obs = max([max(n) for n in obs.values()])
 
-orders = [119, 121, 134, 136]
 
-fig, axes = plt.subplots(figsize=(13,8), nrows=len(orders), sharex=True, constrained_layout=True)
+fig, axes = plt.subplots(figsize=(13,8), nrows=len(ORDERS_TO_PLOT), sharex=True, constrained_layout=True)
 x_pos = [i for i, _ in enumerate(labels)]
 
 fig.suptitle("Number of observations per diffraction order")
 
-for i, order in enumerate(orders):
+for i, order in enumerate(ORDERS_TO_PLOT):
     
     axes[i].grid()
     axes[i].bar(x_pos, obs[order])

@@ -15,16 +15,20 @@ from analysis.so_lno_2023.config import INPUT_DIR
 
 
 
-def get_aotf_file(channel, aotf_nu_centre=None):
+def get_aotf_file(channel, aotf_nu_centre=None, filename=""):
     """read in AOTF wavenumbers and shape from file"""
 
 
-    aotf_filename = {
-        "so":"aotf_so.tsv",
-        "lno":"aotf_lno.tsv",
-    }[channel]
+    if filename == "":
+        aotf_filename = {
+            "so":"aotf_so.tsv",
+            "lno":"aotf_lno.tsv",
+        }[channel]
+        aotf_filepath = os.path.join(INPUT_DIR, aotf_filename)
+    else:
+        aotf_filepath = os.path.join(INPUT_DIR, filename)
+        
 
-    aotf_filepath = os.path.join(INPUT_DIR, aotf_filename)
     aotf_nus, F_aotf = np.loadtxt(aotf_filepath, skiprows=1, unpack=True, delimiter="\t")
     
     #normalise to 1
@@ -36,7 +40,7 @@ def get_aotf_file(channel, aotf_nu_centre=None):
     #flip around
     # F_aotf = F_aotf[::-1]
     
-    max_ix = np.where(F_aotf == np.max(F_aotf))[0]
+    max_ix = int(np.mean(np.where(F_aotf == np.max(F_aotf))[0]))
     aotf_nu_peak = aotf_nus[max_ix]
     
     if aotf_nu_centre:
@@ -81,14 +85,14 @@ def F_aotf_sinc_gaussian(dx, d):
 
 
 
-def get_aotf_sinc_gaussian(channel, aotf_nu_centre=None):
+def get_aotf_sinc_gaussian(channel, aotf_nu_centre=None, aotf_d={}):
     """make AOTF from coefficients Sep 2021"""
     
     dx = np.arange(-100., 150.0, 0.01)
     aotf_nus = dx + aotf_nu_centre
     aotf_nu_range = [aotf_nus[0], aotf_nus[-1]]
 
-    d_aotf = {"aotf_nus":aotf_nus, "aotf_nu_range":aotf_nu_range, "aotf_nu_centre":aotf_nu_centre}
+    aotf_d = {"aotf_nus":aotf_nus, "aotf_nu_range":aotf_nu_range, "aotf_nu_centre":aotf_nu_centre}
     
     aotfwc  = [-1.66406991e-07,  7.47648684e-04,  2.01730360e+01] # Sinc width [cm-1 from AOTF frequency cm-1]
     aotfsc  = [ 8.10749274e-07, -3.30238496e-03,  4.08845247e+00] # sidelobes factor [scaler from AOTF frequency cm-1]
@@ -96,22 +100,33 @@ def get_aotf_sinc_gaussian(channel, aotf_nu_centre=None):
     aotfoc  = [            0.0,             0.0,             0.0] # Offset [coefficients for AOTF frequency cm-1]
     aotfgc  = [ 1.49266526e-07, -9.63798656e-04,  1.60097815e+00] # Gaussian peak intensity [coefficients for AOTF frequency cm-1]
     
-    d_aotf["aotfw"] = np.polyval(aotfwc, aotf_nu_centre)
-    d_aotf["aotfs"] = np.polyval(aotfsc, aotf_nu_centre)
-    d_aotf["aotfa"] = np.polyval(aotfac, aotf_nu_centre)
-    d_aotf["aotfo"] = np.polyval(aotfoc, aotf_nu_centre)
-    d_aotf["aotfg"] = np.polyval(aotfgc, aotf_nu_centre)
-    d_aotf["aotfgw"] = 50. #offset width cm-1
+    if "aotfw" not in aotf_d.keys():
+        aotf_d["aotfw"] = np.polyval(aotfwc, aotf_nu_centre)
+        
+    if "aotfs" not in aotf_d.keys():
+        aotf_d["aotfs"] = np.polyval(aotfsc, aotf_nu_centre)
 
-    F_aotf = F_aotf_sinc_gaussian(dx, d_aotf)
+    if "aotfa" not in aotf_d.keys():
+        aotf_d["aotfa"] = np.polyval(aotfac, aotf_nu_centre)
+
+    if "aotfo" not in aotf_d.keys():
+        aotf_d["aotfo"] = np.polyval(aotfoc, aotf_nu_centre)
+
+    if "aotfg" not in aotf_d.keys():
+        aotf_d["aotfg"] = np.polyval(aotfgc, aotf_nu_centre)
+
+    if "aotfgw" not in aotf_d.keys():
+        aotf_d["aotfgw"] = 50. #offset width cm-1
+
+    F_aotf = F_aotf_sinc_gaussian(dx, aotf_d)
     
     #normalise to 1
     F_aotf /= np.max(F_aotf)
     
-    d_aotf["F_aotf"] = F_aotf
+    aotf_d["F_aotf"] = F_aotf
     
     
-    return d_aotf
+    return aotf_d
 
 
 
@@ -151,6 +166,7 @@ def fsr_peak_nu(aotf_nu_centre, nomad_t):
     return fsr_t_corr
     
 
+
 def fsr_peak_nu_lno(aotf_nu_centre, nomad_t):
     """SO fsr peak Villanueva 23"""
 
@@ -159,33 +175,30 @@ def fsr_peak_nu_lno(aotf_nu_centre, nomad_t):
 
 
 
-
-    
-
-
-def F_blaze_sinc(px_nus, blazef, blazew):
-    dx = px_nus - blazef
+def F_blaze_sinc(px_nus, blaze_nu, blazew):
+    dx = px_nus - blaze_nu
 
     F = np.sinc((dx) / blazew)**2
     return F
 
 
 
-def get_blaze_sinc(channel, px_nus, aotf_nu_centre, order, nomad_t):
+def get_blaze_sinc(channel, px_nus, aotf_nu_centre, order, nomad_t, blazec=-1, blazew=-1):
     """get blaze sinc2 function"""
 
-    if channel == "so":
-        blazew = fsr_peak_nu(aotf_nu_centre, nomad_t)
-    elif channel == "lno":
-        blazew = fsr_peak_nu_lno(aotf_nu_centre, nomad_t)
-        
-    blazef = order * blazew #center of the blaze
+    if blazew == -1:
+        if channel == "so":
+            blazew = fsr_peak_nu(aotf_nu_centre, nomad_t)
+        elif channel == "lno":
+            blazew = fsr_peak_nu_lno(aotf_nu_centre, nomad_t)
+
+    if blazec == -1:
+        blazec = order * blazew #center of the blaze
     
     #make blaze function, one value per pixel
-    blaze = F_blaze_sinc(px_nus, blazef, blazew)
+    blaze = F_blaze_sinc(px_nus, blazec, blazew)
 
     return blaze
-
 
 
 

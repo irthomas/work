@@ -24,8 +24,15 @@ AOTF_OUTPUT_PATH = os.path.normcase(r"C:\Users\iant\Dropbox\NOMAD\Python\%s_aotf
 BLAZE_OUTPUT_PATH = os.path.normcase(r"C:\Users\iant\Dropbox\NOMAD\Python\%s_blazes.txt" %channel)
 
 
+# plot = ["all", "all_rel_nu", "split_rel_4300", "split_rel_4400", "split_rel_4500"]
+plot = ["split_rel_4500"]
+# plot = []
+
 
 def aotf_func_raw(order_ix, aotf_range=200.0, step_nu=0.1):
+    """get sinc gauss aotf function for minimum and maximum expected coefficients in the CO range
+    order_ix = 0: minimum
+    order_ix = 1: maximum function"""
 
     def sinc_gd(dx, width, lobe, asym, offset):
         #goddard version
@@ -91,67 +98,77 @@ aotf_colours = get_colours(len(aotf_range), cmap="brg")
 
 
 
+"""plot all aotfs on the same graph"""
+if "all" in plot:
+    plt.figure()
+    plt.title("AOTF functions")
+    plt.xlabel("Wavenumber (cm-1)")
+    plt.ylabel("AOTF transmittance")
+    plt.grid()
+    loop = 0
+    for i, (nu, aotf) in enumerate(zip(aotfs["nu"], aotfs["aotf"])):
+        
+        if np.min(aotf) > -0.1:
+            peak_nu = aotfs["peak_nu"][i]
+            colour = aotf_colours[np.searchsorted(aotf_range, peak_nu)]
+            plt.plot(nu, aotf, color=colour, alpha=0.5)
+            loop += 1
+    plt.axhline(y=0, color="k")
+    print(loop)
+
+
+if "all_rel_nu" in plot:
+    plt.figure()
+    plt.title("AOTF functions")
+    plt.xlabel("Wavenumber from centre (cm-1)")
+    plt.ylabel("AOTF transmittance")
+    plt.grid()
+    for i, (nu, aotf) in enumerate(zip(aotfs["nu"], aotfs["aotf"])):
     
-plt.figure()
-plt.title("AOTF functions")
-plt.xlabel("Wavenumber (cm-1)")
-plt.ylabel("AOTF transmittance")
-plt.grid()
-loop = 0
-for i, (nu, aotf) in enumerate(zip(aotfs["nu"], aotfs["aotf"])):
+        if np.min(aotf) > -0.1:
+        
+            peak_nu = aotfs["peak_nu"][i]
+            colour = aotf_colours[np.searchsorted(aotf_range, peak_nu)]
+            aotf_peak_ixs = np.argmax(aotf)
+            plt.plot(-(nu - nu[aotf_peak_ixs]), aotf, color=colour, alpha=0.2, label=peak_nu)
+    plt.legend()
+    plt.axhline(y=0, color="k")
     
-    if np.min(aotf) > -0.1:
-        peak_nu = aotfs["peak_nu"][i]
-        colour = aotf_colours[np.searchsorted(aotf_range, peak_nu)]
-        plt.plot(nu, aotf, color=colour, alpha=0.5)
-        loop += 1
-plt.axhline(y=0, color="k")
-print(loop)
-
-plt.figure()
-plt.title("AOTF functions")
-plt.xlabel("Wavenumber from centre (cm-1)")
-plt.ylabel("AOTF transmittance")
-plt.grid()
-for i, (nu, aotf) in enumerate(zip(aotfs["nu"], aotfs["aotf"])):
-
-    if np.min(aotf) > -0.1:
     
-        peak_nu = aotfs["peak_nu"][i]
-        colour = aotf_colours[np.searchsorted(aotf_range, peak_nu)]
-        aotf_peak_ixs = np.argmax(aotf)
-        plt.plot(-(nu - nu[aotf_peak_ixs]), aotf, color=colour, alpha=0.2, label=peak_nu)
-plt.legend()
-plt.axhline(y=0, color="k")
-
-
-aotf_23_low_nu, aotf_23_low = aotf_func_raw(0)
-aotf_23_high_nu, aotf_23_high = aotf_func_raw(1)
-
-plt.plot(-(aotf_23_low_nu - np.mean(aotf_23_low_nu)), aotf_23_low, "k--")
-plt.plot(-(aotf_23_high_nu - np.mean(aotf_23_high_nu)), aotf_23_high, "k--")
+    aotf_23_low_nu, aotf_23_low = aotf_func_raw(0)
+    aotf_23_high_nu, aotf_23_high = aotf_func_raw(1)
+    
+    plt.plot(-(aotf_23_low_nu - np.mean(aotf_23_low_nu)), aotf_23_low, "k--")
+    plt.plot(-(aotf_23_high_nu - np.mean(aotf_23_high_nu)), aotf_23_high, "k--")
 
 
 
 
+"""plot aotfs for 3 different spectral ranges on different figures"""
+if "split_rel_4300" in plot:
+    fig1, ax1 = plt.subplots(figsize=(9, 5))
+    plt.grid()
+    plt.title("AOTF functions")
+    plt.xlabel("Wavenumber from centre (cm-1)")
+    plt.ylabel("AOTF transmittance")
 
-fig1, ax1 = plt.subplots(figsize=(9, 5))
-plt.grid()
-plt.title("AOTF functions")
-plt.xlabel("Wavenumber from centre (cm-1)")
-plt.ylabel("AOTF transmittance")
-fig2, ax2 = plt.subplots(figsize=(9, 5))
-plt.grid()
-plt.title("AOTF functions")
-plt.xlabel("Wavenumber from centre (cm-1)")
-plt.ylabel("AOTF transmittance")
-fig3, ax3 = plt.subplots(figsize=(9, 5))
-plt.grid()
-plt.title("AOTF functions")
-plt.xlabel("Wavenumber from centre (cm-1)")
-plt.ylabel("AOTF transmittance")
+if "split_rel_4400" in plot:
+    fig2, ax2 = plt.subplots(figsize=(9, 5))
+    plt.grid()
+    plt.title("AOTF functions")
+    plt.xlabel("Wavenumber from centre (cm-1)")
+    plt.ylabel("AOTF transmittance")
+
+if "split_rel_4500" in plot:
+    fig3, ax3 = plt.subplots(figsize=(9, 5))
+    plt.grid()
+    plt.title("AOTF functions")
+    plt.xlabel("Wavenumber from centre (cm-1)")
+    plt.ylabel("AOTF transmittance")
 
 
+aotf_4500_nu = []
+aotf_4500 = []
 for i, (nu, aotf) in enumerate(zip(aotfs["nu"], aotfs["aotf"])):
 
     if np.min(aotf) > -0.1:
@@ -161,11 +178,17 @@ for i, (nu, aotf) in enumerate(zip(aotfs["nu"], aotfs["aotf"])):
         aotf_peak_ixs = np.argmax(aotf)
         
         if peak_nu < 4350.:
-            ax1.plot(-(nu - nu[aotf_peak_ixs]), aotf, color=colour, alpha=0.2, label=peak_nu)
+            if "split_rel_4300" in plot:
+                ax1.plot(-(nu - nu[aotf_peak_ixs]), aotf, color=colour, alpha=0.2, label=peak_nu)
+
         elif peak_nu < 4500.:
-            ax2.plot(-(nu - nu[aotf_peak_ixs]), aotf, color=colour, alpha=0.2, label=peak_nu)
+            if "split_rel_4400" in plot:
+                ax2.plot(-(nu - nu[aotf_peak_ixs]), aotf, color=colour, alpha=0.2, label=peak_nu)
         else:
-            ax3.plot(-(nu - nu[aotf_peak_ixs]), aotf, color=colour, alpha=0.2, label=peak_nu)
+            if "split_rel_4500" in plot:
+                ax3.plot(-(nu - nu[aotf_peak_ixs]), aotf, color=colour, alpha=0.2, label=peak_nu)
+            aotf_4500_nu.append(-(nu - nu[aotf_peak_ixs]))
+            aotf_4500.append(aotf)
 # plt.legend()
 # plt.axhline(y=0, color="k")
 
@@ -173,13 +196,55 @@ for i, (nu, aotf) in enumerate(zip(aotfs["nu"], aotfs["aotf"])):
 aotf_23_low_nu, aotf_23_low = aotf_func_raw(0)
 aotf_23_high_nu, aotf_23_high = aotf_func_raw(1)
 
-ax1.plot(-(aotf_23_low_nu - np.mean(aotf_23_low_nu)), aotf_23_low, "k--")
-ax2.plot(-(aotf_23_low_nu - np.mean(aotf_23_low_nu)), aotf_23_low, "k--")
-ax3.plot(-(aotf_23_high_nu - np.mean(aotf_23_high_nu)), aotf_23_high, "k--")
+if "split_rel_4300" in plot:
+    ax1.plot(-(aotf_23_low_nu - np.mean(aotf_23_low_nu)), aotf_23_low, "k--")
+if "split_rel_4400" in plot:
+    ax2.plot(-(aotf_23_low_nu - np.mean(aotf_23_low_nu)), aotf_23_low, "k--")
+if "split_rel_4500" in plot:
+    ax3.plot(-(aotf_23_low_nu - np.mean(aotf_23_low_nu)), aotf_23_low, "k--")
+    ax3.plot(-(aotf_23_high_nu - np.mean(aotf_23_high_nu)), aotf_23_high, "k--")
 
-fig1.savefig("aotf4300.png")
-fig2.savefig("aotf4400.png")
-fig3.savefig("aotf4500.png")
+
+
+"""for last figure, get mean AOTF from data"""
+#interpolate 
+nu_int_grid = np.arange(-100, 100, 0.01) #wavenumbers
+interps = []
+for nu, aotf in zip(aotf_4500_nu, aotf_4500):
+    
+    interp = np.interp(nu_int_grid, nu[::-1], aotf[::-1])
+    interps.append(interp)
+    
+interps = np.asarray(interps)
+
+std = np.std(interps, axis=0)
+median = np.median(interps, axis=0)
+
+
+if "split_rel_4500" in plot:
+    ax3.plot(nu_int_grid, median)
+
+
+
+#get closest aotf to median
+sum_sq = []
+for interp in interps:
+    sum_sq.append(np.sum(np.square(interp - median)))
+    
+min_ix = np.argmin(sum_sq)
+closest_aotf = interps[min_ix, :]
+plt.plot(nu_int_grid, closest_aotf)
+
+#save best fit to file
+np.savetxt("4500um_closest_aotf.txt", np.asarray([nu_int_grid, closest_aotf]).T, fmt="%0.4f", delimiter="\t")
+
+# fig1.savefig("aotf4300.png")
+# fig2.savefig("aotf4400.png")
+# fig3.savefig("aotf4500.png")
+
+
+
+
 
 # #read in blazes
 # blazes = {"aotf":[], "blaze":[]}
