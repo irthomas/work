@@ -19,7 +19,20 @@ from tools.file.paths import paths
 def make_line_anim(d):
     """
     pass dictionary to function to make a line plot animation. Keys are:
-    'x':{name:data}, 'y':{name:data}, 'text':[], 'text_position':[x,y], 'xlabel', 'ylabel', 'xlim', 'ylim', 'filename', 'legend':{}, 'keys':[], 'title'
+    'x':{name:1d or 2d data}, #name = dataset name, 1d or 2d data array
+    'y':{name:2d data},  #name = dataset name, 2d data array
+    'text':[], #text to add to each animation frame, required
+    'text_position':[x,y], #text position in data coords, required
+    'xlabel', #optional
+    'ylabel', #optional
+    'xlim', #[min, max], optional
+    'ylim', #[min, max], optional
+    'save', #True = save to file
+    'filename', #filename to save to
+    'legend':{}, 
+    'keys':[], #keys to plot from x and y, leave blank to plot all
+    'title', 
+    'x_params':{'1d':True} #1d = is x[key] a 1d array for all keys?
     """
 
     if "format" in d.keys():
@@ -29,22 +42,49 @@ def make_line_anim(d):
     
     ext = {"ffmpeg":"mp4", "html":"html"}[anim_format]
     
-    # Set up formatting for the movie files
-    Writer = animation.writers[anim_format]
+    # set up formatting for movie files
+    print("Setting up animation")
+    Writer = animation.writers['ffmpeg']
     writer = Writer(fps=15, metadata=dict(artist="Me"), bitrate=1800)
-    
-    
-    # # First set up the figure, the axis, and the plot element we want to animate
-    fig = plt.figure()
-    ax = plt.axes(xlim=d["xlim"], ylim=d["ylim"], xlabel=d["xlabel"], ylabel=d["ylabel"])
-    
-    if "title" in d.keys():
-        plt.title(d["title"])
-    
+    print("Animation setup done")
+
+    #get list of keys or make list of all keys in data
     if "keys" in d.keys():
         keys = d["keys"]
     else:
         keys = list(d["y"].keys())
+    
+    
+    xlabel = ""
+    if "xlabel" in d.keys():
+        xlabel = d["xlabel"]
+
+    ylabel = ""
+    if "ylabel" in d.keys():
+        ylabel = d["ylabel"]
+
+    if "xlim" in d.keys():
+        xlim = d["xlim"]
+    else:
+        xlim = [np.nanmin([d["x"][key] for key in keys]), np.nanmax([d["x"][key] for key in keys])]
+        ylim = [np.nanmin([d["y"][key] for key in keys]), np.nanmax([d["y"][key] for key in keys])]
+    
+    # # First set up the figure, the axis, and the plot element we want to animate
+    fig = plt.figure()
+    ax = plt.axes(xlim=xlim, ylim=ylim, xlabel=xlabel, ylabel=ylabel)
+    
+    if "title" in d.keys():
+        plt.title(d["title"])
+    
+        
+        
+    #check if x is 1d or 2d
+    x_1d = False
+    if "x_params" in d:
+        if "1d" in d["x_params"]:
+            if d["x_params"]["1d"]:
+                x_1d = True
+
     
     lines = []
     for key in keys:
@@ -74,7 +114,12 @@ def make_line_anim(d):
             print(i)
         
         for line, key in zip(lines, keys):
-            line.set_data(d["x"][key][i],d["y"][key][i])
+            if x_1d:
+                x = d["x"][key]
+            else:
+                x = d["x"][key][i]
+            
+            line.set_data(x, d["y"][key][i])
         text.set_text(d["text"][i])
         
         artists = lines + [text]
@@ -86,7 +131,7 @@ def make_line_anim(d):
     
     
     
-    if "save" in d.keys():
+    if "save" in d.keys() and "filename" in d.keys():
         if d["save"]:
             try:
                 cwd = os.getcwd()
@@ -181,3 +226,4 @@ def make_frame_anim(list_of_frames,zmin,zmax,filename,ymax = 256):
 #                                frames=20, interval=500, blit=True)
 
 # plt.show()
+

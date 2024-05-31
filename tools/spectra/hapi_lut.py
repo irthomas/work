@@ -13,7 +13,6 @@ from tools.file.paths import paths
 
 
 
-
 def get_abs_coeff(order, molecule, iso, t):
     lut_filename = "lut_so_%i_%s.h5" %(order, molecule)
     lut_filepath = os.path.join(paths["LOCAL_DIRECTORY"], "lut", lut_filename)
@@ -28,7 +27,7 @@ def get_abs_coeff(order, molecule, iso, t):
                 print("Error: t not found, must be %0.1f-%0.1fK" %(min(ts), max(ts)))
                 return [], []
     else:
-        print("Error: file not found")
+        print("Error: LUT file %s not found" %lut_filepath)
         return [], []
         
     return nu, coeff

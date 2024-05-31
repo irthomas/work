@@ -18,6 +18,8 @@ MTP056	28-Mar	22-Jun	09-Jul
 
 from datetime import datetime, timedelta
 
+from tools.spice.get_mars_year_ls import get_mars_year_ls
+
 time_format = "%d/%m/%Y"
 
 mtp_1 = datetime(year=2018, month=4, day=21)
@@ -27,7 +29,7 @@ cop_delta = (datetime(year=2022, month=3, day=19) - datetime(year=2022, month=3,
 
 h = ""
 h += "<table border='1'>\n"
-h += "<tr>\n   <th>MTP Number</th><th>STPs</th><th>Pointing Fixed</th><th>Planning Fixed</th><th>Execution Start</th>\n</tr>\n"
+h += "<tr>\n   <th>MTP Number</th><th>STPs</th><th>Pointing Fixed</th><th>Planning Fixed</th><th>Execution Start</th><th>Mars Ls</th>\n</tr>\n"
 
 
 for mtp in range(200):
@@ -38,23 +40,28 @@ for mtp in range(200):
     mtp_pointing = mtp_start - pointing_delta
     mtp_cop = mtp_start - cop_delta
     
+    my, ls = get_mars_year_ls(mtp_start)
+    ls_str = "MY%0i %0.3f" %(my, ls)
+    
     stps = "%i, %i, %i, %i" %(mtp*4-3, mtp*4-2, mtp*4-1, mtp*4)
     
     if mtp > 0:
-        h += "   <td>%i</td><td>%s</td><td>%s</td><td>%s</td><td><b>%s</b></td>\n</tr>\n" %(
+        h += "   <td>%i</td><td>%s</td><td>%s</td><td>%s</td><td><b>%s</b></td><td>%s</td>\n</tr>\n" %(
             mtp,
             stps,
             datetime.strftime(mtp_pointing, time_format),
             datetime.strftime(mtp_cop, time_format),
             datetime.strftime(mtp_start, time_format),
+            ls_str,
         )
     else:
-        h += "   <td>%i</td><td>%s</td><td>%s</td><td>%s</td><td><b>%s</b></td>\n</tr>\n" %(
+        h += "   <td>%i</td><td>%s</td><td>%s</td><td>%s</td><td><b>%s</b></td><td>%s</td>\n</tr>\n" %(
             mtp,
             "-",
             "-",
             "-",
             datetime.strftime(mtp_start, time_format),
+            ls_str,
         )
         
 
@@ -63,3 +70,5 @@ h += "</table>\n"
 with open("mtp_dates.html", "w") as f:
     for line in h:
         f.write(line)
+        
+    f.write("<br><p>Made with tools.website.write_mtp_list.py</p>")

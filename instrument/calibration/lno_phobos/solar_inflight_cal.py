@@ -49,9 +49,9 @@ def planck(xscale, temp): #planck function W/cm2/sr/cm-1
 
 
 
-def read_cal_file(cal_h5):
+def read_cal_file(cal_h5, path=None):
     
-    h5_f = open_hdf5_file(cal_h5)
+    h5_f = open_hdf5_file(cal_h5, path=path)
 
     y_f = h5_f["Science/Y"][...]
     bins = h5_f["Science/Bins"][:, 0]
@@ -86,9 +86,9 @@ def read_cal_file(cal_h5):
 
 
 
-def rad_cal_order(cal_h5, order, centre_indices=None):
+def rad_cal_order(cal_h5, order, centre_indices=None, path=None):
 
-    d = read_cal_file(cal_h5)
+    d = read_cal_file(cal_h5, path=path)
     
     unique_bins = sorted(list(set(d["bins"])))
     centre_bins = unique_bins[6:-6]

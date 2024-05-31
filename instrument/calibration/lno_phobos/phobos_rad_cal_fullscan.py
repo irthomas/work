@@ -21,6 +21,8 @@ from tools.file.hdf5_functions import open_hdf5_file
 # from tools.general.normalise_values_to_range import normalise_values_to_range
 from tools.datasets.get_phobos_crism_data import get_phobos_crism_data
 
+data_path = r"W:\data\SATELLITE\TRACE-GAS-ORBITER\NOMAD\hdf5"
+
 """decide what to plot: 
     on first run, select -2 to show where spectra get noisy, then add good_indices to obs_type dictionary
     then select -1 to check for bad pixels. If spikes are observed, add to bad_pixel_d
@@ -55,10 +57,10 @@ bad_pixel_d = {
     (156, 2):[78],
     (158, 2):[92, 105, 203, 245],
     
-    (146, 3):[13, 188, 228, 121, 151, 236, 294, 314, ],
+    (146, 3):[13, 188, 228, 121, 151, 232, 236, 294, 310, 314, ],
     (149, 3):[1, 3, 46, 92, 292, 296, 310, 317, 301, 258, ],
     (152, 3):[5, 37, 40, 49, 129, 135, 178, 245, 266, ],
-    (155, 3):[125, 232, 308, 78, 181, 209, 254, 294, 291, ],
+    (155, 3):[125, 232, 308, 78, 160, 181, 209, 254, 268, 294, 291, ],
 
 }
 
@@ -71,13 +73,22 @@ good_indices = ""
 
 """observation name:{"h5":hdf5 filename, "good_indices":frames with best signal and least noise, "good_row_indices":bins with highest signal, "orders_crism":orders to fit to CRISM spectra}"""
 obs_types = {
-    "Gap 2 orders 3 60s":{"h5":"20230903_022613_0p1a_LNO_1", "good_indices":[*range(1, 84)], "good_row_indices":[1], "orders_crism":[160, 168, 170]},
-
-    "Gap 2 orders 2 60s":{"h5":"20230828_010044_0p1a_LNO_1", "good_indices":[*range(0, 104)], "good_row_indices":[1], "orders_crism":[160, 168, 170]},
-    "Gap 3 orders 2 60s":{"h5":"20230830_060414_0p1a_LNO_1", "good_indices":[*range(1, 100)], "good_row_indices":[1], "orders_crism":[160, 169, 172]}, #frames 1-100 are good, but low signal on 1-50
-
     "Gap 2 orders 1 60s":{"h5":"20230713_092806_0p1a_LNO_1", "good_indices":[*range(1, 96)], "good_row_indices":[1], "orders_crism":[160, 168, 170]},
+    "Gap 2 orders 2 60s":{"h5":"20230828_010044_0p1a_LNO_1", "good_indices":[*range(0, 104)], "good_row_indices":[1], "orders_crism":[160, 168, 170]},
+    "Gap 2 orders 3 60s":{"h5":"20230903_022613_0p1a_LNO_1", "good_indices":[*range(1, 83)], "good_row_indices":[1], "orders_crism":[160, 168, 170]},
+    "Gap 2 orders 4 60s":{"h5":"20231024_113219_0p1a_LNO_1", "good_indices":[*range(0, 106)], "good_row_indices":[1], "orders_crism":[160, 168, 170]},
+    "Gap 2 orders 5 60s":{"h5":"20231214_124745_0p1a_LNO_1", "good_indices":[*range(0, 48)], "good_row_indices":[0, 1], "orders_crism":[160, 168, 170]},
+
     "Gap 3 orders 1 60s":{"h5":"20230716_061435_0p1a_LNO_1", "good_indices":[*range(1, 100)], "good_row_indices":[1], "orders_crism":[160, 169, 172]}, #frames 1-100 are good, but low signal on 1-50
+    "Gap 3 orders 2 60s":{"h5":"20230830_060414_0p1a_LNO_1", "good_indices":[*range(1, 100)], "good_row_indices":[0, 1], "orders_crism":[160, 169, 172]}, #frames 1-100 are good, but low signal on 1-50
+    "Gap 3 orders 3 60s":{"h5":"20231027_081904_0p1a_LNO_1", "good_indices":[*range(1, 111)], "good_row_indices":[1], "orders_crism":[160, 169, 172]}, #frames 1-100 are good, but low signal on 1-50
+    "Gap 3 orders 4 60s":{"h5":"20231220_141315_0p1a_LNO_1", "good_indices":[*range(1, 52)], "good_row_indices":[0, 1], "orders_crism":[160, 169, 172]}, #frames 1-100 are good, but low signal on 1-50
+
+    "Carbonates 1 60s":{"h5":"20240102_144319_0p1a_LNO_1", "good_indices":[*range(4, 84)], "good_row_indices":[1], "orders_crism":[174, 175, 176, 190, 191, 192]},
+    "Carbonates 2 60s":{"h5":"20240108_160840_0p1a_LNO_1", "good_indices":[*range(5, 94)], "good_row_indices":[1], "orders_crism":[174, 175, 176, 190, 191, 192]},
+    "Carbonates 3 60s":{"h5":"20240111_204709_0p1a_LNO_1", "good_indices":[*range(6, 66)], "good_row_indices":[0,1,2], "orders_crism":[174, 175, 176, 190, 191, 192]},
+    "Carbonates 4 60s":{"h5":"20240114_173338_0p1a_LNO_1", "good_indices":[*range(1, 82)], "good_row_indices":[1,2], "orders_crism":[174, 175, 176, 190, 191, 192]},
+
 
     # "Hydration band 10":{"h5":"20230320_122418_0p1a_LNO_1", "good_indices":[*range(2, 100)], "good_row_indices":[1], "orders_crism":[158, 170, 177]},
     # "Hydration band 11":{"h5":"20230323_011917_0p1a_LNO_1", "good_indices":[*range(2, 115)], "good_row_indices":[1], "orders_crism":[158, 170, 177]},
@@ -144,7 +155,8 @@ for obs_type in obs_types.keys():
     good_indices = obs_types[obs_type]["good_indices"]
     good_row_indices = obs_types[obs_type]["good_row_indices"]
 
-    h5_f = open_hdf5_file(h5, path=r"E:\DATA\hdf5_phobos") #no detector offset!)
+    # h5_f = open_hdf5_file(h5, path=r"E:\DATA\hdf5_phobos") #no detector offset in 0p1a files!
+    h5_f = open_hdf5_file(h5, path=data_path)
 
 
 
@@ -193,7 +205,9 @@ for obs_type in obs_types.keys():
     if plot_level < -1:
         #plot raw data for every bin to check for noisy regions
         plt.figure(figsize=(14, 8))
-        plt.plot(y_spectral_mean)
+        plt.plot(y_spectral_mean, label=np.arange(y_spectral_mean.shape[1]))
+        plt.title(h5)
+        plt.legend()
         sys.exit()
     
     
@@ -236,7 +250,7 @@ for obs_type in obs_types.keys():
     """get solar calibration info from an LNO solar cal fullscan. This gives the sensitivity of the instrument in each order"""
     cal_h5 = "20201222_114725_1p0a_LNO_1_CF"
     # cal_d = {order:rad_cal_order(cal_h5, order, centre_indices=None) for order in unique_orders}
-    cal_d = {order:rad_cal_order(cal_h5, order, centre_indices=range(100, 300)) for order in unique_orders}
+    cal_d = {order:rad_cal_order(cal_h5, order, centre_indices=range(100, 300), path=data_path) for order in unique_orders}
     solar_scalars = {order:cal_d[order]["y_centre_mean"] / 2.0e6 for order in cal_d.keys()}
     
     

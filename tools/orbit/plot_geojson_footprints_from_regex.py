@@ -28,7 +28,7 @@ from other.pipeline.nomad_ops.core.footprints.db_functions import get_h5s_from_c
 # regex = re.compile("2023010[1-5]_......_...._LNO_1_D._.*")
 # regex = re.compile("20230524_025254_...._LNO_1_D._.*")
 
-regex = re.compile("2018...._......_...._LNO_1_D._189")
+regex = re.compile("2022...._......_...._LNO_1_D._189")
 
 
 h5_path = os.path.join(paths["DATASTORE_ROOT_DIRECTORY"], "hdf5", )
@@ -36,7 +36,8 @@ h5_level = "hdf5_level_1p0a"
 
 footprint_version = "v01"
 
-footprint_root_dir = os.path.join(paths["DATASTORE_ROOT_DIRECTORY"], "footprint", footprint_version)
+# footprint_root_dir = os.path.join(paths["DATASTORE_ROOT_DIRECTORY"], "footprint", footprint_version) #W drive
+footprint_root_dir = os.path.join(paths["FOOTPRINT_DIRECTORY"], footprint_version) #D drive
 
 
 

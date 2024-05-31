@@ -25,8 +25,8 @@ from scipy.signal import savgol_filter
 
 
 
-# CLEAR_DB = True
-CLEAR_DB = False
+CLEAR_DB = True
+# CLEAR_DB = False
 
 SMOOTH_STEPS = 199
 
@@ -67,7 +67,7 @@ with sql_db(db_path) as db:
         ts.extend([row[0] for row in rows])
         lno_nominal.extend([row[1] for row in rows])
         
-#conver to arrays
+#convert to arrays
 lno_nominal = np.asarray(lno_nominal)
 ts = np.asarray(ts)
 

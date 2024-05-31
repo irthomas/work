@@ -39,8 +39,10 @@ ISO_IDS = {"H2O":[1, 2, 3, 4, 5, 6, 129], "CO2":[7, 8, 9, 10, 11, 12, 13, 14, 12
 
 molecule = "CO"
 isos = [1,2,3,4]
-order = 185
-order = 186
+# order = 185
+# order = 186
+order = 194
+# order = 195
 
 
 
@@ -69,6 +71,11 @@ nu_range_d = {
     ("H2O", 134):[2960.0, 3085.0], 
     ("CO" , 185):[4100.0, 4330.0],
     ("CO" , 186):[4100.0, 4330.0],
+    ("CO" , 191):[4100.0, 4500.0],
+    ("CO" , 192):[4100.0, 4500.0],
+    ("CO" , 193):[4100.0, 4500.0],
+    ("CO" , 194):[4100.0, 4500.0],
+    ("CO" , 195):[4200.0, 4500.0],
 }
 nu_range = nu_range_d[(molecule, order)]
 nu_step = 0.001
@@ -108,7 +115,7 @@ for iso in isos:
         table_name = molecule
         
         
-        print(t)
+        print("iso", iso, "T=", t)
             
         iso_codes = ISO_IDS[molecule]
         hapi.fetch_by_ids(table_name, iso_codes, nu_range[0], nu_range[1])#, ParameterGroups=PARAMETER_GROUPS)

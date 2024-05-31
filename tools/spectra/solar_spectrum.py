@@ -18,14 +18,14 @@ def get_solar_hr(nu_hr, solspec_filepath=SOLAR_SPECTRUM_FILE, nu_limit=2.0, inte
 
     nu_hr_min = np.min(nu_hr)
     nu_hr_max = np.max(nu_hr)
-    
+
     with open(solspec_filepath, "r") as f:
         nu_solar = []
         I0_solar = []
         for line in f:
             if line[0] == "%":
                 continue
-            
+
             nu, I0 = [float(val) for val in line.split()]
             if nu < nu_hr_min - nu_limit:
                 continue
@@ -33,9 +33,9 @@ def get_solar_hr(nu_hr, solspec_filepath=SOLAR_SPECTRUM_FILE, nu_limit=2.0, inte
                 break
             nu_solar.append(nu)
             I0_solar.append(I0)
-            
+
     # print(len(nu_solar))
-    
+
     if interpolate:
         f_solar = sciin.interp1d(nu_solar, I0_solar)
         I0_solar_hr = f_solar(nu_hr)

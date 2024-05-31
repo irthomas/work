@@ -15,6 +15,7 @@ import matplotlib.pyplot as plt
 
 from analysis.so_lno_2023.functions.aotf_blaze_ils import get_aotf_file
 from analysis.so_lno_2023.functions.aotf_blaze_ils import get_aotf_sinc_gaussian
+from analysis.so_lno_2023.functions.aotf_blaze_ils import get_aotf_custom
 
 from analysis.so_lno_2023.functions.aotf_blaze_ils import get_blaze_file
 from analysis.so_lno_2023.functions.aotf_blaze_ils import get_blaze_sinc
@@ -33,11 +34,23 @@ def get_aotf(channel, aotf_freq, aotf_t, aotf={"type":"sinc_gauss"}):
     elif channel == "lno":
         aotf_nu_centre = nu0_aotf(aotf_freq)
 
+
+
     if aotf["type"] == "sinc_gauss":
         if "aotf_d" not in aotf.keys():
             aotf_d = get_aotf_sinc_gaussian(channel, aotf_nu_centre=aotf_nu_centre, aotf_d={})
         else:
             aotf_d = get_aotf_sinc_gaussian(channel, aotf_nu_centre=aotf_nu_centre, aotf_d=aotf["aotf_d"])
+
+
+
+    elif aotf["type"] == "custom":
+        if "aotf_d" not in aotf.keys():
+            aotf_d = get_aotf_custom(channel, aotf_nu_centre=aotf_nu_centre, aotf_d={})
+        else:
+            aotf_d = get_aotf_custom(channel, aotf_nu_centre=aotf_nu_centre, aotf_d=aotf["aotf_d"])
+
+
 
     elif aotf["type"] == "file":
         if "filename" not in aotf.keys():
@@ -46,6 +59,7 @@ def get_aotf(channel, aotf_freq, aotf_t, aotf={"type":"sinc_gauss"}):
             aotf_d = get_aotf_file(channel, aotf_nu_centre=aotf_nu_centre, filename=aotf["filename"])
 
     aotf_d["nu_centre"] = aotf_nu_centre
+
     
     return aotf_d
 

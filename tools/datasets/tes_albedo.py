@@ -43,15 +43,15 @@ def get_albedo(lons_in, lats_in, albedo_map):
 
 #code for plotting
 
-FIG_X = 12
-FIG_Y = 10
-albedoMap, albedoMapExtents = get_TES_albedo_map()
+# FIG_X = 12
+# FIG_Y = 10
+# albedoMap, albedoMapExtents = get_TES_albedo_map()
 
-#cut off top and bottom like NOMAD. 8px per degree => 16 deg cutoff = 128 points
-albedoMap = albedoMap[128:(1440-128), :]
-albedoMapExtents = [-180, 180, -74, 74]
-fig1, ax1 = plt.subplots(figsize=(FIG_X+5, FIG_Y+2))
-albedoPlot = ax1.imshow(albedoMap, extent=albedoMapExtents, vmin=0.05, vmax=0.5)
+# #cut off top and bottom like NOMAD. 8px per degree => 16 deg cutoff = 128 points
+# albedoMap = albedoMap[128:(1440-128), :]
+# albedoMapExtents = [-180, 180, -74, 74]
+# fig1, ax1 = plt.subplots(figsize=(FIG_X+5, FIG_Y+2))
+# albedoPlot = ax1.imshow(albedoMap, extent=albedoMapExtents, vmin=0.05, vmax=0.5)
 
 # ax1.set_title("MGS/TES Albedo Global Mosaic")
 # ax1.set_xlabel("Longitude")

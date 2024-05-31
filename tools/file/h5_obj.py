@@ -9,7 +9,10 @@ import os
 import h5py
 import numpy as np
 from datetime import datetime
+import matplotlib.pyplot as plt
 
+
+from tools.plotting.colours import get_colours
 from tools.file.paths import paths
 
 ALTITUDE_FIELD = "TangentAltAreoid"
@@ -49,6 +52,8 @@ class h5_obj:
         #get info from filename
         self.obspath_split = self.h5.split("_")
         self.obs_type = self.obspath_split[5]
+        self.file_level = self.obspath_split[2]
+        
 
         #if fullscan or calibration
         self.calibration = False
@@ -60,7 +65,7 @@ class h5_obj:
             self.calibration = True
             
         if not self.fullscan and not self.calibration:
-            self.diffraction_order = self.obspath_split[6]
+            self.diffraction_order = int(self.obspath_split[6])
         
     def set_h5_path(self, h5_path):
         
@@ -103,8 +108,14 @@ class h5_obj:
             h5_d[bin_ix]["y"] = h5f["Science/%s" %TRANSMITTANCE_FIELD][unique_bin_ixs, :]
             
             if not self.calibration:
-                h5_d[bin_ix]["y_raw"] = h5f["Science/%s" %DETECTOR_DATA_FIELD][unique_bin_ixs, :]
-                h5_d[bin_ix]["y_error"] = h5f["Science/%s" %DETECTOR_DATA_ERROR][unique_bin_ixs, :]
+                
+                if self.file_level == "1p0a":
+                    h5_d[bin_ix]["y_raw"] = h5f["Science/%s" %DETECTOR_DATA_FIELD][unique_bin_ixs, :]
+                    h5_d[bin_ix]["y_error"] = h5f["Science/%s" %DETECTOR_DATA_ERROR][unique_bin_ixs, :]
+                else:    
+                    h5_d[bin_ix]["y_raw"] = h5_d[bin_ix]["y"]
+                    h5_d[bin_ix]["y_error"] = np.zeros_like(h5_d[bin_ix]["y"])
+                    
                 h5_d[bin_ix]["lon"] = h5f["Geometry/Point0/Lon"][unique_bin_ixs, 0]
                 h5_d[bin_ix]["lat"] = h5f["Geometry/Point0/Lat"][unique_bin_ixs, 0]
                 h5_d[bin_ix]["alt"] = h5f["Geometry/Point0/%s" %ALTITUDE_FIELD][unique_bin_ixs, 0]
@@ -121,6 +132,7 @@ class h5_obj:
             h5_d["lst"] = -999.0
 
         h5_d["x"] = h5f["Science/X"][0, :] #get first row (all the same)
+        h5_d["px"] = np.arange(h5_d["x"].shape[0])
 
         h5_d["T"] = h5f["Channel/MeasurementTemperature"][0] #get first value
 
@@ -148,7 +160,7 @@ class h5_obj:
             for bin_ix in bin_ixs:
                 self.h5_d[bin_ix][dset] = self.h5_d[bin_ix][dset][:, px_ixs]
                 
-        for dset in ["x"]:
+        for dset in ["x", "px"]:
             self.h5_d[dset] = self.h5_d[dset][px_ixs]
         
         
@@ -209,6 +221,34 @@ class h5_obj:
         self.label_out = self.h5[0:15]+"_"+self.obs_type+" order %s" %self.diffraction_order
         
       
+        
+    def plot(self, plot_type, dset, bin_ixs, ax=None):
+    
+        if plot_type in ["trans_raw_nu", "trans_raw", "trans_raw_px"]:
+            if not ax:
+                fig1, ax = plt.subplots(figsize=(12, 8))
+            ax.grid()
+            ax.set_xlabel("Wavenumber")
+            ax.set_ylabel("Transmittance")
+            ax.set_title(self.h5)
+
+            if plot_type == "trans_raw_nu":
+                x = self.h5_d["x"]
+            elif plot_type == "trans_raw_px":
+                x = self.h5_d["px"]
+            elif plot_type == "trans_raw":
+                x = np.arange(self.h5_d["x"].shape[0])
+            
+            for bin_ix in bin_ixs:
+                
+                y_means = self.h5_d[bin_ix][dset]
+                
+                alt_strs = ["%0.2fkm" %f for f in self.h5_d[bin_ix]["alt"]]
+                colours = get_colours(len(alt_strs))
+                for i, (y_mean, alt_str, colour) in enumerate(zip(y_means, alt_strs, colours)):
+                    ax.plot(x, y_mean)
+                    ax.text(x[0]+5.0, y_mean[0]+0.025, "i=%i, %s" %(i, alt_str))
+    
     # def bad_pixel(self, bin_ix):
         
         # outputDict["alt"] = alt[ix_range[0]:ix_range[-1]]

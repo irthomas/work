@@ -9,7 +9,11 @@ SOLAR LINE DICT
 """
 
 
-#solar line dict
+# solar line dict
+# arr_region_rows = rows beyond the absorption, to avoid converting too much data (normally 0 to end)
+# arr_region_cols = columns beyond the absorption, to avoid converting too much data
+# abs_region_rows = rows containing absorption
+# abs_region_cols = columns containing absorption
 solar_line_dict = {
     # "LNO-20200201-001633-194-4":[
     #     {"arr_region_rows":[0, -1], "arr_region_cols":[1500, 2500], "abs_region_rows":[300, -1], "abs_region_cols":[1859, 1944], "cutoffs":[0.98, 0.98], "smfac":25},
@@ -40,7 +44,7 @@ solar_line_dict = {
     #     {"arr_region_rows":[0, -1], "arr_region_cols":[1800, 2100], "abs_region_rows":[0, -1], "abs_region_cols":[1910, 2000], "cutoffs":[0.95, 0.95], "smfac":25},
     #     {"blaze_rows":[]}
     #     ],
-    
+
     # "LNO-20181106-192332-146-4":[
     #     {"arr_region_rows":[0, -1], "arr_region_cols":[150, 350], "abs_region_rows":[0, -1], "abs_region_cols":[220, 280], "cutoffs":[0.95, 0.95], "smfac":25},
     #     {"arr_region_rows":[0, -1], "arr_region_cols":[1050, 1350], "abs_region_rows":[0, -1], "abs_region_cols":[1110, 1200], "cutoffs":[0.95, 0.95], "smfac":25},
@@ -48,7 +52,7 @@ solar_line_dict = {
     #     {"arr_region_rows":[0, -1], "arr_region_cols":[2800, 3100], "abs_region_rows":[0, -1], "abs_region_cols":[2910, 2980], "cutoffs":[0.95, 0.95], "smfac":25},
     #     {"blaze_rows":[150, 1310]}
     #     ],
-    
+
     # "LNO-20181106-192332-161-4":[
     #     {"arr_region_rows":[0, -1], "arr_region_cols":[100, 400], "abs_region_rows":[0, 1600], "abs_region_cols":[210, 280], "cutoffs":[0.98, 0.98], "smfac":25},
     #     {"arr_region_rows":[0, -1], "arr_region_cols":[300, 550], "abs_region_rows":[0, -1], "abs_region_cols":[380, 470], "cutoffs":[0.98, 0.98], "smfac":25},
@@ -59,8 +63,8 @@ solar_line_dict = {
     #     {"arr_region_rows":[0, -1], "arr_region_cols":[2520, 2850], "abs_region_rows":[0, 1300], "abs_region_cols":[2530, 2610], "cutoffs":[0.98, 0.98], "smfac":25},
     #     {"blaze_rows":[1250]}
     #     ],
-    
-    
+
+
     # "LNO-20181106-195839-170-4":[
     #         {"arr_region_rows":[0, -1], "arr_region_cols":[0, -1], "abs_region_rows":[0, -1], "abs_region_cols":[0, -1], "cutoffs":[0.98, 0.98], "smfac":25},
     #         ],
@@ -76,9 +80,10 @@ solar_line_dict = {
     # "LNO-20181209-180348-158-4":[
     #         {"arr_region_rows":[0, -1], "arr_region_cols":[0, -1], "abs_region_rows":[0, -1], "abs_region_cols":[0, -1], "cutoffs":[0.98, 0.98], "smfac":25},
     #         ],
-    # "LNO-20181209-180348-191-4":[
-    #         {"arr_region_rows":[0, -1], "arr_region_cols":[0, -1], "abs_region_rows":[0, -1], "abs_region_cols":[0, -1], "cutoffs":[0.98, 0.98], "smfac":25},
-    #         ],
+    "LNO-20181209-180348-191-4": [
+        {"arr_region_rows": [0, -1], "arr_region_cols":[2000, 2300], "abs_region_rows":[0, -1],
+            "abs_region_cols":[2120, 2250], "cutoffs":[0.97, 0.97], "smfac":25},
+    ],
     # "LNO-20190212-142357-122-8":[
     #         {"arr_region_rows":[0, -1], "arr_region_cols":[0, -1], "abs_region_rows":[0, -1], "abs_region_cols":[0, -1], "cutoffs":[0.98, 0.98], "smfac":25},
     #         ],
@@ -242,98 +247,79 @@ solar_line_dict = {
 
 
 
-    "SO-20180716-000706-178-4":[
-            {"abs_region_rows":[0, -1], "abs_region_cols":[670, 770], "cutoffs":[0.97, 0.97], "smfac":25, "good":True},
-            {"abs_region_rows":[0, -1], "abs_region_cols":[1210, 1290], "cutoffs":[0.97, 0.97], "smfac":25, "good":True},
-            {"abs_region_rows":[0, -1], "abs_region_cols":[1310, 1390], "cutoffs":[0.97, 0.97], "smfac":25, "good":True},
-            # {"blaze_rows":[1100, 1500]}
-            ],
-    
-    "SO-20181010-084333-184-4":[
-            {"abs_region_rows":[0, -1], "abs_region_cols":[1330, 1430], "cutoffs":[0.97, 0.97], "smfac":25, "good":False},
-            {"abs_region_rows":[0, -1], "abs_region_cols":[1440, 1520], "cutoffs":[0.97, 0.97], "smfac":25, "good":True},
-            # {"blaze_rows":[1500]}
-            ],
-            
-    "SO-20181114-084251-186-4":[
-            {"abs_region_rows":[0, -1], "abs_region_cols":[940, 1020], "cutoffs":[0.95, 0.95], "smfac":25, "good":True},
-            {"abs_region_rows":[0, -1], "abs_region_cols":[1330, 1410], "cutoffs":[0.95, 0.95], "smfac":25, "good":True},
-            {"abs_region_rows":[0, -1], "abs_region_cols":[1440, 1530], "cutoffs":[0.95, 0.95], "smfac":25, "good":True},
-            {"abs_region_rows":[0, -1], "abs_region_cols":[2530, 2630], "cutoffs":[0.95, 0.95], "smfac":25, "good":True},
-            {"abs_region_rows":[0, -1], "abs_region_cols":[2680, 2780], "cutoffs":[0.95, 0.95], "smfac":25, "good":True},
-            {"abs_region_rows":[0, -1], "abs_region_cols":[2940, 3040], "cutoffs":[0.97, 0.97], "smfac":25, "good":True},
-            # {"blaze_rows":[]}
-            ],
-    
+    # "SO-20180716-000706-178-4":[
+    #         {"abs_region_rows":[0, -1], "abs_region_cols":[670, 770], "cutoffs":[0.97, 0.97], "smfac":25, "good":True},
+    #         {"abs_region_rows":[0, -1], "abs_region_cols":[1210, 1290], "cutoffs":[0.97, 0.97], "smfac":25, "good":True},
+    #         {"abs_region_rows":[0, -1], "abs_region_cols":[1310, 1390], "cutoffs":[0.97, 0.97], "smfac":25, "good":True},
+    #         # {"blaze_rows":[1100, 1500]}
+    #         ],
 
-    "SO-20181206-171850-181-4":[
-            {"abs_region_rows":[0, -1], "abs_region_cols":[160, 270], "cutoffs":[0.92, 0.92], "smfac":25, "good":True},
-            {"abs_region_rows":[0, -1], "abs_region_cols":[2220, 2350], "cutoffs":[0.95, 0.95], "smfac":25, "good":True},
-            # {"blaze_rows":[390]}
-            ],
+    # "SO-20181010-084333-184-4":[
+    #         {"abs_region_rows":[0, -1], "abs_region_cols":[1330, 1430], "cutoffs":[0.97, 0.97], "smfac":25, "good":False},
+    #         {"abs_region_rows":[0, -1], "abs_region_cols":[1440, 1520], "cutoffs":[0.97, 0.97], "smfac":25, "good":True},
+    #         # {"blaze_rows":[1500]}
+    #         ],
 
-    
-    "SO-20190416-024455-184-4":[
-            {"abs_region_rows":[0, -1], "abs_region_cols":[1240, 1340], "cutoffs":[0.97, 0.97], "smfac":25},
-            {"abs_region_rows":[0, -1], "abs_region_cols":[1360, 1430], "cutoffs":[0.97, 0.97], "smfac":25},
-            {"abs_region_rows":[0, -1], "abs_region_cols":[1910, 2020], "cutoffs":[0.97, 0.97], "smfac":25},
-            # {"blaze_rows":[1500]}
-            ],
+    # "SO-20181114-084251-186-4":[
+    #         {"abs_region_rows":[0, -1], "abs_region_cols":[940, 1020], "cutoffs":[0.95, 0.95], "smfac":25, "good":True},
+    #         {"abs_region_rows":[0, -1], "abs_region_cols":[1330, 1410], "cutoffs":[0.95, 0.95], "smfac":25, "good":True},
+    #         {"abs_region_rows":[0, -1], "abs_region_cols":[1440, 1530], "cutoffs":[0.95, 0.95], "smfac":25, "good":True},
+    #         {"abs_region_rows":[0, -1], "abs_region_cols":[2530, 2630], "cutoffs":[0.95, 0.95], "smfac":25, "good":True},
+    #         {"abs_region_rows":[0, -1], "abs_region_cols":[2680, 2780], "cutoffs":[0.95, 0.95], "smfac":25, "good":True},
+    #         {"abs_region_rows":[0, -1], "abs_region_cols":[2940, 3040], "cutoffs":[0.97, 0.97], "smfac":25, "good":True},
+    #         # {"blaze_rows":[]}
+    #         ],
 
 
-    "SO-20210226-085144-178-4":[
-            {"abs_region_rows":[0, -1], "abs_region_cols":[550, 650], "cutoffs":[0.95, 0.95], "smfac":25},
-            {"abs_region_rows":[0, -1], "abs_region_cols":[1100, 1190], "cutoffs":[0.97, 0.97], "smfac":25},
-            {"abs_region_rows":[0, -1], "abs_region_cols":[2130, 2230], "cutoffs":[0.95, 0.95], "smfac":25},
-            # {"blaze_rows":[]}
-            ],
-
-    "SO-20211105-155547-178-4":[
-            {"abs_region_rows":[0, -1], "abs_region_cols":[570, 670], "cutoffs":[0.95, 0.95], "smfac":25},
-            {"abs_region_rows":[0, -1], "abs_region_cols":[1110, 1190], "cutoffs":[0.97, 0.97], "smfac":25},
-            {"abs_region_rows":[0, -1], "abs_region_cols":[2150, 2250], "cutoffs":[0.95, 0.95], "smfac":25},
-            # {"blaze_rows":[]}
-            ],
-
-    "SO-20211105-155547-181-4":[
-            {"abs_region_rows":[0, -1], "abs_region_cols":[90, 190], "cutoffs":[0.92, 0.92], "smfac":25},
-            {"abs_region_rows":[0, -1], "abs_region_cols":[1380, 1450], "cutoffs":[0.96, 0.96], "smfac":25},
-            {"abs_region_rows":[0, -1], "abs_region_cols":[2160, 2270], "cutoffs":[0.95, 0.95], "smfac":25},
-            # {"blaze_rows":[390]}
-            ],
-    
-    "SO-20230112-084925-178-4":[
-            {"abs_region_rows":[0, -1], "abs_region_cols":[505, 605], "cutoffs":[0.95, 0.95], "smfac":25},
-            {"abs_region_rows":[0, -1], "abs_region_cols":[1035, 1135], "cutoffs":[0.97, 0.97], "smfac":25},
-            {"abs_region_rows":[0, -1], "abs_region_cols":[2080, 2180], "cutoffs":[0.95, 0.95], "smfac":25},
-            # {"blaze_rows":[]}
-            ],
-    
-    "SO-20230112-084925-181-4":[
-            {"abs_region_rows":[0, -1], "abs_region_cols":[40, 120], "cutoffs":[0.9, 0.9], "smfac":25},
-            {"abs_region_rows":[0, -1], "abs_region_cols":[1320, 1390], "cutoffs":[0.97, 0.97], "smfac":25},
-            {"abs_region_rows":[0, -1], "abs_region_cols":[2080, 2220], "cutoffs":[0.95, 0.95], "smfac":25},
-    #         # {"blaze_rows":[360]}
-            ],    
+    # "SO-20181206-171850-181-4":[
+    #         {"abs_region_rows":[0, -1], "abs_region_cols":[160, 270], "cutoffs":[0.92, 0.92], "smfac":25, "good":True},
+    #         {"abs_region_rows":[0, -1], "abs_region_cols":[2220, 2350], "cutoffs":[0.95, 0.95], "smfac":25, "good":True},
+    #         # {"blaze_rows":[390]}
+    #         ],
 
 
+    # "SO-20190416-024455-184-4":[
+    #         {"abs_region_rows":[0, -1], "abs_region_cols":[1240, 1340], "cutoffs":[0.97, 0.97], "smfac":25},
+    #         {"abs_region_rows":[0, -1], "abs_region_cols":[1360, 1430], "cutoffs":[0.97, 0.97], "smfac":25},
+    #         {"abs_region_rows":[0, -1], "abs_region_cols":[1910, 2020], "cutoffs":[0.97, 0.97], "smfac":25},
+    #         # {"blaze_rows":[1500]}
+    #         ],
 
 
+    # "SO-20210226-085144-178-4":[
+    #         {"abs_region_rows":[0, -1], "abs_region_cols":[550, 650], "cutoffs":[0.95, 0.95], "smfac":25},
+    #         {"abs_region_rows":[0, -1], "abs_region_cols":[1100, 1190], "cutoffs":[0.97, 0.97], "smfac":25},
+    #         {"abs_region_rows":[0, -1], "abs_region_cols":[2130, 2230], "cutoffs":[0.95, 0.95], "smfac":25},
+    #         # {"blaze_rows":[]}
+    #         ],
 
+    # "SO-20211105-155547-178-4":[
+    #         {"abs_region_rows":[0, -1], "abs_region_cols":[570, 670], "cutoffs":[0.95, 0.95], "smfac":25},
+    #         {"abs_region_rows":[0, -1], "abs_region_cols":[1110, 1190], "cutoffs":[0.97, 0.97], "smfac":25},
+    #         {"abs_region_rows":[0, -1], "abs_region_cols":[2150, 2250], "cutoffs":[0.95, 0.95], "smfac":25},
+    #         # {"blaze_rows":[]}
+    #         ],
 
+    # "SO-20211105-155547-181-4":[
+    #         {"abs_region_rows":[0, -1], "abs_region_cols":[90, 190], "cutoffs":[0.92, 0.92], "smfac":25},
+    #         {"abs_region_rows":[0, -1], "abs_region_cols":[1380, 1450], "cutoffs":[0.96, 0.96], "smfac":25},
+    #         {"abs_region_rows":[0, -1], "abs_region_cols":[2160, 2270], "cutoffs":[0.95, 0.95], "smfac":25},
+    #         # {"blaze_rows":[390]}
+    #         ],
 
-    "SO-20181129-002850-184-2":[
-            {"abs_region_rows":[0, -1], "abs_region_cols":[1240, 1340], "cutoffs":[0.98, 0.98], "smfac":25},
-            {"abs_region_rows":[0, -1], "abs_region_cols":[1360, 1430], "cutoffs":[0.98, 0.98], "smfac":25},
-            {"abs_region_rows":[0, -1], "abs_region_cols":[1910, 2020], "cutoffs":[0.98, 0.98], "smfac":25},
-            # {"blaze_rows":[]}
-            ],
+    # "SO-20230112-084925-178-4":[
+    #         {"abs_region_rows":[0, -1], "abs_region_cols":[505, 605], "cutoffs":[0.95, 0.95], "smfac":25},
+    #         {"abs_region_rows":[0, -1], "abs_region_cols":[1035, 1135], "cutoffs":[0.97, 0.97], "smfac":25},
+    #         {"abs_region_rows":[0, -1], "abs_region_cols":[2080, 2180], "cutoffs":[0.95, 0.95], "smfac":25},
+    #         # {"blaze_rows":[]}
+    #         ],
 
-    "SO-20210912-022732-178-2":[
-            {"abs_region_rows":[0, -1], "abs_region_cols":[670, 770], "cutoffs":[0.97, 0.97], "smfac":25},
-            {"abs_region_rows":[0, -1], "abs_region_cols":[1210, 1290], "cutoffs":[0.97, 0.97], "smfac":25},
-            {"abs_region_rows":[0, -1], "abs_region_cols":[1310, 1390], "cutoffs":[0.97, 0.97], "smfac":25},
-            ],
+    # "SO-20230112-084925-181-4":[
+    #         {"abs_region_rows":[0, -1], "abs_region_cols":[40, 120], "cutoffs":[0.9, 0.9], "smfac":25},
+    #         {"abs_region_rows":[0, -1], "abs_region_cols":[1320, 1390], "cutoffs":[0.97, 0.97], "smfac":25},
+    #         {"abs_region_rows":[0, -1], "abs_region_cols":[2080, 2220], "cutoffs":[0.95, 0.95], "smfac":25},
+    # #         # {"blaze_rows":[360]}
+    #         ],
 
 
 
@@ -341,77 +327,96 @@ solar_line_dict = {
 
 
 
-    "SO-20190107-015635-184-8":[
-            {"abs_region_rows":[500, -1], "abs_region_cols":[540, 640], "cutoffs":[0.95, 0.95]},
-            {"abs_region_rows":[0, -1], "abs_region_cols":[680, 780], "cutoffs":[0.95, 0.95]},
-            {"abs_region_rows":[0, -1], "abs_region_cols":[870, 970], "cutoffs":[0.95, 0.95], "good":False},
-            {"abs_region_rows":[0, -1], "abs_region_cols":[920, 1020], "cutoffs":[0.95, 0.95]},
-            {"abs_region_rows":[500, -1], "abs_region_cols":[1310, 1410], "cutoffs":[0.95, 0.95]},
-            {"abs_region_rows":[500, -1], "abs_region_cols":[1420, 1520], "cutoffs":[0.95, 0.95]},
-            {"abs_region_rows":[0, -1], "abs_region_cols":[1780, 1880], "cutoffs":[0.97, 0.97]},
-            {"abs_region_rows":[0, -1], "abs_region_cols":[2520, 2620], "cutoffs":[0.96, 0.96]},
-            {"abs_region_rows":[0, 1800], "abs_region_cols":[2670, 2770], "cutoffs":[0.97, 0.97]},
-            {"abs_region_rows":[0, -1], "abs_region_cols":[2850, 2950], "cutoffs":[0.95, 0.95], "good":False},
-            # {"blaze_rows":[]}
-            ],
+    # "SO-20181129-002850-184-2":[
+    #         {"abs_region_rows":[0, -1], "abs_region_cols":[1240, 1340], "cutoffs":[0.98, 0.98], "smfac":25},
+    #         {"abs_region_rows":[0, -1], "abs_region_cols":[1360, 1430], "cutoffs":[0.98, 0.98], "smfac":25},
+    #         {"abs_region_rows":[0, -1], "abs_region_cols":[1910, 2020], "cutoffs":[0.98, 0.98], "smfac":25},
+    #         # {"blaze_rows":[]}
+    #         ],
 
-    "SO-20190307-011600-184-8":[
-            {"abs_region_rows":[500, -1], "abs_region_cols":[500, 600], "cutoffs":[0.95, 0.95]},
-            {"abs_region_rows":[0, -1], "abs_region_cols":[640, 740], "cutoffs":[0.95, 0.95]},
-            {"abs_region_rows":[0, -1], "abs_region_cols":[830, 930], "cutoffs":[0.95, 0.95], "good":False},
-            {"abs_region_rows":[0, -1], "abs_region_cols":[880, 980], "cutoffs":[0.95, 0.95]},
-            {"abs_region_rows":[500, -1], "abs_region_cols":[1270, 1370], "cutoffs":[0.95, 0.95]},
-            {"abs_region_rows":[500, -1], "abs_region_cols":[1380, 1480], "cutoffs":[0.95, 0.95]},
-            {"abs_region_rows":[0, -1], "abs_region_cols":[1740, 1840], "cutoffs":[0.97, 0.97]},
-            {"abs_region_rows":[0, -1], "abs_region_cols":[2480, 2580], "cutoffs":[0.96, 0.96]},
-            {"abs_region_rows":[0, 1800], "abs_region_cols":[2630, 2730], "cutoffs":[0.97, 0.97]},
-            {"abs_region_rows":[0, -1], "abs_region_cols":[2810, 2910], "cutoffs":[0.95, 0.95], "good":False},
-            # {"blaze_rows":[]}
-            ],
-    
-    
-    "SO-20201010-113533-178-8":[
-            {"abs_region_rows":[0, -1], "abs_region_cols":[85, 185], "cutoffs":[0.92, 0.92]},
-            {"abs_region_rows":[0, -1], "abs_region_cols":[580, 680], "cutoffs":[0.95, 0.95]},
-            {"abs_region_rows":[0, -1], "abs_region_cols":[870, 970], "cutoffs":[0.95, 0.95], "good":False},
-            {"abs_region_rows":[0, -1], "abs_region_cols":[1110, 1210], "cutoffs":[0.97, 0.97]},
-            {"abs_region_rows":[0, -1], "abs_region_cols":[1210, 1310], "cutoffs":[0.97, 0.97], "good":False},
-            {"abs_region_rows":[0, -1], "abs_region_cols":[1930, 2030], "cutoffs":[0.97, 0.97], "good":False},
-            {"abs_region_rows":[0, -1], "abs_region_cols":[2160, 2260], "cutoffs":[0.95, 0.95]},
-            # {"blaze_rows":[]}
-            ],
-    
-    
-    "SO-20210201-111011-178-8":[
-            {"abs_region_rows":[0, -1], "abs_region_cols":[45, 145], "cutoffs":[0.92, 0.92]},
-            {"abs_region_rows":[0, -1], "abs_region_cols":[540, 640], "cutoffs":[0.95, 0.95]},
-            {"abs_region_rows":[0, -1], "abs_region_cols":[830, 930], "cutoffs":[0.95, 0.95], "good":False},
-            {"abs_region_rows":[0, -1], "abs_region_cols":[1070, 1170], "cutoffs":[0.97, 0.97]},
-            {"abs_region_rows":[0, -1], "abs_region_cols":[1170, 1270], "cutoffs":[0.97, 0.97], "good":False},
-            {"abs_region_rows":[0, -1], "abs_region_cols":[1890, 1990], "cutoffs":[0.97, 0.97], "good":False},
-            {"abs_region_rows":[0, -1], "abs_region_cols":[2120, 2220], "cutoffs":[0.95, 0.95]},
-            # {"blaze_rows":[]}
-            ],
-    
-    "SO-20210523-001053-178-8":[
-            {"abs_region_rows":[0, -1], "abs_region_cols":[45, 145], "cutoffs":[0.92, 0.92]},
-            {"abs_region_rows":[0, -1], "abs_region_cols":[540, 640], "cutoffs":[0.95, 0.95]},
-            {"abs_region_rows":[0, -1], "abs_region_cols":[830, 930], "cutoffs":[0.95, 0.95], "good":False},
-            {"abs_region_rows":[0, -1], "abs_region_cols":[1070, 1170], "cutoffs":[0.97, 0.97]},
-            {"abs_region_rows":[0, -1], "abs_region_cols":[1170, 1270], "cutoffs":[0.97, 0.97], "good":False},
-            {"abs_region_rows":[0, -1], "abs_region_cols":[1890, 1990], "cutoffs":[0.97, 0.97], "good":False},
-            {"abs_region_rows":[0, -1], "abs_region_cols":[2120, 2220], "cutoffs":[0.95, 0.95]},
-            # {"blaze_rows":[]}
-            ],
-    
+    # "SO-20210912-022732-178-2":[
+    #         {"abs_region_rows":[0, -1], "abs_region_cols":[670, 770], "cutoffs":[0.97, 0.97], "smfac":25},
+    #         {"abs_region_rows":[0, -1], "abs_region_cols":[1210, 1290], "cutoffs":[0.97, 0.97], "smfac":25},
+    #         {"abs_region_rows":[0, -1], "abs_region_cols":[1310, 1390], "cutoffs":[0.97, 0.97], "smfac":25},
+    #         ],
+
+
+
+
+
+
+
+    # "SO-20190107-015635-184-8":[
+    #         {"abs_region_rows":[500, -1], "abs_region_cols":[540, 640], "cutoffs":[0.95, 0.95]},
+    #         {"abs_region_rows":[0, -1], "abs_region_cols":[680, 780], "cutoffs":[0.95, 0.95]},
+    #         {"abs_region_rows":[0, -1], "abs_region_cols":[870, 970], "cutoffs":[0.95, 0.95], "good":False},
+    #         {"abs_region_rows":[0, -1], "abs_region_cols":[920, 1020], "cutoffs":[0.95, 0.95]},
+    #         {"abs_region_rows":[500, -1], "abs_region_cols":[1310, 1410], "cutoffs":[0.95, 0.95]},
+    #         {"abs_region_rows":[500, -1], "abs_region_cols":[1420, 1520], "cutoffs":[0.95, 0.95]},
+    #         {"abs_region_rows":[0, -1], "abs_region_cols":[1780, 1880], "cutoffs":[0.97, 0.97]},
+    #         {"abs_region_rows":[0, -1], "abs_region_cols":[2520, 2620], "cutoffs":[0.96, 0.96]},
+    #         {"abs_region_rows":[0, 1800], "abs_region_cols":[2670, 2770], "cutoffs":[0.97, 0.97]},
+    #         {"abs_region_rows":[0, -1], "abs_region_cols":[2850, 2950], "cutoffs":[0.95, 0.95], "good":False},
+    #         # {"blaze_rows":[]}
+    #         ],
+
+    # "SO-20190307-011600-184-8":[
+    #         {"abs_region_rows":[500, -1], "abs_region_cols":[500, 600], "cutoffs":[0.95, 0.95]},
+    #         {"abs_region_rows":[0, -1], "abs_region_cols":[640, 740], "cutoffs":[0.95, 0.95]},
+    #         {"abs_region_rows":[0, -1], "abs_region_cols":[830, 930], "cutoffs":[0.95, 0.95], "good":False},
+    #         {"abs_region_rows":[0, -1], "abs_region_cols":[880, 980], "cutoffs":[0.95, 0.95]},
+    #         {"abs_region_rows":[500, -1], "abs_region_cols":[1270, 1370], "cutoffs":[0.95, 0.95]},
+    #         {"abs_region_rows":[500, -1], "abs_region_cols":[1380, 1480], "cutoffs":[0.95, 0.95]},
+    #         {"abs_region_rows":[0, -1], "abs_region_cols":[1740, 1840], "cutoffs":[0.97, 0.97]},
+    #         {"abs_region_rows":[0, -1], "abs_region_cols":[2480, 2580], "cutoffs":[0.96, 0.96]},
+    #         {"abs_region_rows":[0, 1800], "abs_region_cols":[2630, 2730], "cutoffs":[0.97, 0.97]},
+    #         {"abs_region_rows":[0, -1], "abs_region_cols":[2810, 2910], "cutoffs":[0.95, 0.95], "good":False},
+    #         # {"blaze_rows":[]}
+    #         ],
+
+
+    # "SO-20201010-113533-178-8":[
+    #         {"abs_region_rows":[0, -1], "abs_region_cols":[85, 185], "cutoffs":[0.92, 0.92]},
+    #         {"abs_region_rows":[0, -1], "abs_region_cols":[580, 680], "cutoffs":[0.95, 0.95]},
+    #         {"abs_region_rows":[0, -1], "abs_region_cols":[870, 970], "cutoffs":[0.95, 0.95], "good":False},
+    #         {"abs_region_rows":[0, -1], "abs_region_cols":[1110, 1210], "cutoffs":[0.97, 0.97]},
+    #         {"abs_region_rows":[0, -1], "abs_region_cols":[1210, 1310], "cutoffs":[0.97, 0.97], "good":False},
+    #         {"abs_region_rows":[0, -1], "abs_region_cols":[1930, 2030], "cutoffs":[0.97, 0.97], "good":False},
+    #         {"abs_region_rows":[0, -1], "abs_region_cols":[2160, 2260], "cutoffs":[0.95, 0.95]},
+    #         # {"blaze_rows":[]}
+    #         ],
+
+
+    # "SO-20210201-111011-178-8":[
+    #         {"abs_region_rows":[0, -1], "abs_region_cols":[45, 145], "cutoffs":[0.92, 0.92]},
+    #         {"abs_region_rows":[0, -1], "abs_region_cols":[540, 640], "cutoffs":[0.95, 0.95]},
+    #         {"abs_region_rows":[0, -1], "abs_region_cols":[830, 930], "cutoffs":[0.95, 0.95], "good":False},
+    #         {"abs_region_rows":[0, -1], "abs_region_cols":[1070, 1170], "cutoffs":[0.97, 0.97]},
+    #         {"abs_region_rows":[0, -1], "abs_region_cols":[1170, 1270], "cutoffs":[0.97, 0.97], "good":False},
+    #         {"abs_region_rows":[0, -1], "abs_region_cols":[1890, 1990], "cutoffs":[0.97, 0.97], "good":False},
+    #         {"abs_region_rows":[0, -1], "abs_region_cols":[2120, 2220], "cutoffs":[0.95, 0.95]},
+    #         # {"blaze_rows":[]}
+    #         ],
+
+    # "SO-20210523-001053-178-8":[
+    #         {"abs_region_rows":[0, -1], "abs_region_cols":[45, 145], "cutoffs":[0.92, 0.92]},
+    #         {"abs_region_rows":[0, -1], "abs_region_cols":[540, 640], "cutoffs":[0.95, 0.95]},
+    #         {"abs_region_rows":[0, -1], "abs_region_cols":[830, 930], "cutoffs":[0.95, 0.95], "good":False},
+    #         {"abs_region_rows":[0, -1], "abs_region_cols":[1070, 1170], "cutoffs":[0.97, 0.97]},
+    #         {"abs_region_rows":[0, -1], "abs_region_cols":[1170, 1270], "cutoffs":[0.97, 0.97], "good":False},
+    #         {"abs_region_rows":[0, -1], "abs_region_cols":[1890, 1990], "cutoffs":[0.97, 0.97], "good":False},
+    #         {"abs_region_rows":[0, -1], "abs_region_cols":[2120, 2220], "cutoffs":[0.95, 0.95]},
+    #         # {"blaze_rows":[]}
+    #         ],
+
     # "SO-20221011-132104-178-8":[
-            # {"abs_region_rows":[0, -1], "abs_region_cols":[45, 145], "cutoffs":[0.92, 0.92]},
-            # {"abs_region_rows":[0, -1], "abs_region_cols":[540, 640], "cutoffs":[0.95, 0.95]},
-            # {"abs_region_rows":[0, -1], "abs_region_cols":[830, 930], "cutoffs":[0.95, 0.95], "good":False},
-            # {"abs_region_rows":[0, -1], "abs_region_cols":[1070, 1170], "cutoffs":[0.97, 0.97]},
-            # {"abs_region_rows":[0, -1], "abs_region_cols":[1170, 1270], "cutoffs":[0.97, 0.97], "good":False},
-            # {"abs_region_rows":[0, -1], "abs_region_cols":[1890, 1990], "cutoffs":[0.97, 0.97], "good":False},
-            # {"abs_region_rows":[0, -1], "abs_region_cols":[2120, 2220], "cutoffs":[0.95, 0.95]},
+    # {"abs_region_rows":[0, -1], "abs_region_cols":[45, 145], "cutoffs":[0.92, 0.92]},
+    # {"abs_region_rows":[0, -1], "abs_region_cols":[540, 640], "cutoffs":[0.95, 0.95]},
+    # {"abs_region_rows":[0, -1], "abs_region_cols":[830, 930], "cutoffs":[0.95, 0.95], "good":False},
+    # {"abs_region_rows":[0, -1], "abs_region_cols":[1070, 1170], "cutoffs":[0.97, 0.97]},
+    # {"abs_region_rows":[0, -1], "abs_region_cols":[1170, 1270], "cutoffs":[0.97, 0.97], "good":False},
+    # {"abs_region_rows":[0, -1], "abs_region_cols":[1890, 1990], "cutoffs":[0.97, 0.97], "good":False},
+    # {"abs_region_rows":[0, -1], "abs_region_cols":[2120, 2220], "cutoffs":[0.95, 0.95]},
     #         # {"blaze_rows":[]}
     #         ],
     # "SO-20221011-132104-184-8":[
@@ -432,7 +437,6 @@ solar_line_dict = {
 }
 
 
-
 # # code to make the dictionary above
 # channel = "so"
 # # channel = "lno"
@@ -441,6 +445,6 @@ solar_line_dict = {
 #         {"abs_region_rows":[0, -1], "abs_region_cols":[0, -1], "cutoffs":[0.98, 0.98], "smfac":25},
 #         {"blaze_rows":[]}
 #         ],''' %(os.path.splitext(f)[0])
-    
+
 #     print(s)
 # # stop()

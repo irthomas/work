@@ -16,8 +16,8 @@ def read_hdf5_to_dict(hdf5_filename):
 
     import h5py
 
-    with h5py.File(hdf5_filename+".h5",'r') as f:
-    
+    with h5py.File(hdf5_filename+".h5", 'r') as f:
+
         datasets = {}
         for node, dataset in f.items():
             path = node
@@ -36,14 +36,12 @@ def read_hdf5_to_dict(hdf5_filename):
         #                    print(path)
                             if isinstance(f[path], h5py.Dataset):
                                 datasets[path] = dataset3[...]
-                                
+
         attributes = {}
         for name in f.attrs:
             attributes[name] = f.attrs[name]
 
-    return datasets, attributes            
-
-
+    return datasets, attributes
 
 
 def write_hdf5_from_dict(hdf5_filename_new, dataset_dict, attribute_dict, replace_datasets, replace_attributes, resize_len=0, resize_index=0):
@@ -57,7 +55,7 @@ def write_hdf5_from_dict(hdf5_filename_new, dataset_dict, attribute_dict, replac
                 f.attrs[name] = replace_attributes[name]
             else:
                 f.attrs[name] = attr
-        
+
         for node, dataset in dataset_dict.items():
             dtype = dataset.dtype
             if dataset.ndim == 1:
@@ -68,7 +66,7 @@ def write_hdf5_from_dict(hdf5_filename_new, dataset_dict, attribute_dict, replac
                 if resize_len > 0:
                     if dataset.shape[0] == resize_len:
                         dataset = np.array(dataset[resize_index, :], dtype=dtype)
-            
+
 #            if node in replace_datasets.keys():
 #                f[node] = np.array(replace_datasets[node], dtype=dtype)
 #            else:
@@ -78,13 +76,31 @@ def write_hdf5_from_dict(hdf5_filename_new, dataset_dict, attribute_dict, replac
             else:
                 data = dataset
 
-            if data.size>1:
-                compression="gzip"
-                shuffle=True
+            if data.size > 1:
+                compression = "gzip"
+                shuffle = True
             else:
-                compression=None
-                shuffle=False
+                compression = None
+                shuffle = False
 
 #            print(node, data.shape, data, data.size)
             f.create_dataset(node, data=data, dtype=dtype, compression=compression, shuffle=shuffle)
-                
+
+
+def write_hdf5_from_dict_simple(hdf5_filename_new, dataset_dict):
+
+    import h5py
+    with h5py.File(hdf5_filename_new+".h5", "w") as f:
+
+        for node, data in dataset_dict.items():
+            dtype = data.dtype
+
+            if data.size > 1:
+                compression = "gzip"
+                shuffle = True
+            else:
+                compression = None
+                shuffle = False
+
+#            print(node, data.shape, data, data.size)
+            f.create_dataset(node, data=data, dtype=dtype, compression=compression, shuffle=shuffle)

@@ -133,6 +133,88 @@ def get_aotf_sinc_gaussian(channel, aotf_nu_centre=None, aotf_d={}):
 
 
 
+
+def F_aotf_custom(centres, heights, widths, super_gaussian=[], ax=None):
+    #new aotf
+    #13 coefficients + optional super gaussian for the central peak
+
+    dx = np.arange(-150., 150.0, 0.01)
+    
+    aotf = np.zeros_like(dx)
+    for centre, height, width in zip(centres, heights, widths):
+    
+        dx_sinc = np.arange(-width, width, 0.01) + 0.00001
+        
+        if centre == 0.0 and len(super_gaussian) == 3:
+            #overwrite central sinc2 with the super gaussian
+            dx_sinc = np.arange(-width*1.75, width*1.75, 0.01) + 0.00001
+            sup = super_gaussian[0] * np.exp(- 2.0 * (np.abs(dx_sinc - 0.0) / super_gaussian[1])**super_gaussian[2])
+            if ax:
+                ax.plot(dx_sinc+centre, sup, alpha=0.5, color="grey", ls="--")
+        else:
+            sinc2 = (width*np.sin(np.pi * dx_sinc / width)/(np.pi * dx_sinc))**2.0 * height
+            if ax:
+                ax.plot(dx_sinc + centre, sinc2, alpha=0.5, color="grey", ls="--")
+        
+        ixs = np.searchsorted(dx, dx_sinc + centre)
+        
+        if centre == 0.0 and len(super_gaussian) == 3:
+            aotf[ixs] += sup
+        else:
+            aotf[ixs] += sinc2
+        
+    aotf /= np.max(aotf) #normalise
+        
+    if ax:
+        ax.plot(dx, aotf, "k--")
+        
+    return dx, aotf
+
+
+
+def get_aotf_custom(channel, aotf_nu_centre=None, aotf_d={}):
+
+    # centres = np.asarray([-51., -28.5, 0., 29., 52., 75.])
+    # heights = np.asarray([0.18, 0.4, 1.0, 0.45, 0.15, 0.08])
+    # widths = np.asarray([17.0, 17.0, 25.0, 17.0, 17.0, 17.0])
+
+    centres = np.asarray([-100., -75., -51., -28.5, 0., 29., 52., 75., 100.])
+    heights = np.asarray([0.1, 0.18, 0.4, 1.0, 0.45, 0.15, 0.08, 0.05])
+    widths = np.asarray([17.0, 17.0, 17.0, 25.0, 17.0, 17.0, 17.0, 17.0])
+
+
+    super_gaussian = [1.0, 15.0, 2.8]
+
+    dx, F_aotf = F_aotf_custom(centres, heights, widths, super_gaussian=super_gaussian)    
+
+    aotf_nus = dx + aotf_nu_centre
+    aotf_nu_range = [aotf_nus[0], aotf_nus[-1]]
+
+
+    return {"aotf_nus":aotf_nus, "F_aotf":F_aotf, "aotf_nu_range":aotf_nu_range, "aotf_nu_centre":aotf_nu_centre}
+
+
+
+
+
+"""for testing"""
+# import matplotlib.pyplot as plt
+
+# centres = np.asarray([-51., -28.5, 0., 29., 52., 75.])
+# heights = np.asarray([0.18, 0.4, 1.0, 0.45, 0.15, 0.08])
+# widths = np.asarray([17.0, 17.0, 25.0, 17.0, 17.0, 17.0])
+
+# super_gaussian = [1.0, 15.0, 2.8]
+
+# fig1, ax1 = plt.subplots()
+
+# aotf = F_aotf_custom(centres, heights, widths, super_gaussian=super_gaussian, ax=ax1)    
+
+
+
+
+
+
 def get_blaze_file(channel):
     
     blaze_filename = {

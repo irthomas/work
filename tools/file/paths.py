@@ -28,6 +28,7 @@ if SYSTEM == "Linux": #linux system
     paths["DATASTORE_ROOT_DIRECTORY"] = os.path.normcase(r"/bira-iasb/data/SATELLITE/TRACE-GAS-ORBITER/NOMAD")
     paths["LOCAL_DIRECTORY"] = os.path.normcase(r"/home/iant/linux/DATA")
     paths["RETRIEVAL_DIRECTORY"] = os.path.normcase(r"/home/iant/linux/input_tools/Tools")
+    paths["FOOTPRINT_DIRECTORY"] = os.path.normcase(r"/bira-iasb/data/SATELLITE/TRACE-GAS-ORBITER/NOMAD/footprint")
     paths["DB_DIRECTORY"] = os.path.normcase(r"/bira-iasb/projects/work/NOMAD/Science/ian/db")
     paths["ANIMATION_DIRECTORY"] = os.path.normcase(r"/home/iant/linux/DATA/animations")
     paths["SIMULATION_DIRECTORY"] = os.path.normcase(r"/home/iant/linux/DATA/simulations")
@@ -66,7 +67,7 @@ elif os.path.exists(os.path.normcase(r"C:\Users\iant\Dropbox\NOMAD\Python")): #o
 
     # paths["DATA_DIRECTORY"] = os.path.normcase(r"C:\Users\iant\Documents\DATA\hdf5_copy")
     # paths["DATA_DIRECTORY"] = os.path.normcase(r"C:\Users\iant\Documents\DATA\hdf5")
-    paths["DATA_DIRECTORY"] = os.path.normcase(r"E:\DATA\hdf5")
+    paths["DATA_DIRECTORY"] = os.path.normcase(r"D:\DATA\hdf5")
     # paths["DATA_DIRECTORY"] = os.path.normcase(r"W:\data\SATELLITE\TRACE-GAS-ORBITER\NOMAD\hdf5")
     # paths["DATA_DIRECTORY"] = os.path.normcase(r"W:\data\SATELLITE\TRACE-GAS-ORBITER\NOMAD\test\iant\hdf5")
 
@@ -79,10 +80,13 @@ elif os.path.exists(os.path.normcase(r"C:\Users\iant\Dropbox\NOMAD\Python")): #o
     paths["RETRIEVAL_DIRECTORY"] = os.path.normcase(r"C:\Users\iant\Documents\DATA\retrievals")
 #    paths["RETRIEVAL_DIRECTORY"] = os.path.normcase(r"X:\linux\input_tools\Tools")
 
+    paths["FOOTPRINT_DIRECTORY"] = os.path.normcase(r"D:\DATA\footprint")
+
+
     paths["DB_DIRECTORY"] = os.path.normcase(r"C:\Users\iant\Documents\DATA\db")
     paths["ANIMATION_DIRECTORY"] = os.path.normcase(r"C:\Users\iant\Documents\DATA\animations")
     paths["SIMULATION_DIRECTORY"] = os.path.normcase(r"C:\Users\iant\Documents\DATA\simulations")
-    paths["GCM_DIRECTORY"] = os.path.normcase(r"E:\DATA\gcm")
+    paths["GCM_DIRECTORY"] = os.path.normcase(r"D:\DATA\gcm")
     paths["KERNEL_DIRECTORY"] = os.path.normcase(r"C:\Users\iant\Documents\DATA\local_spice_kernels\kernels\mk")
 
     paths["COP_TABLE_DIRECTORY"] = os.path.normcase(r"C:\Users\iant\Documents\DATA\cop_tables")
@@ -92,7 +96,7 @@ elif os.path.exists(os.path.normcase(r"C:\Users\iant\Dropbox\NOMAD\Python")): #o
     paths["PFM_AUXILIARY_FILES"] = os.path.normcase(r"C:\Users\iant\Documents\DATA\pfm_auxiliary_files")
 #    paths["PFM_AUXILIARY_FILES"] = os.path.normcase(r"X:\projects\NOMAD\data\pfm_auxiliary_files")
 
-    paths["FS_DATA_DIRECTORY"] = os.path.normcase(r"E:\DATA\flight_spare\hdf5")
+    paths["FS_DATA_DIRECTORY"] = os.path.normcase(r"D:\DATA\flight_spare\hdf5")
     # paths["FS_DATA_DIRECTORY"] = os.path.normcase(r"X:\projects\NOMAD\data\flight_spare\hdf5")
 
     FIG_X = 10 #for PPT
