@@ -9,7 +9,7 @@ CONVERT SOLAR LINE INTO AOTF/PIXEL RANGE
 
 
 import os
-import h5py
+# import h5py
 from astropy.io import fits
 
 
@@ -25,6 +25,8 @@ from tools.spectra.solar_spectrum import get_solar_hr
 from tools.general.progress_bar import progress
 
 from instrument.calibration.so_lno_2023.solar_line_dict import solar_line_dict
+
+from analysis.so_lno_2023.functions.aotf_blaze_ils import get_ils_coeffs, make_ils
 
 MINISCAN_PATH = os.path.normcase(r"C:\Users\iant\Documents\DATA\miniscans")
 
@@ -93,6 +95,7 @@ orders = np.arange(min_order, max_order+1)
 
 px_ixs = np.arange(320.0)
 
+
 solar_spec_d = {}
 for order in orders:
     px_nus = nu_mp(order, px_ixs, t_mean)
@@ -105,9 +108,55 @@ for order in orders:
 
     solar_spec_d[order]["solar_spec"] = solar_spec
 
-for order in orders:
+
+# ILS convolution
+# sum of ILS for each pixel for T=1
+ils_sum = np.zeros(len(px_nus))
+ils_sums = np.zeros((len(orders), len(px_nus)))
+# sum of ILS for each pixel including absorptions
+ils_sums_spectrum = np.zeros((len(orders), len(px_nus)))
+
+for order_ix, order in enumerate(orders):
+    # spectral calibration of each pixel in order
     px_nus = nu_mp(order, px_ixs, t_mean)
-    plt.plot(px_nus, solar_spec_d[order]["solar_spec"])
+    # plt.plot(px_nus, solar_spec_d[order]["solar_spec"], label="Order %i" % order)
+
+    # convolve with ILS to make low resolution plot
+    # approx value for order
+    aotf_nu_centre = np.mean(aotf_line)
+    ils_d = get_ils_coeffs(channel, aotf_nu_centre)
+
+    for px, px_nu in enumerate(px_nus):
+
+        # get bounding indices of solar grid
+        ix_start = np.searchsorted(nu_hr, px_nu - 0.7)
+        ix_end = np.searchsorted(nu_hr, px_nu + 0.7)
+
+        width = ils_d["ils_width"][px]  # only ILS width known for LNO
+        # displacement = ils_d["ils_displacement"][px]
+        # amplitude = ils_d["ils_amplitude"][px]
+        displacement = 0.0
+        amplitude = 0.0
+
+        nu_grid = nu_hr[ix_start:ix_end] - px_nu
+        solar_grid = solar_hr[ix_start:ix_end]
+
+        ils = make_ils(nu_grid, width, displacement, amplitude)
+        # summed ils without absorption lines - different for different pixels but v. similar for orders
+        ils_sum[px] = np.sum(ils)
+        ils_sums[order_ix, px] = ils_sum[px]
+        # summed ils with absorption lines - changes with pixel and order
+        ils_sums_spectrum[order_ix, px] = np.sum(ils * solar_grid)
+
+spectrum = ils_sums_spectrum / ils_sums
+
+for order_ix, order in enumerate(orders):
+    px_nus = nu_mp(order, px_ixs, t_mean)
+    plt.plot(px_nus, spectrum[order_ix, :])
+
+# plt.legend()
+# plt.grid()
+
 
 # norm_scan_array = np.zeros_like(scan_array)
 # for i in range(aotf_array.shape[0]):

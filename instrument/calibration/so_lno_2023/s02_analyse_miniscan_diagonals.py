@@ -49,8 +49,10 @@ INPUT_FILE_TYPE = "fits"  # which file type should be loaded?
 # save_ifigs = True
 save_ifigs = False
 
-
+# define what should be plotted
+# fit coeffs is plotted separately
 plot = ["uncorrected array", "residual array", "corrected array", "residual array 2", "corrected array 2", "residual spectra", "fit coeffs"]
+# define the plotting axes, should be enough to include all above except fit coeffs
 naxes = [2, 3]
 
 

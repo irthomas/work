@@ -301,8 +301,10 @@ class forward:
                         hapi_min = 1.0
                     else:
                         hapi_min = np.min(hapi_trans_grid)
-                    logger.debug("order %i, px %i: ix_start = %i, ix_end = %i, hapi_grid has %i points, min trans = %0.8f, blaze_aotf = %f, ils_sum = %f, ils_sums = %f, ils_sums_spectrum = %f",
-                                 order, px, ix_start, ix_end, len(hapi_grid), hapi_min, blaze_aotf[order_ix, px], ils_sum[px], ils_sums[order_ix, px], ils_sums_spectrum[order_ix, px])
+                    logger.debug("order %i, px %i: ix_start = %i, ix_end = %i, hapi_grid has %i points, min trans = %0.8f, blaze_aotf = %f, \
+                                 ils_sum = %f, ils_sums = %f, ils_sums_spectrum = %f",
+                                 order, px, ix_start, ix_end, len(hapi_grid), hapi_min, blaze_aotf[order_ix, px],
+                                 ils_sum[px], ils_sums[order_ix, px], ils_sums_spectrum[order_ix, px])
 
         # expand ils_sums to [n_orders x n_px]
         # ils_sums = np.tile(ils_sum, (len(self.orders), 1))

@@ -15,8 +15,8 @@ import matplotlib.pyplot as plt
 
 from tools.file.hdf5_functions import make_filelist, open_hdf5_file
 
-# regex = re.compile("202[0123]...._......_.*_UVIS_O")
-regex = re.compile("20231..._......_.*_UVIS_O")
+regex = re.compile("20(2[012]....|230...)_......_.*_UVIS_O")
+# regex = re.compile("20231..._......_.*_UVIS_O")
 
 
 def get_uvis_data(regex):
@@ -57,7 +57,9 @@ emission_ixs = np.abs(x - 589).argmin()
 
 y_binned_d = {}
 
+
 for lower_alt in np.arange(45., 75., 5.):
+    # for lower_alt in [55.]:
     upper_alt = lower_alt + 5.0
 
     alt_ixs = np.where((uvis_dict["alts"] > lower_alt) & (uvis_dict["alts"] < upper_alt))[0]
@@ -65,26 +67,32 @@ for lower_alt in np.arange(45., 75., 5.):
     # plot all spectra individually, grouped into altitude bins
     # plt.figure()
     # plt.title("%i - %i km (%i spectra)" % (lower_alt, upper_alt, len(alt_ixs)))
+    # plt.xlabel("Wavelength (nm)")
+    # plt.ylabel("Radiance")
+    # plt.grid()
 
     y_norms = []
     for alt_ix in alt_ixs:
         sza = uvis_dict["szas"][alt_ix]
 
-        if sza > 100:
+        if sza > 110:
             y = uvis_dict["ys"][alt_ix, :]
-            # plt.plot(x, y, color=[sza/180, sza/180, sza/180], alpha=1.0)
+            colour = (sza-90)/120
+            # plt.plot(x, y, color=[colour, colour, colour], alpha=0.4)
+            # plt.plot(x, y, alpha=0.3)
 
             # print(lower_alt, np.mean(y[:300]), sza)
 
             polyfit = np.polyfit(x, y, 2)
             polyval = np.polyval(polyfit, x)
-            # plt.plot(x, polyval)
+            # plt.plot(x, polyval, color=[colour, colour, colour], alpha=1.0)
 
             y_norm = y - polyval
 
-            y_norms.append(y_norm)
+            if np.mean(y) > 0.0:
+                y_norms.append(y_norm)
 
-            # plt.plot(x, y_norm, alpha=0.1)
+            # plt.plot(x, y_norm, color=[colour, colour, colour], alpha=0.4)
 
             mean_left = np.mean(y_norm[continuum_ixs_left])
             mean_right = np.mean(y_norm[continuum_ixs_right])
@@ -104,12 +112,35 @@ for lower_alt in np.arange(45., 75., 5.):
     y_binned_d[lower_alt] = {"y_norms": y_norms, "mean": np.mean(y_norms, axis=0), "std": np.std(y_norms, axis=0)}
 
 
+# check spectral calibration
 plt.figure()
-for lower_alt in np.arange(45., 75., 5.):
+plt.title("Spectral calibration check: which pixel index corresponds to the Na emission line (589nm)")
+plt.xlabel("Spectrum number, for spectra taken from all files")
+plt.ylabel("Wavelength of pixel (nm)")
+for i in [765, 766]:
+    plt.plot(uvis_dict["xs"][:, i], label="Pixel %i" % (i+100))
+plt.legend()
+plt.grid()
+
+
+# #investigate one altitude
+# lower_alt = 55
+# y_norms = y_binned_d[lower_alt]["y_norms"]
+# plt.figure()
+# plt.plot(y_norms.T, alpha=0.3)
+# plt.title("All spectra in the %i-%i altitude")
+
+
+plt.figure()
+# for i, lower_alt in enumerate([55.]):
+for i, lower_alt in enumerate(np.arange(45., 75., 5.)):
 
     y_mean = y_binned_d[lower_alt]["mean"]
 
-    plt.plot(y_mean, alpha=0.3, label=lower_alt)
+    offset = i * 1e-6
+
+    plt.plot(x, y_mean + offset, alpha=0.7, label="%i-%ikm" % (lower_alt, lower_alt+5), color="C%i" % i)
+    plt.axhline(offset, alpha=1.0, color="C%i" % i)
 
     mean_left = np.mean(y_mean[continuum_ixs_left])
     mean_right = np.mean(y_mean[continuum_ixs_right])
@@ -119,6 +150,14 @@ for lower_alt in np.arange(45., 75., 5.):
 
     emission = y_mean[emission_ixs]
 
-    plt.scatter([569, 589, 610], [mean_left, emission, mean_right])
+    # plt.scatter([569, 589, 610], [mean_left, emission, mean_right])
+    # plt.axvline(x[continuum_ixs_left[0]], color="k")
+    # plt.axvline(x[continuum_ixs_left[-1]], color="k")
+    # plt.axvline(x[continuum_ixs_right[0]], color="k")
+    # plt.axvline(x[continuum_ixs_right[-1]], color="k")
 
+plt.title("Mean of all spectra for different latitude bins, offset for clarity")
 plt.legend()
+plt.xlabel("Wavelength (nm)")
+plt.ylabel("Radiance")
+plt.grid()
