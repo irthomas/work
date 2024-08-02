@@ -39,34 +39,45 @@ file_level = "hdf5_level_1p0a"
 regex = re.compile("20.*_%s_.*_CM" % channel.upper())  # search all files
 # regex = re.compile("20180716.*_%s_.*_CM" % channel.upper())  # search specific file SO
 # regex = re.compile("20181209_180348_1p0a_LNO_2_CM")  # search specific file LNO
+# regex = re.compile("20210606_021551_1p0a_LNO_2_CM")  # search specific file LNO
 
 # #ground
 # file_level = "hdf5_level_0p1a"
 # regex = re.compile("20150404_(08|09|10)...._.*")  #all observations with good lines (CH4 only)
 
 
-HR_SCALER = 10.  # make HR grid with N times more points than pixel columns
+HR_SCALER = 5.  # make HR grid with N times more points than pixel columns
 
 MINISCAN_PATH = os.path.normcase(r"C:\Users\iant\Documents\DATA\miniscans")
+H5_ROOT_PATH = r"C:\Users\iant\Documents\DATA\hdf5"
 
 OUTPUT_FILE_TYPE = "fits"
 # OUTPUT_FILE_TYPE = "h5"
 
 
+# list and colour code files matching the search parameters
 list_files = True
 # list_files = False
+
+# force reloading of h5 data? If false and variable exists, use values in memory
+force_reload = True
+# force_reload = False
+
 
 # for checking the oscillation removal
 # plot_fft = True
 plot_fft = False
 
+# for checking interpolation and oscillations in miniscan grid
+# plot_hr_grid = True
+plot_hr_grid = False
 
 if channel == "so":
 
     # search for miniscan files with the following characteristics
     # aotf step in kHz
-    aotf_steppings = [4.0]
-    # aotf_steppings = [2.0]
+    aotf_steppings = [4]
+    # aotf_steppings = [2]
 
     # detector row binning
     binnings = [0]
@@ -77,12 +88,13 @@ if channel == "so":
 
 
 elif channel == "lno":
-    # aotf_steppings = [8.0]
-    aotf_steppings = [2.0, 4.0, 8.0]
+    # aotf_steppings = [8]
+    aotf_steppings = [4, 8]
     binnings = [0]
 
     # starting_orders = [194]
-    starting_orders = list(range(180, 210))
+    # starting_orders = list(range(180, 210))
+    starting_orders = list(range(110, 210))
 
 
 # only reload from disk if not present
@@ -92,18 +104,20 @@ if "d" not in globals():
 
 """get data"""
 if list_files:
-    h5_filenames, h5_prefixes = list_miniscan_data_1p0a(regex, file_level, channel, starting_orders, aotf_steppings, binnings, path=None)
+    h5_filenames, h5_prefixes = list_miniscan_data_1p0a(regex, file_level, channel, starting_orders,
+                                                        aotf_steppings, binnings, path=H5_ROOT_PATH)
 
     # only reload from disk if not present
-    if "d" not in globals():
-        d = get_miniscan_data_1p0a(h5_filenames, channel)
+    if "d" not in globals() or force_reload:
+        d = get_miniscan_data_1p0a(h5_filenames, channel, plot=False, path=H5_ROOT_PATH)
     if h5_prefixes != list(d.keys()):
-        d = get_miniscan_data_1p0a(h5_filenames, channel)
+        d = get_miniscan_data_1p0a(h5_filenames, channel, path=H5_ROOT_PATH)
 
 
 # remove oscillations, output spectra and other info to a dictionary d2
 d2 = remove_oscillations(d, channel, plot=plot_fft)
 
+# stop()
 
 """make high resolution (hr) arrays"""
 for h5_prefix in progress(h5_prefixes):
@@ -117,6 +131,12 @@ for h5_prefix in progress(h5_prefixes):
         array = d2[h5_prefix]["array%i" % rep]
         array_hr, aotf_hr = make_hr_array(array, aotfs, HR_SCALER)
         d2[h5_prefix]["array%i_hr" % rep] = array_hr
+
+        if plot_hr_grid:
+            plt.figure()
+            for i in range(15, 320, 50):
+                plt.plot(np.arange(array.shape[0]), array[:, i])
+                plt.plot(np.arange(array_hr.shape[0])/HR_SCALER, array_hr[:, i*int(HR_SCALER)])
 
     d2[h5_prefix]["aotf_hr"] = aotf_hr
 

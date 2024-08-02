@@ -270,7 +270,7 @@ def get_ils_lno(aotf_nu_centre):
     """LNO - to be recalculated"""
 
     pixels = np.arange(320.)
-    rp = 8500.  # resolving power cm-1/dcm-1
+    rp = 14000.  # resolving power cm-1/dcm-1
 
     A_w_nu0 = aotf_nu_centre / rp
     sconv = A_w_nu0/2.355

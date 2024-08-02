@@ -17,14 +17,21 @@ import numpy as np
 # from scipy.interpolate import UnivariateSpline
 import matplotlib.pyplot as plt
 
+from scipy.ndimage import gaussian_filter
+from scipy.signal import argrelmin
+
+
 # from instrument.nomad_so_instrument_v03 import aotf_peak_nu
 from instrument.nomad_lno_instrument_v02 import nu_mp, nu0_aotf, F_aotf_sinc
 
 
 from tools.spectra.solar_spectrum import get_solar_hr
+from tools.spectra.baseline_als import baseline_als
 from tools.general.progress_bar import progress
 
+
 from instrument.calibration.so_lno_2023.solar_line_dict import solar_line_dict
+from instrument.calibration.so_lno_2023.fit_blaze_shape import fit_blaze
 
 from analysis.so_lno_2023.functions.aotf_blaze_ils import get_ils_coeffs, make_ils
 
@@ -34,14 +41,31 @@ MINISCAN_PATH = os.path.normcase(r"C:\Users\iant\Documents\DATA\miniscans")
 channel = "lno"
 
 
+aotf_steppings = [8]
+
 # save_ifigs = True
 save_ifigs = False
+
+# plot_solar = True
+plot_solar = False
+
+force_reload = True
+# force_reload = False
 
 
 plot = []
 
+# new version finds solar line positions automatically rather than using the solar line dict
+# check for data available in miniscan dir
+filenames = os.listdir(os.path.join(MINISCAN_PATH, channel))
+# list all fits files
+h5_prefixes = [s.replace(".fits", "") for s in filenames if ".fits" in s and s]
+# list those with chosen stepping
+h5_prefixes = [s for s in h5_prefixes if int(s.split("-")[-1]) in aotf_steppings]
 
-for h5_prefix, solar_line_data_all in solar_line_dict.items():  # loop through files
+# for h5_prefix, solar_line_data_all in solar_line_dict.items():  # loop through files
+for file_ix, h5_prefix in enumerate(h5_prefixes):  # loop through files
+    print("%i/%i: %s" % (file_ix+1, len(h5_prefixes), h5_prefix))
     channel = h5_prefix.split("-")[0].lower()
 
     # get data from miniscan file
@@ -57,10 +81,81 @@ for h5_prefix, solar_line_data_all in solar_line_dict.items():  # loop through f
             aotfs.append(hdul["AOTF%02i" % i].data)
             ts.append(hdul["T%02i" % i].data)
 
+    aotf_array = aotfs[0]
+    scan_array = arrs[0]
+    t_mean = np.mean(ts[0])
+    nrows, ncols = scan_array.shape
 
-aotf_array = aotfs[0]
-scan_array = arrs[0]
-t_mean = np.mean(ts[0])
+# fit blaze shape to every spectrum in the whole array
+# if "scan_array_norm" not in globals() or force_reload:
+    scan_blaze_fits = np.zeros_like(scan_array)
+    for i, scan_line in enumerate(progress(scan_array)):
+        scan_blaze_fits[i, :] = fit_blaze(scan_line, max_rms=0.02)
+    # normalise to flat spectrum by removing blaze
+    scan_array_norm = scan_array / scan_blaze_fits
+# fig1, (ax1a, ax1b) = plt.subplots(nrows=2)
+# ax1a.set_title("Blaze fitting")
+# ax1b.set_title("Blaze removed")
+# ax1a.imshow(scan_blaze_fits)
+# ax1b.imshow(scan_array_norm)
+
+    # find local minima
+    # find smallest values in array, then block off x points around
+    min_array = np.zeros_like(scan_array_norm)
+
+    # get row and col indices of minima in order, with deepest absorption first
+    sorted_ixs = np.array(np.unravel_index(np.argsort(scan_array_norm, axis=None), scan_array_norm.shape))
+
+    n_found = 0
+    # loop through absorption rows and col indices
+    for i in np.arange(sorted_ixs.shape[1]):
+        ix = sorted_ixs[:, i]
+
+        # if index too close to top/bottom of detector, skip
+        if ix[1] < 100 or ix[1] > ncols-50:
+            continue
+
+        # if index too close to left/right edge of detector, skip
+        if ix[0] < 100 or ix[0] > nrows-100:
+            continue
+
+        # if chosen point is not already blocked off
+        if min_array[ix[0], ix[1]] == 0:
+            n_found += 1
+            # print(ix)
+            # set absorption centre = 2
+            min_array[ix[0], ix[1]] = 2
+
+            # set points arround it = 1 to block them off, so they aren't used in future iterations
+            x_around = [i for i in np.arange(ix[0]-400, ix[0]+400, 1) if i >= 0 and i < nrows]
+            y_around = [i for i in np.arange(ix[1]-40, ix[1]+40, 1) if i >= 0 and i < ncols]
+            for x in x_around:
+                for y in y_around:
+                    if min_array[x, y] == 0:
+                        min_array[x, y] = 1
+
+        # once N absorptions have been found, stop
+        if n_found == 5:
+            break
+
+    fig1, (ax1a, ax1b) = plt.subplots(nrows=2)
+    ax1a.set_title("Blaze removed")
+    ax1b.set_title("Absorption search")
+    ax1a.imshow(scan_array_norm)
+    ax1b.imshow(min_array)
+
+    plt.figure()
+    for col_ix, row_ix in zip(np.where(min_array == 2)[1], np.where(min_array == 2)[0]):
+        column = scan_array_norm[:, col_ix]
+        depth = scan_array_norm[row_ix, col_ix]
+        aotf_khzs = aotf_array[:, col_ix]
+        aotf_khz_centre = aotf_array[row_ix, col_ix]
+        aotf_func = 1.0 - (column / depth)
+        plt.plot(aotf_khzs - aotf_khz_centre, aotf_func, label=col_ix)
+    plt.grid()
+    plt.legend()
+
+stop()
 
 # find upper/lower nus for high res solar spectrum
 min_aotf_khz = np.min(aotf_array)
@@ -74,9 +169,18 @@ max_nu = aotf_search_range_nu[np.searchsorted(aotf_search_range_khz, max_aotf_kh
 
 # get solar spectrum
 nu_hr = np.arange(min_nu - 50.0, max_nu + 50.0, 0.001)
-solar_hr = get_solar_hr(nu_hr)
+solar_hr_raw = get_solar_hr(nu_hr)
+# normalise + correct solar with baseline ALS
+solar_cont = baseline_als(solar_hr_raw, lam=1e11, p=0.9999)
+solar_hr = solar_hr_raw / solar_cont
 
-# plt.plot(nu_hr, solar_hr)
+if plot_solar:
+    plt.figure()
+    plt.plot(nu_hr, solar_hr_raw)
+    plt.plot(nu_hr, solar_cont)
+    plt.figure()
+    plt.plot(nu_hr, solar_hr)
+
 
 aotf_line = aotf_array[0, :]
 scan_line = scan_array[0, :]
@@ -94,6 +198,7 @@ max_order = order_search_range[np.searchsorted(order_search_range_nu, max_nu)]
 orders = np.arange(min_order, max_order+1)
 
 px_ixs = np.arange(320.0)
+px_ixs_hr = np.arange(ncols) / ncols * 320.0
 
 
 solar_spec_d = {}
@@ -141,7 +246,7 @@ for order_ix, order in enumerate(orders):
         nu_grid = nu_hr[ix_start:ix_end] - px_nu
         solar_grid = solar_hr[ix_start:ix_end]
 
-        ils = make_ils(nu_grid, width, displacement, amplitude)
+        ils = make_ils(nu_grid, width/6., displacement, amplitude)
         # summed ils without absorption lines - different for different pixels but v. similar for orders
         ils_sum[px] = np.sum(ils)
         ils_sums[order_ix, px] = ils_sum[px]
@@ -150,12 +255,26 @@ for order_ix, order in enumerate(orders):
 
 spectrum = ils_sums_spectrum / ils_sums
 
-for order_ix, order in enumerate(orders):
-    px_nus = nu_mp(order, px_ixs, t_mean)
-    plt.plot(px_nus, spectrum[order_ix, :])
 
-# plt.legend()
-# plt.grid()
+plt.figure()
+for order_ix, order in enumerate(orders):
+    # px_nus = nu_mp(order, px_ixs, t_mean)
+    px_nus_hr = nu_mp(order, px_ixs_hr, t_mean)
+
+    spectrum_norm = spectrum[order_ix, :] / np.max(spectrum[order_ix, :])
+
+    spectrum_norm_hr = np.interp(px_ixs_hr, px_ixs, spectrum_norm)
+
+    plt.plot(px_nus_hr, spectrum_norm_hr, label="Order %i" % order)
+
+    if order == 194:
+        plt.plot(px_nus_hr[10:], scan_array_norm[75, 10:], linestyle="--")
+    if order == 195:
+        plt.plot(px_nus_hr[10:], scan_array_norm[120, 10:], linestyle="--")
+
+
+plt.legend()
+plt.grid()
 
 
 # norm_scan_array = np.zeros_like(scan_array)

@@ -80,10 +80,10 @@ solar_line_dict = {
     # "LNO-20181209-180348-158-4":[
     #         {"arr_region_rows":[0, -1], "arr_region_cols":[0, -1], "abs_region_rows":[0, -1], "abs_region_cols":[0, -1], "cutoffs":[0.98, 0.98], "smfac":25},
     #         ],
-    "LNO-20181209-180348-191-4": [
-        {"arr_region_rows": [0, -1], "arr_region_cols":[2000, 2300], "abs_region_rows":[0, -1],
-            "abs_region_cols":[2120, 2250], "cutoffs":[0.97, 0.97], "smfac":25},
-    ],
+    # "LNO-20181209-180348-191-4": [
+    #     {"arr_region_rows": [0, -1], "arr_region_cols":[2000, 2300], "abs_region_rows":[0, -1],
+    #         "abs_region_cols":[2120, 2250], "cutoffs":[0.97, 0.97], "smfac":25},
+    # ],
     # "LNO-20190212-142357-122-8":[
     #         {"arr_region_rows":[0, -1], "arr_region_cols":[0, -1], "abs_region_rows":[0, -1], "abs_region_cols":[0, -1], "cutoffs":[0.98, 0.98], "smfac":25},
     #         ],
@@ -239,14 +239,6 @@ solar_line_dict = {
     #         {"arr_region_rows":[0, -1], "arr_region_cols":[0, -1], "abs_region_rows":[0, -1], "abs_region_cols":[0, -1], "cutoffs":[0.98, 0.98], "smfac":25},
     #         ],
 
-
-
-
-
-
-
-
-
     # "SO-20180716-000706-178-4":[
     #         {"abs_region_rows":[0, -1], "abs_region_cols":[670, 770], "cutoffs":[0.97, 0.97], "smfac":25, "good":True},
     #         {"abs_region_rows":[0, -1], "abs_region_cols":[1210, 1290], "cutoffs":[0.97, 0.97], "smfac":25, "good":True},
@@ -270,13 +262,11 @@ solar_line_dict = {
     #         # {"blaze_rows":[]}
     #         ],
 
-
     # "SO-20181206-171850-181-4":[
     #         {"abs_region_rows":[0, -1], "abs_region_cols":[160, 270], "cutoffs":[0.92, 0.92], "smfac":25, "good":True},
     #         {"abs_region_rows":[0, -1], "abs_region_cols":[2220, 2350], "cutoffs":[0.95, 0.95], "smfac":25, "good":True},
     #         # {"blaze_rows":[390]}
     #         ],
-
 
     # "SO-20190416-024455-184-4":[
     #         {"abs_region_rows":[0, -1], "abs_region_cols":[1240, 1340], "cutoffs":[0.97, 0.97], "smfac":25},
@@ -284,7 +274,6 @@ solar_line_dict = {
     #         {"abs_region_rows":[0, -1], "abs_region_cols":[1910, 2020], "cutoffs":[0.97, 0.97], "smfac":25},
     #         # {"blaze_rows":[1500]}
     #         ],
-
 
     # "SO-20210226-085144-178-4":[
     #         {"abs_region_rows":[0, -1], "abs_region_cols":[550, 650], "cutoffs":[0.95, 0.95], "smfac":25},
@@ -321,12 +310,6 @@ solar_line_dict = {
     # #         # {"blaze_rows":[360]}
     #         ],
 
-
-
-
-
-
-
     # "SO-20181129-002850-184-2":[
     #         {"abs_region_rows":[0, -1], "abs_region_cols":[1240, 1340], "cutoffs":[0.98, 0.98], "smfac":25},
     #         {"abs_region_rows":[0, -1], "abs_region_cols":[1360, 1430], "cutoffs":[0.98, 0.98], "smfac":25},
@@ -339,12 +322,6 @@ solar_line_dict = {
     #         {"abs_region_rows":[0, -1], "abs_region_cols":[1210, 1290], "cutoffs":[0.97, 0.97], "smfac":25},
     #         {"abs_region_rows":[0, -1], "abs_region_cols":[1310, 1390], "cutoffs":[0.97, 0.97], "smfac":25},
     #         ],
-
-
-
-
-
-
 
     # "SO-20190107-015635-184-8":[
     #         {"abs_region_rows":[500, -1], "abs_region_cols":[540, 640], "cutoffs":[0.95, 0.95]},
@@ -374,7 +351,6 @@ solar_line_dict = {
     #         # {"blaze_rows":[]}
     #         ],
 
-
     # "SO-20201010-113533-178-8":[
     #         {"abs_region_rows":[0, -1], "abs_region_cols":[85, 185], "cutoffs":[0.92, 0.92]},
     #         {"abs_region_rows":[0, -1], "abs_region_cols":[580, 680], "cutoffs":[0.95, 0.95]},
@@ -385,7 +361,6 @@ solar_line_dict = {
     #         {"abs_region_rows":[0, -1], "abs_region_cols":[2160, 2260], "cutoffs":[0.95, 0.95]},
     #         # {"blaze_rows":[]}
     #         ],
-
 
     # "SO-20210201-111011-178-8":[
     #         {"abs_region_rows":[0, -1], "abs_region_cols":[45, 145], "cutoffs":[0.92, 0.92]},

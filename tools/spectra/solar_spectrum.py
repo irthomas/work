@@ -8,7 +8,8 @@ import os
 
 from tools.file.paths import paths
 
-SOLAR_SPECTRUM_FILE = os.path.join(paths["RETRIEVALS"]["SOLAR_DIR"], "Solar_irradiance_ACESOLSPEC_2015.dat")
+# SOLAR_SPECTRUM_FILE = os.path.join(paths["RETRIEVALS"]["SOLAR_DIR"], "Solar_irradiance_ACESOLSPEC_2015.dat")
+SOLAR_SPECTRUM_FILE = os.path.join(paths["RETRIEVALS"]["SOLAR_DIR"], "pfsolspec_hr.dat")
 
 
 def get_solar_hr(nu_hr, solspec_filepath=SOLAR_SPECTRUM_FILE, nu_limit=2.0, interpolate=True):

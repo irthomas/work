@@ -6,12 +6,20 @@ Created on Fri Jun 21 11:21:43 2024
 """
 
 import numpy as np
+import matplotlib.pyplot as plt
+
+from numpy.polynomial.polynomial import polyfit, polyval
 
 from tools.file.hdf5_functions import make_filelist, open_hdf5_file
+from tools.spectra.bad_pixel_functions import median_frame_bad_pixel
+
 from tools.general.cprint import cprint
 
 
-illuminated_row_dict = {24: slice(6, 19)}
+illuminated_row_dict = {
+    "so": {24: slice(6, 19)},
+    "lno": {24: slice(1, 16)},
+}
 
 
 def list_miniscan_data_1p0a(regex, file_level, channel, starting_orders, aotf_steppings, binnings, path=None):
@@ -38,7 +46,7 @@ def list_miniscan_data_1p0a(regex, file_level, channel, starting_orders, aotf_st
 
         orders = np.array([m_aotf(i) for i in unique_aotf_freqs])
         unique_orders = sorted(list(set(orders)))
-        aotf_freqs_step = unique_aotf_freqs[1] - unique_aotf_freqs[0]
+        aotf_freqs_step = int(np.round(unique_aotf_freqs[1] - unique_aotf_freqs[0]))
 
         h5_split = h5.split("_")
         h5_prefix = f"{h5_split[3]}-{h5_split[0]}-{h5_split[1]}-%i-%i" % (np.min(unique_orders), np.round(aotf_freqs_step))
@@ -102,7 +110,7 @@ def list_miniscan_data_1p0a(regex, file_level, channel, starting_orders, aotf_st
 #     return d
 
 
-def get_miniscan_data_1p0a(h5_filenames, channel):
+def get_miniscan_data_1p0a(h5_filenames, channel, plot=False, path=None):
 
     print("Getting data for %i files" % len(h5_filenames))
 
@@ -112,14 +120,14 @@ def get_miniscan_data_1p0a(h5_filenames, channel):
         from instrument.nomad_lno_instrument_v02 import m_aotf
 
     d = {}
-    for h5 in h5_filenames:
+    for file_ix, h5 in enumerate(h5_filenames):
         # if "SO" in h5:
         #     good_bins = np.arange(126, 131)
         # elif "LNO" in h5:
         #     good_bins = np.arange(150, 155)
 
-        print("Getting data for %s" % h5)
-        h5_f = open_hdf5_file(h5)
+        print("%i/%i: getting data for file %s" % (file_ix, len(h5_filenames), h5))
+        h5_f = open_hdf5_file(h5, path=path)
 
         # observationDatetimes = h5_f["Geometry/ObservationDateTime"][...]
         # bins = h5_f["Science/Bins"][:, 0]
@@ -130,14 +138,43 @@ def get_miniscan_data_1p0a(h5_filenames, channel):
         # number of bins per aotf_freq
         n_bins = np.where(np.diff(aotf_freqs) > 0)[0][0] + 1  # first index where diff is nonzero
 
+        illuminated_rows = illuminated_row_dict[channel][n_bins]
+
         # reshape by bin
         y = np.reshape(y, (-1, n_bins, 320))
         t = np.reshape(t, (-1, n_bins))[:, 0]
         aotf_freqs = np.reshape(aotf_freqs, (-1, n_bins))[:, 0]
         aotf_freqs = np.array([int(np.round(i)) for i in aotf_freqs])
 
-        illuminated_rows = illuminated_row_dict[n_bins]
-        y_mean = np.mean(y[:, illuminated_rows, :], axis=1)  # mean of illuminated rows
+        # take the illuminated lines and correct the bad pixels
+        y_illum = y[:, illuminated_rows, :]
+        y_corrected = np.zeros_like(y_illum[:, 0, :])
+        # first scale each bin in the frame to the median spectrum value to normalise the spectra in each bin
+        for frame_ix in np.arange(y_illum.shape[0]):
+            # unbinned frame containing illuminated rows
+            frame = y_illum[frame_ix, :, :].copy()
+            # get median of each row and the frame value
+            frame_row_median = np.median(frame, axis=1)
+            frame_mean = np.mean(frame_row_median)
+            for row_ix in np.arange(frame.shape[0]):
+                frame[row_ix, :] = frame[row_ix, :] / frame_row_median[row_ix] * frame_mean
+
+            # remove bad pixels and get best spectrum from each frame
+            corrected_frame = median_frame_bad_pixel(frame)
+
+            y_corrected[frame_ix, :] = corrected_frame
+
+        if plot:
+            fig, (ax1a, ax1b) = plt.subplots(ncols=2)
+            for i in np.arange(0, y.shape[0], 100):
+                ax1a.plot(y[i, :, 200], label="Frame index %i" % i)
+            for i in np.arange(y.shape[1]):
+                ax1b.plot(y[200, i, :], label="Row index %i" % i)
+
+            ax1a.grid()
+            ax1a.legend()
+            ax1b.grid()
+            ax1b.legend()
 
         # number of aotf freqs
         unique_aotf_freqs = sorted(list(set(aotf_freqs)))
@@ -146,7 +183,7 @@ def get_miniscan_data_1p0a(h5_filenames, channel):
         # remove incomplete aotf repetitions
         n_repetitions = int(np.floor(np.divide(y.shape[0], n_aotf_freqs)))
 
-        y_rep = np.reshape(y_mean[0:(n_repetitions*n_aotf_freqs), :], (-1, n_aotf_freqs, 320))
+        y_rep = np.reshape(y_corrected[0:(n_repetitions*n_aotf_freqs), :], (-1, n_aotf_freqs, 320))
         t_rep = np.reshape(t[0:(n_repetitions*n_aotf_freqs)], (-1, n_aotf_freqs)).T
 
         # unique_bins = sorted(list(set(bins)))
@@ -158,6 +195,6 @@ def get_miniscan_data_1p0a(h5_filenames, channel):
 
         # output mean y for illuminated bins (2D), temperatures (1D) and aotf freqs (1D)
         # also output truncated arrays containing n repeated aotf freqs: y_rep (3D), t_rep (2D), a_rep(1D)
-        d[h5_prefix] = {"y": y_mean, "t": t, "a": aotf_freqs, "y_rep": y_rep, "t_rep": t_rep, "a_rep": unique_aotf_freqs}
+        d[h5_prefix] = {"y": y_corrected, "t": t, "a": aotf_freqs, "y_rep": y_rep, "t_rep": t_rep, "a_rep": unique_aotf_freqs}
 
     return d

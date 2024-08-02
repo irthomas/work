@@ -9,6 +9,8 @@ Created on Fri Jun 21 11:23:12 2024
 import numpy as np
 import matplotlib.pyplot as plt
 
+from tools.spectra.savitzky_golay import savitzky_golay
+
 
 def remove_oscillations(d, channel, plot=False):
     """make dictionary of miniscan arrays before and after oscillation removal
@@ -17,9 +19,13 @@ def remove_oscillations(d, channel, plot=False):
     cut_off_inner: whether to set the inner indices to zero (removes high res oscillations)
     or outer indices to zero (removes large features)"""
 
+    ix = 20  # for plotting
+
     # dictionary of fft_cutoff for each aotf_stepping value
     # this is used to remove oscillations from the spectra by cutting off some parts of the fft'ed spectrum
     if channel == "so":
+        method = "fft"
+        direction = "h"
         fft_cutoff_dict = {
             1: 4,
             2: 15,
@@ -28,13 +34,15 @@ def remove_oscillations(d, channel, plot=False):
         }
         cut_off = ["inner"]
     elif channel == "lno":
+        method = "sg"
+        direction = "v"
         fft_cutoff_dict = {
-            1: 0,
-            2: 0,
-            4: 0,
-            8: 0,
+            1: 5,
+            2: 5,
+            4: 9,
+            8: 5,
         }  # don't apply FFT to LNO - no ringing
-        cut_off = []
+        cut_off = ["inner"]
 
     d2 = {}
     for h5_prefix in d.keys():
@@ -60,41 +68,83 @@ def remove_oscillations(d, channel, plot=False):
         for rep_ix in range(n_reps):
 
             miniscan_array = d[h5_prefix]["y_rep"][rep_ix, :, :]  # get 2d array for 1st repetition in file
+            nrows, ncols = miniscan_array.shape
 
-            if "inner" in cut_off or "outer" in cut_off:
+            if method == "fft":
 
-                # simple bad pixel correction
-                if channel == "so":
-                    miniscan_array[:, 269] = np.mean(miniscan_array[:, [268, 270]], axis=1)
+                if "inner" in cut_off or "outer" in cut_off:
 
-                fft = np.fft.fft2(miniscan_array)
+                    fft = np.fft.fft2(miniscan_array)
+
+                    if plot:
+                        fig, (ax1a, ax1b) = plt.subplots(ncols=2)
+                        ax1a.set_title("%s repeat %i" % (h5_prefix, rep_ix))
+                        if direction == "h":
+                            ax1a.plot(fft.real[:, ix], label="FFT before correction")
+                        elif direction == "v":
+                            ax1a.plot(fft.real[ix, :], label="FFT before correction")
+
+                        ax1b.plot(miniscan_array[:, ix], label="Miniscan column before correction")
+                        ax1b.plot(miniscan_array[ix, :], label="Miniscan row before correction")
+
+                    if "inner" in cut_off:
+                        if direction == "h":
+                            fft.real[fft_cutoff:(nrows-fft_cutoff), :] = 0.0
+                            fft.imag[fft_cutoff:(nrows-fft_cutoff), :] = 0.0
+                        elif direction == "v":
+                            fft.real[:, fft_cutoff:(ncols-fft_cutoff)] = 0.0
+                            fft.imag[:, fft_cutoff:(ncols-fft_cutoff)] = 0.0
+
+                    if "outer" in cut_off:
+                        if direction == "h":
+                            fft.real[0:fft_cutoff, :] = 0.0
+                            fft.real[(nrows-fft_cutoff):, :] = 0.0
+                            fft.imag[0:fft_cutoff, :] = 0.0
+                            fft.imag[(nrows-fft_cutoff):, :] = 0.0
+                        elif direction == "v":
+                            fft.real[:, 0:fft_cutoff] = 0.0
+                            fft.real[:, (ncols-fft_cutoff):] = 0.0
+                            fft.imag[:, 0:fft_cutoff] = 0.0
+                            fft.imag[:, (ncols-fft_cutoff):] = 0.0
+
+                    if plot:
+                        if direction == "h":
+                            ax1a.plot(fft.real[:, ix], linestyle=":", label="FFT after correction")
+                        elif direction == "v":
+                            ax1a.plot(fft.real[ix, :], linestyle=":", label="FFT after correction")
+
+                    ifft = np.fft.ifft2(fft).real
+
+                    if plot:
+                        ax1b.plot(ifft[:, ix], linestyle=":", label="Miniscan column after correction")
+                        ax1b.plot(ifft[ix, :], linestyle=":", label="Miniscan row after correction")
+
+                        ax1a.legend()
+                        ax1b.legend()
+                        ax1a.grid()
+                        ax1b.grid()
+
+                    d2[h5_prefix]["array%i" % (rep_ix)] = ifft
+
+                else:  # if no cutoff given, don't do anything
+                    d2[h5_prefix]["array%i" % (rep_ix)] = miniscan_array
+
+            elif method == "sg":
+                miniscan_array2 = np.zeros_like(miniscan_array)
+
+                for i in np.arange(ncols):
+                    miniscan_array2[:, i] = savitzky_golay(miniscan_array[:, i], fft_cutoff, 2)
 
                 if plot:
-                    fig, ax = plt.subplots()
-                    ax.set_title(h5_prefix)
-                    ax.plot(fft.real[:, 200])
-                    # ax.plot(fft.imag[:, 200])
+                    fig, ax1a = plt.subplots()
+                    ax1a.set_title("%s repeat %i" % (h5_prefix, rep_ix))
 
-                if "inner" in cut_off:
-                    fft.real[fft_cutoff:(256-fft_cutoff), :] = 0.0
-                    fft.imag[fft_cutoff:(256-fft_cutoff), :] = 0.0
+                    ax1a.plot(miniscan_array[:, ix], label="Miniscan column before correction")
+                    ax1a.plot(miniscan_array[ix, :], label="Miniscan row before correction")
+                    ax1a.plot(miniscan_array2[:, ix], label="Miniscan column before correction")
+                    ax1a.plot(miniscan_array2[ix, :], label="Miniscan row before correction")
 
-                if "outer" in cut_off:
-                    fft.real[0:fft_cutoff, :] = 0.0
-                    fft.real[(256-fft_cutoff):, :] = 0.0
-                    fft.imag[0:fft_cutoff, :] = 0.0
-                    fft.imag[(256-fft_cutoff):, :] = 0.0
-
-                if plot:
-                    ax.plot(fft.real[:, 200], linestyle=":")
-                    # ax.plot(fft.imag[:, 200])
-
-                ifft = np.fft.ifft2(fft).real
-
-                d2[h5_prefix]["array%i" % (rep_ix)] = ifft
-
-            else:  # if no cutoff given, don't do anything
-                d2[h5_prefix]["array%i" % (rep_ix)] = miniscan_array
+                d2[h5_prefix]["array%i" % (rep_ix)] = miniscan_array2
 
     return d2
 
