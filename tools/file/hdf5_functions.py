@@ -320,18 +320,18 @@ def make_filelist2(regex, file_level, open_files=True, path=None):
     else:
         root_path = paths["DATA_DIRECTORY"]
 
-    filenames, filepaths = get_hdf5_filename_list2(regex, file_level, path=root_path)
-    print("%i matching files found for regex %s" % (len(filenames), regex.pattern))
+    h5s, h5_paths = get_hdf5_filename_list2(regex, file_level, path=root_path)
+    print("%i matching files found for regex %s" % (len(h5s), regex.pattern))
 
     h5fs = []
     if open_files:
-        for i, filepath in enumerate(filepaths):
+        for i, filepath in enumerate(h5_paths):
             if os.path.exists(filepath):
                 h5fs.append(h5py.File(filepath, "r"))
             else:
                 print("Error file %s does not exist" % filepath)
 
-    return h5fs, filenames, filepaths
+    return h5fs, h5s, h5_paths
 
 
 def write_file(file_name, lines_to_write):

@@ -72,6 +72,8 @@ plot_fft = False
 # plot_hr_grid = True
 plot_hr_grid = False
 
+
+# find all minicans with the following characteristics, to avoid analysing all data each time
 if channel == "so":
 
     # search for miniscan files with the following characteristics
