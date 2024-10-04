@@ -19,37 +19,35 @@ CONVERT SOLAR LINE INTO AOTF/PIXEL RANGE
 import os
 # import h5py
 from astropy.io import fits
-
-
 import numpy as np
 # from scipy.interpolate import UnivariateSpline
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
-
 # from scipy.ndimage import gaussian_filter
 # from scipy.signal import argrelmin
 
-
 # from instrument.nomad_so_instrument_v03 import aotf_peak_nu
 # from instrument.nomad_lno_instrument_v02 import nu_mp, nu0_aotf, F_aotf_sinc
-
-
 # from tools.spectra.solar_spectrum import get_solar_hr
 # from tools.spectra.baseline_als import baseline_als
 from tools.general.progress_bar import progress
-
-
+from tools.file.read_write_hdf5 import write_hdf5_from_dict_simple
 from instrument.calibration.so_lno_2023.fit_blaze_shape import fit_blaze
-
 # from analysis.so_lno_2023.functions.aotf_blaze_ils import get_ils_coeffs, make_ils
-
-MINISCAN_PATH = os.path.normcase(r"C:\Users\iant\Documents\DATA\miniscans")
 
 # channel = "so"
 channel = "lno"
 
+# search for miniscan files with the following characteristics
+# aotf step in kHz
+aotf_steppings = [4, 8]
+# diffraction order of first spectrum in file
+# starting_orders = list(range(178, 210))
+starting_orders = [164]
 
-aotf_steppings = [4]
+
+MINISCAN_PATH = os.path.normcase(r"C:\Users\iant\Documents\DATA\miniscans")
+
 
 # save_ifigs = True
 # save_ifigs = False
@@ -59,6 +57,10 @@ plot_solar = False
 
 force_reload = True
 # force_reload = False
+
+# save the fitted blaze function to a hdf5 file for further analysis?
+save_blaze_fits = True
+# save_blaze_fits = False
 
 
 plot = ["blaze_fits", "blaze_norm"]
@@ -70,7 +72,13 @@ filenames = os.listdir(os.path.join(MINISCAN_PATH, channel))
 h5_prefixes = [s.replace(".fits", "") for s in filenames if ".fits" in s and s]
 # list those with chosen stepping
 h5_prefixes = [s for s in h5_prefixes if int(s.split("-")[-1]) in aotf_steppings]
+# list those with chosen aotf diffraction orders
+h5_prefixes = [s for s in h5_prefixes if int(s.split("-")[-2]) in starting_orders]
+print("%i files found matching the desired stepping and diffraction order start" % len(h5_prefixes))
 
+
+if save_blaze_fits:
+    blaze_d = {}
 
 with PdfPages("aotfs.pdf") as pdf:
     # for h5_prefix, solar_line_data_all in solar_line_dict.items():  # loop through files
@@ -92,9 +100,11 @@ with PdfPages("aotfs.pdf") as pdf:
                 ts.append(hdul["T%02i" % i].data)
 
         # just take the first array (do the others in future)
-        aotf_array = aotfs[0]
-        scan_array = arrs[0]
-        t_mean = np.mean(ts[0])
+        rep_ix = 0
+
+        aotf_array = aotfs[rep_ix]
+        scan_array = arrs[rep_ix]
+        t_mean = np.mean(ts[rep_ix])
         nrows, ncols = scan_array.shape
 
         # fit blaze shape to every spectrum in the whole array
@@ -102,6 +112,7 @@ with PdfPages("aotfs.pdf") as pdf:
 
         if "blaze_fits" in plot:
             fig1, ax1 = plt.subplots()
+            ax1.set_title(h5_prefix)
 
         scan_blaze_fits = np.zeros_like(scan_array)
         for i, scan_line in enumerate(progress(scan_array)):
@@ -117,12 +128,15 @@ with PdfPages("aotfs.pdf") as pdf:
         scan_array_norm = scan_array / scan_blaze_fits
         if "blaze_norm" in plot:
             fig1, (ax1a, ax1b) = plt.subplots(nrows=2)
-            ax1a.set_title("Blaze fitting")
+            ax1a.set_title("%s: blaze fitting" % h5_prefix)
             ax1b.set_title("Blaze removed")
             ax1a.imshow(scan_blaze_fits)
             ax1b.imshow(scan_array_norm)
             pdf.savefig()
             plt.close()
+
+        if save_blaze_fits:
+            blaze_d[h5_prefix] = {"ts": ts[rep_ix], "blaze": scan_blaze_fits, "aotf_col0": aotf_array[:, 0]}
 
         # find local minima
         # find smallest values in array, then block off x points around
@@ -164,7 +178,7 @@ with PdfPages("aotfs.pdf") as pdf:
                 break
 
         fig1, (ax1a, ax1b) = plt.subplots(nrows=2)
-        ax1a.set_title("Blaze removed")
+        ax1a.set_title("%s: blaze removed" % h5_prefix)
         ax1b.set_title("Absorption search")
         ax1a.imshow(scan_array_norm)
         ax1b.imshow(min_array)
@@ -184,12 +198,16 @@ with PdfPages("aotfs.pdf") as pdf:
         pdf.savefig()
         plt.close()
 
+
+if save_blaze_fits:
+    write_hdf5_from_dict_simple(os.path.join(MINISCAN_PATH, "blaze_functions"), blaze_d)
+
 # SIMULATE MINISCANS WITH SOLAR LINE
 # # find upper/lower nus for high res solar spectrum
 # min_aotf_khz = np.min(aotf_array)
 # max_aotf_khz = np.max(aotf_array)
 
-# aotf_search_range_khz = np.arange(18000, 32000)
+# aotf_search_range_khz = np.arange(16000, 32000)
 # aotf_search_range_nu = nu0_aotf(aotf_search_range_khz)
 
 # min_nu = aotf_search_range_nu[np.searchsorted(aotf_search_range_khz, min_aotf_khz)]

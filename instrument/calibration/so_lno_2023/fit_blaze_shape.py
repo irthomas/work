@@ -61,11 +61,11 @@ def fit_blaze_iterative(y, maxrms, start_coeff=0.05, max_loop=10, degree=7, verb
     return polyfit
 
 
-def fit_blaze(spectrum, max_rms=0.02, verbose=False, plot=False):
+def fit_blaze(spectrum, max_rms=0.02, degree=7, verbose=False, plot=False):
 
     x = np.arange(len(spectrum))
 
-    spectrum_coeffs = fit_blaze_iterative(spectrum, max_rms, verbose=verbose, plot=plot)
+    spectrum_coeffs = fit_blaze_iterative(spectrum, max_rms, degree=degree, verbose=verbose, plot=plot)
     x2 = x - min(x) - (max(x) - min(x))/2.
     spectrum_fit = np.polyval(spectrum_coeffs, x2) * np.max(spectrum)
 

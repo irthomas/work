@@ -8,13 +8,16 @@ Created on Fri Jun 21 11:21:43 2024
 import numpy as np
 import matplotlib.pyplot as plt
 
+from matplotlib.backends.backend_pdf import PdfPages
+
 from numpy.polynomial.polynomial import polyfit, polyval
+
 
 from tools.file.hdf5_functions import make_filelist, open_hdf5_file
 from tools.spectra.bad_pixel_functions import median_frame_bad_pixel
 
 from tools.general.cprint import cprint
-
+from tools.plotting.colours import get_colours
 
 illuminated_row_dict = {
     "so": {24: slice(6, 19)},
@@ -110,7 +113,7 @@ def list_miniscan_data_1p0a(regex, file_level, channel, starting_orders, aotf_st
 #     return d
 
 
-def get_miniscan_data_1p0a(h5_filenames, channel, plot=False, path=None):
+def get_miniscan_data_1p0a(h5_filenames, channel, plot=[], path=None):
 
     print("Getting data for %i files" % len(h5_filenames))
 
@@ -118,6 +121,10 @@ def get_miniscan_data_1p0a(h5_filenames, channel, plot=False, path=None):
         from instrument.nomad_so_instrument_v03 import m_aotf
     elif channel == "lno":
         from instrument.nomad_lno_instrument_v02 import m_aotf
+
+    if "raw" in plot:
+        # make pdf
+        pdf = PdfPages("miniscan_data.pdf")
 
     d = {}
     for file_ix, h5 in enumerate(h5_filenames):
@@ -164,18 +171,6 @@ def get_miniscan_data_1p0a(h5_filenames, channel, plot=False, path=None):
 
             y_corrected[frame_ix, :] = corrected_frame
 
-        if plot:
-            fig, (ax1a, ax1b) = plt.subplots(ncols=2)
-            for i in np.arange(0, y.shape[0], 100):
-                ax1a.plot(y[i, :, 200], label="Frame index %i" % i)
-            for i in np.arange(y.shape[1]):
-                ax1b.plot(y[200, i, :], label="Row index %i" % i)
-
-            ax1a.grid()
-            ax1a.legend()
-            ax1b.grid()
-            ax1b.legend()
-
         # number of aotf freqs
         unique_aotf_freqs = sorted(list(set(aotf_freqs)))
         n_aotf_freqs = len(unique_aotf_freqs)
@@ -193,8 +188,54 @@ def get_miniscan_data_1p0a(h5_filenames, channel, plot=False, path=None):
         h5_split = h5.split("_")
         h5_prefix = f"{h5_split[3]}-{h5_split[0]}-{h5_split[1]}-%i-%i" % (starting_order, np.round(aotf_freqs_step))
 
+        if "raw" in plot:
+            fig1, (ax1a, ax1b) = plt.subplots(ncols=2, figsize=(12, 6))
+            fig1.suptitle(h5_prefix)
+            for i in np.arange(0, y.shape[0], 100):
+                ax1a.plot(y[i, :, 200], label="Frame index %i" % i)
+
+            colours = get_colours(y.shape[1])
+            for i in np.arange(y.shape[1]):
+                # ax1b.plot(y[200, i, :], color=colours[i], label="Row index %i" % i)
+                ax1b.plot(y[200, i, :], color=colours[i])
+
+            ax1a.set_xlabel("Detector row")
+            ax1a.set_ylabel("Detector counts")
+            ax1a.grid()
+            ax1a.legend()
+            ax1b.set_xlabel("Pixel number")
+            ax1b.grid()
+            # ax1b.legend()
+
+            pdf.savefig()
+            plt.close()
+
+            fig2, ax2 = plt.subplots(figsize=(12, 6))
+            fig2.suptitle(h5_prefix)
+            colours = get_colours(int(256/aotf_freqs_step), cmap="brg")
+            for i in np.arange(0, int(256/aotf_freqs_step), 1):
+                if i % 5 == 0:
+                    alpha = 1.0
+                    label = "Spectrum %i" % i
+                else:
+                    alpha = 0.3
+                    label = ""
+                ax2.plot(y_corrected[i, :], color=colours[i], alpha=alpha, label=label)
+
+            ax2.grid()
+            ax2.legend()
+            ax2.set_xlabel("Pixel number")
+            ax2.set_ylabel("Detector counts")
+
+            pdf.savefig()
+            plt.close()
+
         # output mean y for illuminated bins (2D), temperatures (1D) and aotf freqs (1D)
         # also output truncated arrays containing n repeated aotf freqs: y_rep (3D), t_rep (2D), a_rep(1D)
         d[h5_prefix] = {"y": y_corrected, "t": t, "a": aotf_freqs, "y_rep": y_rep, "t_rep": t_rep, "a_rep": unique_aotf_freqs}
+
+    if "raw" in plot:
+        # close pdf to save figures
+        pdf.close()
 
     return d

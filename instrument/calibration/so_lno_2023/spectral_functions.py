@@ -26,23 +26,35 @@ def find_peak_aotf_pixel(t, aotf_freqs, px_ixs, channel):
     orders = [m_aotf(i) for i in aotf_freqs]
     if channel == "so":
         aotf_nus = [aotf_peak_nu(i, t) for i in aotf_freqs]
-        px_nus = [lt22_waven(i, t) for i in orders]
+        px_nus = [lt22_waven(i, t, px_ixs=px_ixs) for i in orders]
+        px_nus_m1 = [lt22_waven(i-1, t, px_ixs=px_ixs) for i in orders]
+        px_nus_p1 = [lt22_waven(i+1, t, px_ixs=px_ixs) for i in orders]
     elif channel == "lno":
         aotf_nus = [nu0_aotf(i) for i in aotf_freqs]
         px_nus = [nu_mp(i, px_ixs, t) for i in orders]
+        px_nus_m1 = [nu_mp(i-1, px_ixs, t) for i in orders]
+        px_nus_p1 = [nu_mp(i+1, px_ixs, t) for i in orders]
 
-    # pixel position of peak AOTF in each frame
-    px_peaks = []
-    for aotf_nu, px_nu in zip(aotf_nus, px_nus):
-        px_peak = (np.abs(px_nu - aotf_nu)).argmin()
-        px_peaks.append(px_peak)
+    # pixel position of peak high resolution AOTF in each frame
+    px_peaks_all = np.zeros((len(aotf_nus), max(orders)+1)) + np.nan
+    for i, (aotf_nu, px_nu, px_nu_m1, px_nu_p1) in enumerate(zip(aotf_nus, px_nus, px_nus_m1, px_nus_p1)):
+        if aotf_nu > px_nu[0] and aotf_nu < px_nu[-1]:
+            px_peak = (np.abs(px_nu - aotf_nu)).argmin()
+            px_peaks_all[i, orders[i]] = px_peak
 
-    return px_peaks, aotf_nus
+        if aotf_nu > px_nu_m1[0] and aotf_nu < px_nu_m1[-1]:
+            px_peak = (np.abs(px_nu_m1 - aotf_nu)).argmin()
+            px_peaks_all[i, orders[i]-1] = px_peak
+
+        if aotf_nu > px_nu_p1[0] and aotf_nu < px_nu_p1[-1]:
+            px_peak = (np.abs(px_nu_p1 - aotf_nu)).argmin()
+            px_peaks_all[i, orders[i]+1] = px_peak
+
+    return px_peaks_all, np.asarray(aotf_nus)
 
 
 def get_diagonal_blaze_indices(px_peaks, px_ixs):
-
-    # make array of blaze functions, one blaze for each row offset value
+    """make array of blaze functions, one blaze for each row offset value"""
     blazes = []
     px_ix = 0
     blaze = []

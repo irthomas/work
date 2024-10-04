@@ -31,6 +31,15 @@ from instrument.calibration.so_lno_2023.make_hr_array import make_hr_array
 # channel = "so"
 channel = "lno"
 
+# search for miniscan files with the following characteristics
+# aotf step in kHz
+aotf_steppings = [4]
+# detector row binning
+binnings = [0]
+# diffraction order of first spectrum in file
+# starting_orders = list(range(178, 210))
+starting_orders = [164]
+
 
 # in-flight
 file_level = "hdf5_level_1p0a"
@@ -56,13 +65,18 @@ OUTPUT_FILE_TYPE = "fits"
 
 
 # list and colour code files matching the search parameters
-list_files = True
-# list_files = False
+# list_files = True
+list_files = False
 
 # force reloading of h5 data? If false and variable exists, use values in memory
-force_reload = True
-# force_reload = False
+# force_reload = True
+force_reload = False
 
+
+# plot raw miniscan
+# plot = ["raw", "diagonals"]
+plot = ["diagonals"]
+# plot_raw = False
 
 # for checking the oscillation removal
 # plot_fft = True
@@ -73,47 +87,24 @@ plot_fft = False
 plot_hr_grid = False
 
 
-# find all minicans with the following characteristics, to avoid analysing all data each time
-if channel == "so":
-
-    # search for miniscan files with the following characteristics
-    # aotf step in kHz
-    aotf_steppings = [4]
-    # aotf_steppings = [2]
-
-    # detector row binning
-    binnings = [0]
-
-    # diffraction order of first spectrum in file
-    starting_orders = list(range(178, 210))
-    # starting_orders = [188]
-
-
-elif channel == "lno":
-    # aotf_steppings = [8]
-    aotf_steppings = [4, 8]
-    binnings = [0]
-
-    # starting_orders = [194]
-    # starting_orders = list(range(180, 210))
-    starting_orders = list(range(110, 210))
-
-
 # only reload from disk if not present
 if "d" not in globals():
     list_files = True
 
 
 """get data"""
+# search through all minican files and list those matching the aotf step(s) and diffraction order(s) given above
+# yellow = order matches but not the aotf Khz step
+# blue = order and aotf step values match -> add this file to the list to analyse
 if list_files:
     h5_filenames, h5_prefixes = list_miniscan_data_1p0a(regex, file_level, channel, starting_orders,
                                                         aotf_steppings, binnings, path=H5_ROOT_PATH)
 
     # only reload from disk if not present
     if "d" not in globals() or force_reload:
-        d = get_miniscan_data_1p0a(h5_filenames, channel, plot=False, path=H5_ROOT_PATH)
+        d = get_miniscan_data_1p0a(h5_filenames, channel, plot=plot, path=H5_ROOT_PATH)
     if h5_prefixes != list(d.keys()):
-        d = get_miniscan_data_1p0a(h5_filenames, channel, path=H5_ROOT_PATH)
+        d = get_miniscan_data_1p0a(h5_filenames, channel, plot=plot, path=H5_ROOT_PATH)
 
 
 # remove oscillations, output spectra and other info to a dictionary d2
@@ -141,7 +132,8 @@ for h5_prefix in progress(h5_prefixes):
                 plt.plot(np.arange(array_hr.shape[0])/HR_SCALER, array_hr[:, i*int(HR_SCALER)])
 
     d2[h5_prefix]["aotf_hr"] = aotf_hr
-
+    d2[h5_prefix]["t_hr"] = [np.interp(np.arange(array_hr.shape[0])/HR_SCALER, np.arange(array.shape[0]),
+                                       d[h5_prefix]["t_rep"][:, rep]) for rep in range(n_reps)]
     d2[h5_prefix]["t"] = [np.mean(d[h5_prefix]["t_rep"][:, rep]) for rep in range(n_reps)]
     d2[h5_prefix]["t_range"] = [[np.min(d[h5_prefix]["t_rep"][:, rep]), np.max(d[h5_prefix]["t_rep"][:, rep])] for rep in range(n_reps)]
 
@@ -149,18 +141,53 @@ for h5_prefix in progress(h5_prefixes):
         # calc blaze diagonals
 
         t = d2[h5_prefix]["t"][rep]
-        px_ixs = np.arange(d2[h5_prefix]["array%i_hr" % rep].shape[1])
 
-        px_peaks, aotf_nus = find_peak_aotf_pixel(t, d2[h5_prefix]["aotf_hr"], px_ixs, channel)
-        px_peaks = np.asarray(px_peaks) * int(HR_SCALER)
-        aotf_nus = np.asarray(aotf_nus)
-        blaze_diagonal_ixs_all = get_diagonal_blaze_indices(px_peaks, px_ixs)
+        aotf_hr = d2[h5_prefix]["aotf_hr"]
+        array_hr = d2[h5_prefix]["array%i_hr" % rep]
+
+        px_ixs_hr = np.arange(array_hr.shape[1])
+
+        px_peaks, aotf_nus = find_peak_aotf_pixel(t, aotf_hr, px_ixs_hr/HR_SCALER, channel)
+        # px_peaks is an array of size N spectra x max(orders) with the indices of HR pixel numbers where the AOTF is at max value for each order
+
+        # find orders with non nan values and where there are sufficient points to interpolate between orders (i.e. not orders at start/end of miniscan)
+        orders = np.where(np.sum(~np.isnan(px_peaks), axis=0) > 250)[0]
+
+        order = orders[0]
+        px_ixs = px_peaks[:, order]
+
+        spectrum_ixs_not_nan = np.where(~np.isnan(px_ixs))[0]
+        px_ixs_not_nan = np.int64(px_ixs[spectrum_ixs_not_nan])
+
+        # now interpolate this onto the high res pixel number grid
+        # spectrum = np.interp(px_ixs_hr, px_ixs_not_nan, array_hr[spectrum_ixs_not_nan, px_ixs_not_nan])
+        px_ixs_interp = np.interp(px_ixs_hr, px_ixs_not_nan, spectrum_ixs_not_nan)
+
+        # aotf_nus = np.asarray(aotf_nus)
+        # px_peaks = np.asarray(px_peaks)
+        # blaze_diagonal_ixs_all = get_diagonal_blaze_indices(px_peaks, px_ixs_hr)
 
         # make diagonally corrected array
         diagonals = []
         diagonals_aotf = []
+        diagonals_t = []
 
-        for row in range(d2[h5_prefix]["array%i_hr" % rep].shape[0]-5):
+        if "diagonals" in plot:
+
+            array_hr_mask = array_hr.copy()
+
+            for spectrum_ix in np.arange(array_hr_mask.shape[0]):
+                # find orders without nans
+                order_ixs = np.where(~np.isnan(px_peaks[spectrum_ix]))[0]
+                for order_ix in order_ixs:
+                    array_hr_mask[spectrum_ix, int(px_peaks[spectrum_ix, order_ix])] = np.nan
+
+            plt.figure()
+            plt.imshow(array_hr_mask)
+
+        stop()
+
+        for row in range(array_hr.shape[0]-5):
             # find closest diagonal pixel number (in first column)
             closest_ix = np.argmin(np.abs(blaze_diagonal_ixs_all[:, 0] - row))
             row_offset = blaze_diagonal_ixs_all[closest_ix, 0] - row
@@ -168,14 +195,16 @@ for h5_prefix in progress(h5_prefixes):
             # apply offset to diagonal indices
             blaze_diagonal_ixs = (blaze_diagonal_ixs_all[closest_ix, :] - row_offset)
 
-            if np.all(blaze_diagonal_ixs < d2[h5_prefix]["array%i_hr" % rep].shape[0]):
-                diagonals.append(d2[h5_prefix]["array%i_hr" % rep][blaze_diagonal_ixs, px_ixs])
-                diagonals_aotf.append(d2[h5_prefix]["aotf_hr"][blaze_diagonal_ixs])
+            if np.all(blaze_diagonal_ixs < array_hr.shape[0]):
+                diagonals.append(array_hr[blaze_diagonal_ixs, px_ixs_hr])
+                diagonals_aotf.append(aotf_hr[blaze_diagonal_ixs])
+                diagonals_t.append(d2[h5_prefix]["t_hr"][rep][blaze_diagonal_ixs])
 
         diagonals = np.asarray(diagonals)
         diagonals_aotf = np.asarray(diagonals_aotf)
         d2[h5_prefix]["array_diag%i_hr" % rep] = diagonals
         d2[h5_prefix]["aotf_diag%i_hr" % rep] = diagonals_aotf
+        d2[h5_prefix]["t_diag%i_hr" % rep] = diagonals_t
 
         # print("Diagonal shape: ", diagonals.shape)
         # print("Diagonal AOTF shape: ", diagonals_aotf.shape)
@@ -183,20 +212,25 @@ for h5_prefix in progress(h5_prefixes):
     """Save figures and files"""
     # save diagonally-correct array and aot freqs to hdf5
     if OUTPUT_FILE_TYPE == "h5":
+        print("Writing to file %s.h5" % h5_prefix)
         with h5py.File(os.path.join(MINISCAN_PATH, channel.upper(), "%s.h5" % h5_prefix), "w") as f:
             for rep in range(d2[h5_prefix]["nreps"]):
                 f.create_dataset("array%02i" % rep, dtype=np.float32, data=d2[h5_prefix]["array_diag%i_hr" % rep],
                                  compression="gzip", shuffle=True)
                 f.create_dataset("aotf%02i" % rep, dtype=np.float32, data=d2[h5_prefix]["aotf_diag%i_hr" % rep],
                                  compression="gzip", shuffle=True)
-                f.create_dataset("t%02i" % rep, dtype=np.float32, data=d2[h5_prefix]["t_range"][rep],
+                f.create_dataset("trange%02i" % rep, dtype=np.float32, data=d2[h5_prefix]["t_range"][rep],
                                  compression="gzip", shuffle=True)
+                f.create_dataset("t%02i" % rep, dtype=np.float32, data=d2[h5_prefix]["t_diag%i_hr" % rep][:, 0],
+                                 compression="gzip", shuffle=True)  # just save 1st column for temperature
     elif OUTPUT_FILE_TYPE == "fits":
         hdus = [fits.PrimaryHDU()]
+        print("Writing to file %s.fits" % h5_prefix)
         for rep in range(d2[h5_prefix]["nreps"]):
             hdus.append(fits.CompImageHDU(data=d2[h5_prefix]["array_diag%i_hr" % rep], name="array%02i" % rep))
             hdus.append(fits.CompImageHDU(data=d2[h5_prefix]["aotf_diag%i_hr" % rep], name="aotf%02i" % rep))
-            hdus.append(fits.ImageHDU(data=d2[h5_prefix]["t_range"][rep], name="t%02i" % rep))
+            hdus.append(fits.ImageHDU(data=d2[h5_prefix]["t_range"][rep], name="trange%02i" % rep))
+            hdus.append(fits.ImageHDU(data=d2[h5_prefix]["t_diag%i_hr" % rep], name="t%02i" % rep))
         hdul = fits.HDUList(hdus)
         hdul.writeto(os.path.join(MINISCAN_PATH, channel.upper(), "%s.fits" % h5_prefix), overwrite=True)
 

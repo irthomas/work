@@ -103,7 +103,7 @@ def get_hdf5_filename_list(root_directory, check_for_calibration_file=False):
 def get_hdf5_filename_list2(regex, file_level, path=None):
     """take a full regex of the form YYYYMMDD_ and search for all possible files"""
 
-    regex_ymd = re.compile(regex.pattern[0:8])
+    regex_ymd = re.compile(regex.pattern.split("_")[0])
 
     dt_start = datetime(2018, 3, 1)
     dt_end = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
