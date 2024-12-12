@@ -19,8 +19,8 @@ channel = "lno"
 # aotf step in kHz
 aotf_steppings = [4]
 # diffraction order of first spectrum in file
-# starting_orders = list(range(178, 210))
-starting_orders = [164]
+starting_orders = list(range(163, 210))
+# starting_orders = [164]
 
 
 MINISCAN_PATH = os.path.normcase(r"C:\Users\iant\Documents\DATA\miniscans")
@@ -42,7 +42,7 @@ for file_ix, h5_prefix in enumerate(h5_prefixes[0:5]):  # loop through files
     channel = h5_prefix.split("-")[0].lower()
 
     # get data from miniscan file
-    with fits.open(os.path.join(MINISCAN_PATH, channel, "%s.fits" % h5_prefix)) as hdul:
+    with fits.open(os.path.join(MINISCAN_PATH, channel, "%s.fits" % h5_prefix), lazy_load_hdus=True) as hdul:
         keys = [i.name for i in hdul if i.name != "PRIMARY"]
         n_reps = len([i for i, key in enumerate(keys) if "ARRAY" in key])
 
@@ -56,6 +56,8 @@ for file_ix, h5_prefix in enumerate(h5_prefixes[0:5]):  # loop through files
 
     plt.figure()
     plt.title(h5_prefix)
-    for arr in arrs:
-        plt.plot(arr[:, 800], label="Row %i" % 800)
-        plt.plot(arr[500, :], label="Column %i" % 500)
+    for arr_ix, arr in enumerate(arrs):
+        plt.plot(arr[:, 800], label="Row %i repeat %i" % (800, arr_ix))
+        plt.plot(arr[500, :], label="Column %i repeat %i" % (500, arr_ix))
+
+    plt.legend()

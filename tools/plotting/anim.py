@@ -69,6 +69,11 @@ def make_line_anim(d):
         xlim = [np.nanmin([d["x"][key] for key in keys]), np.nanmax([d["x"][key] for key in keys])]
         ylim = [np.nanmin([d["y"][key] for key in keys]), np.nanmax([d["y"][key] for key in keys])]
 
+    if "interval" in d.keys():
+        interval = int(d["interval"])
+    else:
+        interval = 50
+
     ylim[0] /= 1.01
     ylim[1] *= 1.01
 
@@ -131,7 +136,7 @@ def make_line_anim(d):
     n_frames = len(d["y"][list(d["y"].keys())[0]])
     print("N frames = %i" % n_frames)
     # call the animator.  blit=True means only re-draw the parts that have changed.
-    anim = animation.FuncAnimation(fig, animate, init_func=init, frames=n_frames, interval=50, blit=True)
+    anim = animation.FuncAnimation(fig, animate, init_func=init, frames=n_frames, interval=interval, blit=True)
 
     if "save" in d.keys() and "filename" in d.keys():
         if d["save"]:

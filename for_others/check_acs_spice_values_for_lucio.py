@@ -32,10 +32,19 @@ sp.furnsh(os.path.join(PATH_TO_KERNELS, r"em16_tgo_cog_349_01_20220101_20240914_
 sp.furnsh(os.path.join(PATH_TO_KERNELS, r"kernels\spk\de432s.bsp"))
 
 
-subpnt = sp.subpnt('NEAR POINT/ELLIPSOID', 'MARS', et, 'IAU_MARS', 'LT+S', '-143')
-
+subpnt = sp.subpnt('NEAR POINT/ELLIPSOID', 'MARS', et, 'IAU_MARS', 'LT', '-143')
 dist = sp.vnorm(subpnt[2])
 
 print("TGO Mars ellipsoid distance is", dist, "km")
 
 # Prints to console "TGO Mars ellipsoid distance is 429.48433583463213 km"
+
+
+spkpos = sp.spkpos('TGO', et, 'IAU_MARS', 'LT', 'MARS')
+
+bodvrd = sp.bodvrd("MARS", "RADII", 3)[1]
+nearpt = sp.nearpt(spkpos[0], bodvrd[0], bodvrd[1], bodvrd[2])
+
+print("TGO Mars ellipsoid distance is", nearpt[1], "km")
+
+print(dist - nearpt[1])

@@ -10,7 +10,7 @@ ASYMMETRIC BLAZE FROM LOIC
 import numpy as np
 # import matplotlib.pyplot as plt
 
-from instrument.nomad_lno_instrument_v02 import nu_mp
+# from instrument.nomad_lno_instrument_v02 import nu_mp
 
 
 def compute_beta(wvn, order, sigma, gamma, alpha):
@@ -23,7 +23,7 @@ def compute_beta(wvn, order, sigma, gamma, alpha):
 # channel = "lno"
 
 
-def get_asym_blaze(channel, order, px_nus):
+def asymmetric_blaze(channel, order, px_nus):
     """Loic asymmetric blaze function"""
     if channel == "so":
         gamma, alphab = 0.04538, -0.0003491
