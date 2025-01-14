@@ -145,16 +145,18 @@ for i, (line_str, sza) in enumerate(zip(lines_str, szas)):
         comment = "***BAD GEOMETRY***"
     else:
         comment = ""
-    lines_new.append("%s, %0.3f, %s\n" % (line_str, sza, comment))
+    lines_new.append("%s, %0.3f, %s\n" % (line_str.strip(), sza, comment))
 
 # save output file
 OUT_FILEPATH = r"C:/Users/iant/Downloads/Clancy2017_volume_emission_rates_o2_singlet_delta_sza.csv"
-with open(OUT_FILEPATH, "wb") as f:
+with open(OUT_FILEPATH, "w") as f:
     for line in lines_new:
         f.write(line)
 
 # plot solar zenith angles
-plt.figure()
-plt.title("Solar Zenith Angles")
+plt.figure(figsize=(12, 6))
+plt.title("Clancy et al. solar zenith angles")
 plt.ylabel("SZA (degrees)")
 plt.plot(szas)
+plt.axhline(y=90, linestyle="--", color="k")
+plt.savefig(r"C:/Users/iant/Downloads/Clancy_et_al_SZAs.png")
