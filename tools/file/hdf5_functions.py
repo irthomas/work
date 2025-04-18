@@ -112,7 +112,7 @@ def get_hdf5_filename_list2(regex, file_level, path=None):
 
     matching_ymds = list(filter(regex_ymd.search, pos_ymds))
 
-    print("Searching for matching full regex")
+    print("Searching for matching full regex for %i matching dirs" % len(matching_ymds))
     filepaths = []
     filenames = []
     for matching_ymd in progress(matching_ymds):
@@ -325,7 +325,7 @@ def make_filelist2(regex, file_level, open_files=True, path=None):
 
     h5fs = []
     if open_files:
-        for i, filepath in enumerate(h5_paths):
+        for i, filepath in enumerate(progress(h5_paths)):
             if os.path.exists(filepath):
                 h5fs.append(h5py.File(filepath, "r"))
             else:

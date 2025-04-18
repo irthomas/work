@@ -31,6 +31,9 @@ def get_aotf(channel, aotf_freq, aotf_t, aotf={"type": "sinc_gauss"}):
     elif channel == "lno":
         aotf_nu_centre = nu0_aotf(aotf_freq)
 
+    if "nu_offset" in aotf.keys():
+        aotf_nu_centre += aotf["nu_offset"]
+
     if aotf["type"] == "sinc_gauss":
         if "aotf_d" not in aotf.keys():
             aotf_d = get_aotf_sinc_gaussian(channel, aotf_nu_centre=aotf_nu_centre, aotf_d={})

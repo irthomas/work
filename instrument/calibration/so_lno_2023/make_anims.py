@@ -4,7 +4,7 @@ Created on Mon Aug  5 16:16:04 2024
 
 @author: iant
 
-MINISCAN ANIMATION 
+MINISCAN ANIMATION
 
 """
 import os
@@ -14,11 +14,51 @@ from instrument.calibration.so_lno_2023.load_fits_miniscan import load_fits_mini
 
 from tools.plotting.anim import make_line_anim
 
+# channel = "so"
+channel = "lno"
+
+
+# MINISCAN_PATH = os.path.normcase(r"C:\Users\iant\Documents\DATA\miniscans")
+
+# h5_prefix = "LNO-20220619-140101-176-4"
+# # h5_prefix = "LNO-20181106-195839-170-4"
+
+
+# search for miniscan files with the following characteristics
+# aotf step in kHz
+aotf_steppings = [4, 8]
+# diffraction order of first spectrum in file
+# starting_orders = list(range(163, 210))
+starting_orders = [176]
+
 
 MINISCAN_PATH = os.path.normcase(r"C:\Users\iant\Documents\DATA\miniscans")
 
-h5_prefix = "LNO-20220619-140101-164-4"
-# h5_prefix = "LNO-20181106-195839-170-4"
+
+# check for data available in miniscan dir
+filenames = os.listdir(os.path.join(MINISCAN_PATH, channel))
+# list all fits files
+h5_prefixes = [s.replace(".fits", "") for s in filenames if ".fits" in s and s]
+# list those with chosen AOTF stepping (in KHz)
+h5_prefixes = [s for s in h5_prefixes if int(s.split("-")[-1]) in aotf_steppings]
+# list those with chosen aotf diffraction orders
+h5_prefixes = [s for s in h5_prefixes if int(s.split("-")[-2]) in starting_orders]
+print("%i files found matching the desired stepping and diffraction order start" % len(h5_prefixes))
+
+
+# just take 1 file - if more, ask the user
+if len(h5_prefixes) == 1:
+    h5_prefix = h5_prefixes[0]
+else:
+    for i, h5_prefix in enumerate(h5_prefixes):
+        print(i, h5_prefix)
+    inp_in = int(input("Please select one to plot (0 to %i): " % (len(h5_prefixes)-1)))
+    if inp_in < len(h5_prefixes):
+        h5_prefix = h5_prefixes[inp_in]
+    else:
+        print("Out of range, selecting the last one")
+        h5_prefix = h5_prefixes[-1]
+
 
 arrs, aotfs, ts = load_fits_miniscan(h5_prefix, MINISCAN_PATH)
 

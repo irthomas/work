@@ -24,7 +24,7 @@ from tools.datasets.get_solar import get_nomad_solar
 from tools.spectra.hapi_lut import get_abs_coeff, abs_coeff_pt, hapi_transmittance
 
 
-logging.basicConfig(filename='fw.log', encoding='utf-8', format='%(levelname)s: %(message)s', datefmt='%Y-%m-%dT%H:%M:%S')
+logging.basicConfig(filename='fw.log', encoding='utf-8', format='%(levelname)s: %(message)s', datefmt='%Y-%m-%dT%H:%M:%S', force=True)
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -32,6 +32,8 @@ logger.setLevel(logging.DEBUG)
 log_px = 159
 
 FIG_SIZE = (15, 8)
+
+OPTIMIZE = False
 
 
 class forward:
@@ -46,13 +48,14 @@ class forward:
         self.centre_order = cal_d["centre_order"]
         self.orders = list(cal_d["orders"].keys())
 
-        """need to select an order where absorption lines are present to start with"""
-        if 191 in self.orders:
-            self.first_order = 191
-        elif 186 in self.orders:
-            self.first_order = 186
-        else:
-            print("Error: select a first order")
+        # """need to select an order where absorption lines are present to start with"""
+        # if 191 in self.orders:
+        #     self.first_order = 191
+        # elif 186 in self.orders:
+        #     self.first_order = 186
+        # else:
+        #     print("Error: select a first order")
+        self.first_order = self.orders[0]
 
         # dictionary to keep the correct indices with the orders as the order is changed
         self.order_ixs_d = {order: i for i, order in enumerate(self.orders)}
@@ -227,7 +230,7 @@ class forward:
                     continue
 
                 # first run through, do full calculation
-                if order == self.first_order:
+                if order == self.first_order or not OPTIMIZE:
 
                     logger.debug("Running first order %i", order)
 
@@ -362,6 +365,252 @@ class forward:
             ax2.grid()
 
             self.rel_cont = rel_cont
+
+        return spectrum
+
+    def fit(self, params, y_raw, plot=[]):
+
+        mol_scaler = params["mol_scaler"].value
+
+        # normalise raw SO spectrum
+        y_raw /= np.max(y_raw)
+
+        self.spectrum_norm = self.forward_so(params, plot=plot)
+        sum_sq = np.sum(np.square(y_raw - self.spectrum_norm))
+
+        if "fit" in plot:
+            plt.figure(figsize=FIG_SIZE, constrained_layout=True)
+            plt.xlabel("Wavenumber cm-1")
+            plt.ylabel("SO transmittance")
+
+            plt.plot(self.cal_d["orders"][self.centre_order]["px_nus"], y_raw, label="SO raw spectrum")
+            plt.plot(self.cal_d["orders"][self.centre_order]["px_nus"], self.spectrum_norm, label="Simulation")
+            plt.grid()
+            plt.title("%s: %0.4f %0.4f" % (self.molecules, sum_sq, mol_scaler))
+            plt.legend()
+            # plt.savefig(("%0.8f" %ssd).replace(".","p")+".png")
+
+        print("sum_sq=", sum_sq)
+        return np.square(y_raw - self.spectrum_norm)
+
+    def forward_toa(self, plot=[]):
+
+        hr_nu_grid = self.cal_d["aotf"]["aotf_nus"]
+
+        solar_hr_nu, solar_hr_rad = get_nomad_solar(self.nu_range, interp_grid=hr_nu_grid)
+
+        # convolve AOTF function to wavenumber of each pixel in each order
+
+        # ILS convolution
+        # loop through pixel
+        ils_sums = np.zeros((len(self.orders), len(self.pxs)))
+        ils_sums_spectrum = np.zeros((len(self.orders), len(self.pxs)))
+        blaze_aotf = np.zeros((len(self.orders), len(self.pxs)))
+
+        # if "cont" in plot:
+        #     rel_cont = np.zeros((len(self.orders), len(self.pxs)))
+
+        for px in self.pxs:
+
+            width = self.cal_d["ils"]["ils_width"][px]
+            displacement = self.cal_d["ils"]["ils_displacement"][px]
+            amplitude = self.cal_d["ils"]["ils_amplitude"][px]
+
+            # loop through order
+            for order_ix, order in enumerate(self.orders):
+
+                blaze = self.cal_d["orders"][order]["F_blaze"][px]
+
+                # px central cm-1
+                px_nu = self.cal_d["orders"][order]["px_nus"][px]
+                aotf = self.cal_d["orders"][order]["F_aotf"][px]
+
+                # get bounding indices of hapi grid
+                ix_start = np.searchsorted(hr_nu_grid, px_nu - 0.7)
+                ix_end = np.searchsorted(hr_nu_grid, px_nu + 0.7)
+
+                # make ILS function on hapi grid
+                hapi_grid = hr_nu_grid[ix_start:ix_end] - px_nu
+
+                ils = make_ils(hapi_grid, width, displacement, amplitude)
+                ils_sums[order_ix, px] = np.sum(ils)  # * blaze * aotf
+
+                if self.raw:
+                    ils_sums_spectrum[order_ix, px] = np.sum(ils * solar_hr_rad[ix_start:ix_end])
+                else:
+                    ils_sums_spectrum[order_ix, px] = np.sum(ils)
+
+                blaze_aotf[order_ix, px] = blaze * aotf
+
+        ils_sums_spectrum_blaze_aotf = ils_sums_spectrum * blaze_aotf
+        if self.raw:
+            spectrum_sum = np.sum(ils_sums_spectrum_blaze_aotf, axis=0)
+            spectrum = spectrum_sum / np.max(spectrum_sum)
+
+        else:
+            ils_sums_blaze_aotf = ils_sums * blaze_aotf
+            spectrum = np.sum(ils_sums_spectrum_blaze_aotf, axis=0) / np.sum(ils_sums_blaze_aotf, axis=0)
+
+        if "aotf" in plot:
+            plt.figure(figsize=FIG_SIZE, constrained_layout=True)
+            plt.xlabel("Wavenumber")
+            plt.ylabel("AOTF / solar radiance")
+            plt.plot(hr_nu_grid, solar_hr_rad/np.max(solar_hr_rad), label="Solar spectrum")
+            plt.plot(hr_nu_grid, self.cal_d["aotf"]["F_aotf"], label="AOTF function")
+            plt.legend()
+            plt.grid()
+
+        return spectrum
+
+
+class forward_solar:
+
+    def calibrate(self, cal_d):
+        self.cal_d = cal_d
+
+        self.centre_order = cal_d["centre_order"]
+        self.orders = list(cal_d["orders"].keys())
+
+        self.first_order = self.orders[0]
+
+        # dictionary to keep the correct indices with the orders as the order is changed
+        self.order_ixs_d = {order: i for i, order in enumerate(self.orders)}
+        # re-order the orders with the one first with absorption liens
+        self.ordered_orders = [self.first_order] + [i for i in self.orders if i != self.first_order]
+
+        self.n_px = len(cal_d["orders"][self.centre_order]["px_nus"])
+        self.pxs = np.arange(self.n_px)
+
+        self.nu_range = cal_d["aotf"]["aotf_nu_range"]
+
+    def forward(self, params, plot=[], axes=[]):
+
+        logger.debug("### Starting SO forward model %s###", datetime.now())
+
+        # raw solar spectrum
+        hapi_nus = self.cal_d["aotf"]["aotf_nus"]
+        solar_hr_nu, solar_hr_rad = get_nomad_solar(self.nu_range, interp_grid=hapi_nus)
+
+        # plt.figure()
+        # plt.plot(solar_hr_nu, solar_hr_rad)
+
+        """convolve AOTF function to wavenumber of each pixel in each order"""
+        # precompute the blaze_aotf
+        blaze_aotf = np.zeros((len(self.orders), len(self.pxs)))
+
+        for px in self.pxs:
+
+            # loop through orders, starting with the one preselected to have absorption lines
+            for order in self.ordered_orders:
+
+                order_ix = self.order_ixs_d[order]
+
+                blaze = self.cal_d["orders"][order]["F_blaze"][px]
+                aotf = self.cal_d["orders"][order]["F_aotf"][px]
+                blaze_aotf[order_ix, px] = blaze * aotf
+
+                if px == log_px:
+                    logger.debug("order %i, px %i: blaze = %f, aotf = %f", order, px, blaze, aotf)
+
+        # ILS convolution
+        # sum of ILS for each pixel including absorptions
+        ils_sums_spectrum = np.zeros((len(self.orders), len(self.pxs)))
+
+        # just for plotting
+        # if "contribution" in plot:
+        #     rel_cont = np.zeros((len(self.orders), len(self.pxs)))
+
+        # loop through pixel
+        for px in self.pxs:
+
+            width = self.cal_d["ils"]["ils_width"][px]
+            displacement = self.cal_d["ils"]["ils_displacement"][px]
+            amplitude = self.cal_d["ils"]["ils_amplitude"][px]
+
+            if px == log_px:
+                logger.debug("ils width = %f, displacement = %f, amplitude = %f", width, displacement, amplitude)
+
+            # loop through orders, starting with the one preselected to have absorption lines
+            for order in self.ordered_orders:
+
+                order_ix = self.order_ixs_d[order]
+
+                # pixel centre cm-1
+                px_nu = self.cal_d["orders"][order]["px_nus"][px]
+
+                # get bounding indices of hapi grid
+                ix_start = np.searchsorted(hapi_nus, px_nu - 0.7)
+                ix_end = np.searchsorted(hapi_nus, px_nu + 0.7)
+
+                # TODO: add check to ensure first order is covered by hapi range
+
+                hapi_grid = hapi_nus[ix_start:ix_end] - px_nu
+                # hapi_trans_grid = hapi_trans_total[ix_start:ix_end]
+
+                ils = make_ils(hapi_grid, width, displacement, amplitude)
+                # summed ils without absorption lines - different for different pixels but v. similar for orders
+                # ils_sum[px] = np.sum(ils)
+                # ils_sums[order_ix, px] = ils_sum[px]
+                # summed ils with absorption lines - changes with pixel and order
+                ils_sums_spectrum[order_ix, px] = np.sum(ils * solar_hr_rad[ix_start:ix_end])
+
+                if px == log_px:
+                    # if ix_start == ix_end:
+                    #     hapi_min = 1.0
+                    # else:
+                    hapi_min = np.min(ils_sums_spectrum[order_ix, px])
+                    logger.debug("order %i, px %i: px_nu = %f, ix_start = %i, ix_end = %i, grid_start = %f, grid_end = %f, hapi_grid has %i points, min trans = %0.8f, blaze_aotf = %f, \
+                                 ils_sums_spectrum = %f",
+                                 order, px, px_nu, ix_start, ix_end, hapi_nus[0], hapi_nus[-1], len(hapi_grid), hapi_min, blaze_aotf[order_ix, px],
+                                 ils_sums_spectrum[order_ix, px])
+
+        # expand ils_sums to [n_orders x n_px]
+        # ils_sums = np.tile(ils_sum, (len(self.orders), 1))
+
+        # multiply the ils sum for each order and pixel by blaze and aotf
+        ils_sums_spectrum_blaze_aotf = ils_sums_spectrum * blaze_aotf
+
+        logger.debug("ils_sums_spectrum_blaze_aotf[:, log_px] = %s", ils_sums_spectrum_blaze_aotf[:, log_px])
+
+        # order addition
+        spectrum_sum = np.sum(ils_sums_spectrum_blaze_aotf, axis=0)
+
+        # normalise to 1
+        spectrum = spectrum_sum / np.max(spectrum_sum)
+
+        logger.debug("sum(ils_sums_spectrum_blaze_aotf[log_px]) = %f", np.sum(ils_sums_spectrum_blaze_aotf, axis=0)[log_px])
+
+        logger.debug("spectrum[log_px] = %f", spectrum[log_px])
+
+        # if "contribution" in plot:
+        #     # plot bar chart for each
+
+        #     # loop through orders
+        #     for order_ix, order in enumerate(self.orders):
+        #         # 1.0e-9 added to numerator and denominator to avoid divide by zero
+        #         rel_cont[order_ix, :] = 1.0 - (1.0 - ((ils_sums_spectrum[order_ix, :]+1.0e-9) / (ils_sums[order_ix, :]+1.0e-9))
+        #                                        ) * (blaze_aotf[order_ix] / (np.sum(blaze_aotf[:, :], axis=0)))
+
+        #     rel_1_cont = 1.0 - rel_cont
+
+        #     if len(axes) < 2:
+        #         fig2, ax2 = plt.subplots(figsize=FIG_SIZE, constrained_layout=True)
+        #     else:
+        #         ax2 = axes[1]
+
+        #     ax2.set_xlabel("Pixel number")
+        #     ax2.set_ylabel("Contribution from each order")
+        #     rel_1_cont_cumul = np.ones(len(self.pxs))  # set to 0 for first bars
+        #     for order_ix, order in enumerate(self.orders):
+        #         rel_1_cont_cumul -= rel_1_cont[order_ix, :]
+        #         # x axis, height of the bar, bottom of the bar
+        #         ax2.bar(self.pxs, rel_1_cont[order_ix, :], bottom=rel_1_cont_cumul, label=order)
+
+        #     ax2.plot(self.pxs, spectrum, "k-", label="Spectrum")
+        #     ax2.legend()
+        #     ax2.grid()
+
+        #     self.rel_cont = rel_cont
 
         return spectrum
 

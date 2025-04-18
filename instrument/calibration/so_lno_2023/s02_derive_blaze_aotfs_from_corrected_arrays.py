@@ -5,8 +5,8 @@ Created on Mon Nov 18 14:43:14 2024
 @author: iant
 
 STEP2:
-    NEW VERSION OF STEP02: READ IN DIAGONALLY CORRECT MINISCANS, FIT BLAZE AND AUTOMATICALLY FIND SOLAR LINE POSITIONS
-    DERIVE AOTF FUNCTIONS AND SAVE TO PDF AND TEXT FILES
+    READ IN DIAGONALLY CORRECT MINISCANS, FIT BLAZE AND AUTOMATICALLY FIND SOLAR LINE POSITIONS
+    DERIVE AOTF FUNCTIONS AND SAVE TO PDF
 
 
 """
@@ -36,10 +36,10 @@ channel = "lno"
 
 # search for miniscan files with the following characteristics
 # aotf step in kHz
-aotf_steppings = [4, 8]
+aotf_steppings = [4]
 # diffraction order of first spectrum in file
-starting_orders = list(range(163, 210))
-# starting_orders = [164]
+# starting_orders = list(range(163, 210))
+starting_orders = [176]
 
 
 MINISCAN_PATH = os.path.normcase(r"C:\Users\iant\Documents\DATA\miniscans")
@@ -114,6 +114,7 @@ with PdfPages("aotfs.pdf") as pdf:
 
         scan_blaze_fits = np.zeros_like(scan_array)
         for i, scan_line in enumerate(progress(scan_array)):
+            # fit_blaze here uses a polyfit iteration to remove absorption lines
             scan_blaze_fits[i, :] = fit_blaze(scan_line, max_rms=0.002)
 
             if "blaze_fits" in plot and i % 100 == 0:

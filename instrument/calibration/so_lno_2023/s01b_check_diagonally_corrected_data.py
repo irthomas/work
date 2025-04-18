@@ -4,7 +4,9 @@ Created on Wed Aug  7 13:54:23 2024
 
 @author: iant
 
+Optional step:
 Check diagonally corrected data, to find issues and improve the correction if needed
+E.g. if the diagonal correction is introducing sawtooth artefacts in the spectra
 """
 
 import os
@@ -19,8 +21,8 @@ channel = "lno"
 # aotf step in kHz
 aotf_steppings = [4]
 # diffraction order of first spectrum in file
-starting_orders = list(range(163, 210))
-# starting_orders = [164]
+# starting_orders = list(range(163, 210))
+starting_orders = [176]
 
 
 MINISCAN_PATH = os.path.normcase(r"C:\Users\iant\Documents\DATA\miniscans")

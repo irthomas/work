@@ -41,8 +41,8 @@ aotf_steppings = [4]
 binnings = [0]
 # diffraction order of first spectrum in file
 # starting_orders = list(range(178, 210))
-starting_orders = list(range(163, 210))
-# starting_orders = [164]
+# starting_orders = list(range(163, 210))
+starting_orders = [176]
 
 
 # in-flight
@@ -70,18 +70,18 @@ OUTPUT_FILE_TYPE = "fits"
 
 
 # list and colour code files matching the search parameters
-# list_files = True
-list_files = False
+list_files = True
+# list_files = False
 
 # force reloading of h5 data? If false and variable exists, use values in memory
-# force_reload = True
-force_reload = False
+force_reload = True
+# force_reload = False
 
 
 # for checking HR interpolation and oscillations in miniscan grid
 # for checking the oscillation removal
 # plot = ["check hr", "check fft", "raw", "corrected"]
-plot = ["raw", "corrected"]
+plot = ["corrected"]
 # plot = ["raw"]
 
 

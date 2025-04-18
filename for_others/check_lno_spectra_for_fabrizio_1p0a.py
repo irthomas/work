@@ -15,9 +15,15 @@ import os
 import glob
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy.optimize import minimize
 
 from tools.file.hdf5_functions import open_hdf5_file
 from tools.file.paths import paths
+
+
+from instrument.nomad_lno_instrument_v02 import nu_mp
+from instrument.calibration.so_lno_2023.asymmetric_blaze import asymmetric_blaze
+
 
 LEVEL = "0p1a"
 # LEVEL = "1p0a"
@@ -25,6 +31,7 @@ LEVEL = "0p1a"
 DATA_PATH = r"C:\Users\iant\Documents\DATA\hdf5"
 
 BAD_PX_ITERS = 5
+BAD_PX_STD = 5.0
 
 zp1a = LEVEL == "0p1a"
 
@@ -33,8 +40,43 @@ if zp1a:
 else:
     orders = ["_DF_186", "_DP_187", "_DP_193", "_DF_194", "_DF_198", "_DF_199"]
 
-
 h5_prefix = "20220130_045445"
+
+
+def make_blaze(params, channel, order, ncols):
+
+    [eff_n_px, t, scaler, offset] = params
+    # print(params)
+
+    px_nus = nu_mp(order, np.arange(ncols)*(eff_n_px/ncols), t)
+    blaze = asymmetric_blaze(channel, order, px_nus)*scaler + offset
+    return blaze
+
+
+def min_blaze(params, args):
+    # print(params)
+    # print(args)
+
+    [spectrum, channel, order] = args
+
+    ncols = len(spectrum)
+    blaze = make_blaze(params, channel, order, ncols)
+    chisq_px = (spectrum - blaze)**2
+    chisq = np.sum(chisq_px)
+    return chisq
+
+
+def fit_blaze_spectrum(spectrum, first_guess, channel, order):
+    res = minimize(min_blaze, first_guess, args=[spectrum, channel, order])
+
+    ncols = len(spectrum)
+    # print(res.x)
+    # plt.figure()
+    # plt.plot(spectrum)
+    blaze = make_blaze([*res.x[0:-1], 0.0], channel, order, ncols)
+    # plt.plot(blaze)
+    return blaze
+
 
 d = {}
 for order in orders:
@@ -91,24 +133,46 @@ for order in orders:
 
         y_order = y[::6, :, :]  # every 6th is of same order
 
-        spectrum = y_order[76, 0, :]
+        fitted_spectra = []
+        for i in range(76):
+            spectrum = y_order[i, 0, :]
 
-        x = np.arange(len(spectrum))
+            x = np.arange(len(spectrum))
 
-        good_ixs = np.ones_like(x, dtype=bool)
+            good_ixs = np.ones_like(x, dtype=bool)
 
-        for iteration in range(BAD_PX_ITERS):
+            for iteration in range(BAD_PX_ITERS):
+                polyfit = np.polyfit(x[~np.isnan(spectrum)], spectrum[~np.isnan(spectrum)], 3)
+                polyval = np.polyval(polyfit, x)
+                # plt.plot(spectrum, label="%i" % iteration, color="C%i" % iteration)
+                # plt.plot(polyval, "--", color="C%i" % iteration)
+
+                diff = np.abs(spectrum - polyval)
+                bad_ix = np.nanargmax(diff)
+                diff_std = np.nanstd(diff)
+                # print(bad_ix, diff[bad_ix]/diff_std, BAD_PX_STD)
+                if diff[bad_ix]/diff_std > BAD_PX_STD:
+                    spectrum[bad_ix] = np.nan
+                else:
+                    break
+
+            # replace nans by polynomial value
             polyfit = np.polyfit(x[~np.isnan(spectrum)], spectrum[~np.isnan(spectrum)], 3)
             polyval = np.polyval(polyfit, x)
-            plt.plot(spectrum, label="%i" % iteration, color="C%i" % iteration)
-            plt.plot(polyval, "--", color="C%i" % iteration)
+            bad_ixs = np.argwhere(np.isnan(spectrum))
+            for bad_ix in bad_ixs:
+                spectrum[bad_ix] = polyval[bad_ix]
+            # plt.plot(spectrum, color="k")
 
-            diff = np.abs(spectrum - polyval)
-            bad_ix = np.nanargmax(diff)
-            print(bad_ix)
-            spectrum[bad_ix] = np.nan
+            # plt.legend()
 
-        plt.legend()
+            # now fit the blaze function
+            first_guess = [320., -5.0, np.max(spectrum)*0.95, np.mean(spectrum[0:50])]
+            blaze = fit_blaze_spectrum(spectrum, first_guess, "lno", 186)
+
+            fitted_spectra.append(blaze)
+
+        plt.plot(np.asarray(fitted_spectra).T)
         stop()
 
         peak_mean = np.mean(y_order[:, :, 180:220], axis=2)
@@ -129,7 +193,6 @@ for order in orders:
 
             plt.plot(mean, "k--")
             plt.plot(std, "k.-")
-        stop()
 
     else:
         for ix in np.arange(y.shape[0]):

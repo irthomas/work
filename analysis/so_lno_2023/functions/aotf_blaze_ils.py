@@ -64,6 +64,14 @@ def sinc_gd(dx, width, lobe, asym, offset):
     return sinc
 
 
+def F_aotf_sinc_gaussian_lno(nu, nu0, iG=0.3709984, i0=0.6290016, w0=18.188122, sigmaG=12.181137):
+    """calculate aotf function from order and high resolution wavenumber grid covering all required orders"""
+    """AOTF is old formulation from Liuzzi draft"""
+    F = i0 * np.sinc((nu-nu0)/w0)**2 + iG * np.exp((-1.0 * (nu - nu0)**2)/(sigmaG**2))
+
+    return F
+
+
 def F_aotf_sinc_gaussian(dx, d):
     offset = d["aotfg"] * np.exp(-dx**2.0 / (2.0 * d["aotfgw"]**2.0))
     sinc = sinc_gd(dx, d["aotfw"], d["aotfs"], d["aotfa"], offset)
@@ -79,31 +87,35 @@ def get_aotf_sinc_gaussian(channel, aotf_nu_centre=None, aotf_d={}):
 
     aotf_d = {"aotf_nus": aotf_nus, "aotf_nu_range": aotf_nu_range, "aotf_nu_centre": aotf_nu_centre}
 
-    aotfwc = [-1.66406991e-07,  7.47648684e-04,  2.01730360e+01]  # Sinc width [cm-1 from AOTF frequency cm-1]
-    aotfsc = [8.10749274e-07, -3.30238496e-03,  4.08845247e+00]  # sidelobes factor [scaler from AOTF frequency cm-1]
-    aotfac = [-1.54536176e-07,  1.29003715e-03, -1.24925395e+00]  # Asymmetry factor [scaler from AOTF frequency cm-1]
-    aotfoc = [0.0,             0.0,             0.0]  # Offset [coefficients for AOTF frequency cm-1]
-    aotfgc = [1.49266526e-07, -9.63798656e-04,  1.60097815e+00]  # Gaussian peak intensity [coefficients for AOTF frequency cm-1]
+    if channel == "so":
+        aotfwc = [-1.66406991e-07,  7.47648684e-04,  2.01730360e+01]  # Sinc width [cm-1 from AOTF frequency cm-1]
+        aotfsc = [8.10749274e-07, -3.30238496e-03,  4.08845247e+00]  # sidelobes factor [scaler from AOTF frequency cm-1]
+        aotfac = [-1.54536176e-07,  1.29003715e-03, -1.24925395e+00]  # Asymmetry factor [scaler from AOTF frequency cm-1]
+        aotfoc = [0.0,             0.0,             0.0]  # Offset [coefficients for AOTF frequency cm-1]
+        aotfgc = [1.49266526e-07, -9.63798656e-04,  1.60097815e+00]  # Gaussian peak intensity [coefficients for AOTF frequency cm-1]
 
-    if "aotfw" not in aotf_d.keys():
-        aotf_d["aotfw"] = np.polyval(aotfwc, aotf_nu_centre)
+        if "aotfw" not in aotf_d.keys():
+            aotf_d["aotfw"] = np.polyval(aotfwc, aotf_nu_centre)
 
-    if "aotfs" not in aotf_d.keys():
-        aotf_d["aotfs"] = np.polyval(aotfsc, aotf_nu_centre)
+        if "aotfs" not in aotf_d.keys():
+            aotf_d["aotfs"] = np.polyval(aotfsc, aotf_nu_centre)
 
-    if "aotfa" not in aotf_d.keys():
-        aotf_d["aotfa"] = np.polyval(aotfac, aotf_nu_centre)
+        if "aotfa" not in aotf_d.keys():
+            aotf_d["aotfa"] = np.polyval(aotfac, aotf_nu_centre)
 
-    if "aotfo" not in aotf_d.keys():
-        aotf_d["aotfo"] = np.polyval(aotfoc, aotf_nu_centre)
+        if "aotfo" not in aotf_d.keys():
+            aotf_d["aotfo"] = np.polyval(aotfoc, aotf_nu_centre)
 
-    if "aotfg" not in aotf_d.keys():
-        aotf_d["aotfg"] = np.polyval(aotfgc, aotf_nu_centre)
+        if "aotfg" not in aotf_d.keys():
+            aotf_d["aotfg"] = np.polyval(aotfgc, aotf_nu_centre)
 
-    if "aotfgw" not in aotf_d.keys():
-        aotf_d["aotfgw"] = 50.  # offset width cm-1
+        if "aotfgw" not in aotf_d.keys():
+            aotf_d["aotfgw"] = 50.  # offset width cm-1
 
-    F_aotf = F_aotf_sinc_gaussian(dx, aotf_d)
+        F_aotf = F_aotf_sinc_gaussian(dx, aotf_d)
+
+    elif channel == "lno":
+        F_aotf = F_aotf_sinc_gaussian_lno(aotf_nus, aotf_nu_centre)
 
     # normalise to 1
     F_aotf /= np.max(F_aotf)
@@ -230,7 +242,7 @@ def F_blaze_sinc(px_nus, blaze_nu, blazew):
 
 
 def get_blaze_sinc(channel, px_nus, aotf_nu_centre, order, nomad_t, blazec=-1, blazew=-1):
-    """get blaze sinc2 function"""
+    """get blaze sinc2 function. -1 = calculate the parameters"""
 
     if blazew == -1:
         if channel == "so":
@@ -239,7 +251,13 @@ def get_blaze_sinc(channel, px_nus, aotf_nu_centre, order, nomad_t, blazec=-1, b
             blazew = fsr_peak_nu_lno(aotf_nu_centre, nomad_t)
 
     if blazec == -1:
-        blazec = order * blazew  # center of the blaze
+        if channel == "so":
+            blazec = order * blazew  # centre of the blaze
+        elif channel == "lno":
+            px_ix = 160.25 + 0.23 * order
+            blazec = np.interp(px_ix, np.arange(len(px_nus)), px_nus)  # centre of the blaze from old 2017 pixel number form 160.25 + 0.23 * order
+
+    # print(blazec, blazew, order)
 
     # make blaze function, one value per pixel
     blaze = F_blaze_sinc(px_nus, blazec, blazew)
@@ -275,7 +293,7 @@ def get_ils_lno(aotf_nu_centre):
     A_w_nu0 = aotf_nu_centre / rp
     sconv = A_w_nu0/2.355
 
-    return {"ils_width": np.tile(sconv, len(pixels))}
+    return {"ils_width": np.tile(sconv, len(pixels)), "ils_displacement": np.zeros_like(pixels), "ils_amplitude": np.ones_like(pixels)}
 
 
 def get_ils_coeffs(channel, aotf_nu_centre):

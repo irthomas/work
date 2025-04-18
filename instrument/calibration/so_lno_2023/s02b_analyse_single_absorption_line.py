@@ -5,6 +5,8 @@ Created on Mon Nov 18 13:36:01 2024
 @author: iant
 
 ANALYSE A SINGLE ABSORPTION LINE
+TEST FITTING ASYMMETRIC BLAZE
+
 """
 
 
@@ -29,23 +31,55 @@ from instrument.calibration.so_lno_2023.asymmetric_blaze import asymmetric_blaze
 # from analysis.so_lno_2023.functions.aotf_blaze_ils import get_ils_coeffs, make_ils
 from tools.general.get_minima_maxima import get_local_maxima_or_equals
 
+from instrument.calibration.so_lno_2023.fitting_functions import fit_blaze_spectrum
+
+
 # channel = "so"
 channel = "lno"
 
+# search for miniscan files with the following characteristics
+# aotf step in kHz
+aotf_steppings = [4]
+# diffraction order of first spectrum in file
+# starting_orders = list(range(163, 210))
+starting_orders = [176]
+
+
 MINISCAN_PATH = os.path.normcase(r"C:\Users\iant\Documents\DATA\miniscans")
-FIGSIZE = (8, 10)
 
 
-h5_prefix = "LNO-20220619-140101-164-4"
-# h5_prefix = "LNO-20181106-195839-170-4"
+# check for data available in miniscan dir
+filenames = os.listdir(os.path.join(MINISCAN_PATH, channel))
+# list all fits files
+h5_prefixes = [s.replace(".fits", "") for s in filenames if ".fits" in s and s]
+# list those with chosen AOTF stepping (in KHz)
+h5_prefixes = [s for s in h5_prefixes if int(s.split("-")[-1]) in aotf_steppings]
+# list those with chosen aotf diffraction orders
+h5_prefixes = [s for s in h5_prefixes if int(s.split("-")[-2]) in starting_orders]
+print("%i files found matching the desired stepping and diffraction order start" % len(h5_prefixes))
 
 
 # plot = ["asym_blaze", "std no abs"]
 plot = ["asym_blaze"]
 
+# just take 1 file - if more, ask the user
+if len(h5_prefixes) == 1:
+    h5_prefix = h5_prefixes[0]
+else:
+    for i, h5_prefix in enumerate(h5_prefixes):
+        print(i, h5_prefix)
+    inp_in = int(input("Please select one to plot (0 to %i): " % (len(h5_prefixes)-1)))
+    if inp_in < len(h5_prefixes):
+        h5_prefix = h5_prefixes[inp_in]
+    else:
+        print("Out of range, selecting the last one")
+        h5_prefix = h5_prefixes[-1]
+
+# get data from selected file
 arrs, aotfs, ts = load_fits_miniscan(h5_prefix, MINISCAN_PATH)
 nrows, ncols = arrs[0].shape
 
+FIGSIZE = (8, 10)
 
 # normalise arrays
 array_norms = []
@@ -94,6 +128,7 @@ if "asym_blaze" in plot:
 
     for order, row_ix in [[165, 200], [169, 770]]:
 
+        # don't fit the blaze, just plot the expected shape
         px_nus = nu_mp(order, np.arange(ncols)*(290/ncols), -5.0)
         blaze = asymmetric_blaze(channel, order, px_nus)*1.01
 
@@ -104,6 +139,10 @@ if "asym_blaze" in plot:
 
         # plt.figure()
         plt.plot(array_norms[0][row_ix, :]/blaze)
+
+
+# fit blaze with minimise
+fit_blaze_spectrum(spectrum, first_guess, channel, order)
 
 
 if "polyfit" in plot:

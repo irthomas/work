@@ -25,9 +25,9 @@ def compute_beta(wvn, order, sigma, gamma, alpha):
 
 def asymmetric_blaze(channel, order, px_nus):
     """Loic asymmetric blaze function"""
-    if channel == "so":
+    if channel.lower() == "so":
         gamma, alphab = 0.04538, -0.0003491
-    elif channel == "lno":
+    elif channel.lower() == "lno":
         gamma, alphab = 0.04764, 0.0
     thetab = 1.10706
     sigma = 0.024792

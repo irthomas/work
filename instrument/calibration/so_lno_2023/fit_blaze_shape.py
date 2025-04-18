@@ -3,6 +3,9 @@
 Created on Fri May 24 13:21:09 2024
 
 @author: iant
+
+FIT BLAZE AS A POLYNOMIAL, ITERATING TO REMOVE ABSORPTION LINES
+
 """
 
 import numpy as np
