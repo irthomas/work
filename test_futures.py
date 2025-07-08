@@ -4,6 +4,8 @@ Created on Fri Jun 19 10:40:51 2020
 
 @author: iant
 """
+from multiprocessing import Pool
+import os
 import concurrent.futures
 import time
 import queue
@@ -17,21 +19,20 @@ n_proc = 3
 sources = ["abc", "def", "ghi", "jkl", "mno"]
 
 # class process(object):
-   
-    
+
+
 #     def wait(self, source):
 #         rand = np.random.rand()
 #         time.sleep(rand * 3)
 #         print(rand, source)
-        
-        
+
 
 #     def __call__(self, executor, sources):
 
 #         print("Starting process from %d source files" %(len(sources)))
 #         ft_queue = queue.Queue()
 #         cb = functools.partial(self.__callback, ft_queue)
-        
+
 #         #all sources are passed to generic process. Now loop through each source, running the converter
 #         for src in sources:
 #             ft = executor.submit(self.wait, src)
@@ -52,18 +53,17 @@ sources = ["abc", "def", "ghi", "jkl", "mno"]
 #     def __callback(ft_queue, ft):
 #         if ft.done():
 #             ft_queue.put(ft)
-    
 
- 
+
 # if __name__ == '__main__':
 #     with concurrent.futures.ProcessPoolExecutor(n_proc) as executor:
-        
+
 #         # Call process - run one level process e.g. Hdf5L01dProcess on all sources
 #         new_products, prssd_sources = process(executor, sources)
 
 
-
 """map stops on crash"""
+
 
 # def wait(_in):
 #     source, i = _in
@@ -72,13 +72,13 @@ sources = ["abc", "def", "ghi", "jkl", "mno"]
 #     if i == 3:
 #         cheese == 2
 #     return i, source
-        
-        
+
+
 # if __name__ == '__main__':
 #     with concurrent.futures.ProcessPoolExecutor(n_proc) as executor:
 #         for i, result in executor.map(wait, zip(sources, range(len(sources)))):
 #             print(i, result)
-        
+
 
 """submit doesn't stop on crash, but all futures need to be checked afterwards. Also print statements go to anaconda prompt"""
 # def wait(i, source):
@@ -89,10 +89,10 @@ sources = ["abc", "def", "ghi", "jkl", "mno"]
 #     if i == 3:
 #         cheese == 2
 #     return i, source
-        
+
 # futures_list = []
 # results = []
-        
+
 # if __name__ == '__main__':
 #     with concurrent.futures.ProcessPoolExecutor(n_proc) as executor:
 #         for i, source in enumerate(sources):
@@ -111,7 +111,7 @@ sources = ["abc", "def", "ghi", "jkl", "mno"]
 # def summed(x, y, z):
 #     return x*100 + y*10 + z
 
-        
+
 # a = summed(1,2,3)
 # print(a)
 
@@ -139,24 +139,22 @@ sources = ["abc", "def", "ghi", "jkl", "mno"]
 # g = logged(g)
 
 
-
-
 """classmethod test"""
 
-class Student(object):
-    def __init__(self, first_name, last_name):
-        self.first_name = first_name
-        self.last_name = last_name
 
-    @classmethod
-    def from_string(cls, name_str):
-        first_name, last_name = map(str, name_str.split(' '))
-        student = cls(first_name, last_name)  #run the class from inside the class
-        return student
+# class Student(object):
+#     def __init__(self, first_name, last_name):
+#         self.first_name = first_name
+#         self.last_name = last_name
 
-scott = Student.from_string('Scott Robinson')
+#     @classmethod
+#     def from_string(cls, name_str):
+#         first_name, last_name = map(str, name_str.split(' '))
+#         student = cls(first_name, last_name)  # run the class from inside the class
+#         return student
 
 
+# scott = Student.from_string('Scott Robinson')
 
 
 """use submit and queue"""
@@ -172,7 +170,6 @@ scott = Student.from_string('Scott Robinson')
 # def __callback(ft_queue, ft):
 #     if ft.done():
 #         ft_queue.put(ft)
-
 
 
 # futures_list = []
@@ -198,6 +195,45 @@ scott = Student.from_string('Scott Robinson')
 #                 results.append(None)
 
 
+""" L2 pipeline multiprocessing test: doesn't work in spyder, only command line"""
 
 
-    
+# class Controller_SO_occ_hcl_1():
+
+#     def __init__(self):
+#         self.__asi_path_list: list[str] = ["path1", "path2", "path3", "path4", "path5"]
+#         self.h5_path_list: list[str] = []
+
+#     def _processing_input(self, asi_path: str) -> bool:
+#         hdf5_path = os.path.splitext(asi_path.replace('ASI', 'RESULTS'))[0] + '_Level2.h5'
+
+#         self.h5_path_list.append(hdf5_path)
+#         print(f"L2 file {hdf5_path} created succesfully")
+
+#     def processing_input_list(self) -> None:
+#         """
+#         Processes a list of .asi files using the __processing_input method.
+
+#         Returns:
+#             bool: True if all files are processed successfully, False otherwise.
+
+#         Logs:
+#             Errors encountered during the processing of files.
+#         """
+#         # for multiprocessings: get number of processes from config file (if it exists)
+#         n_proc = 3
+
+#         print(f"Running {len(self.__asi_path_list)} files with {n_proc} processes")
+#         pool = Pool(n_proc)
+
+#         try:
+#             pool.map(self._processing_input, self.__asi_path_list)
+#         except Exception as e:
+#             print(f"Error during processing: {e}\n")
+#             raise
+
+
+# ctr = Controller_SO_occ_hcl_1()
+# ctr.processing_input_list()
+
+# print("Done:", ctr.h5_path_list)
