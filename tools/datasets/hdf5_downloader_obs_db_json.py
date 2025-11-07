@@ -18,7 +18,9 @@ import requests
 from requests.auth import HTTPBasicAuth
 
 # Insert the NOMAD sci WebDAV password here
-WEBDAV_PASSWORD = ""
+# WEBDAV_PASSWORD = ""
+from tools.file.passwords import passwords
+WEBDAV_PASSWORD = passwords["nomadsci_webdav"]
 
 # Download directory (leave blank for current directory)
 DOWNLOAD_DIR = "hdf5"
@@ -28,7 +30,7 @@ JSON_FILENAME = ""
 
 # Other constants
 WEBDAV_USER = "nomadsci"
-HDF5_LEVEL = "hdf5_level_1p0a"
+HDF5_LEVEL = "hdf5_level_0p3a"
 
 
 if JSON_FILENAME == "":

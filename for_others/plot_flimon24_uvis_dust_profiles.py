@@ -20,14 +20,14 @@ filepath = "C:/Users/iant/Downloads/uvis_paper.txt"
 
 # choose northern or southern hemisphere
 
-# title = "Southern Hemisphere"
-# lat_range = [-90, -30]
+title = "Southern Hemisphere"
+lat_range = [-90, -30]
 
 # title = "Northern Hemisphere"
 # lat_range = [30, 90]
 
-title = "Mid Latitudes"
-lat_range = [-30, 30]
+# title = "Mid Latitudes"
+# lat_range = [-30, 30]
 
 # end of user inputs
 

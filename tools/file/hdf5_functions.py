@@ -57,21 +57,19 @@ BAD_FILE_DICTIONARY = {
     "20180529_150145": "Nadir off-planet",
     "20180625_191417": "Nadir off-planet",
 
-    "20150315_235950": "Wrong day",
-    "20180628_235204": "Wrong day",
-    "20190130_235926": "Wrong day",
-    "20190308_235913": "Wrong day",
-    "20190712_235957": "Wrong day",
-    "20191016_235331": "Wrong day",
-    "20220103_235931": "Wrong day",
+    # "20150315_235950": "Wrong day",
+    # "20180628_235204": "Wrong day",
+    # "20190130_235926": "Wrong day",
+    # "20190308_235913": "Wrong day",
+    # "20190712_235957": "Wrong day",
+    # "20191016_235331": "Wrong day",
+    # "20220103_235931": "Wrong day",
 
 }
 
 
-"""make list of all hdf5 files in given folder and all subdirectories"""
-
-
 def get_hdf5_filename_list(root_directory, check_for_calibration_file=False):
+    """make list of all hdf5 files in given folder and all subdirectories"""
 
     data_filenames = []
     for path, subfolders, files in os.walk(root_directory):
@@ -134,7 +132,7 @@ def get_hdf5_filename_list2(regex, file_level, path=None):
     return filenames, filepaths
 
 
-def get_filepath(hdf5_filename):
+def get_filepath(hdf5_filename, path=None):
     """get full file path from name"""
 
     import os
@@ -145,7 +143,10 @@ def get_filepath(hdf5_filename):
     month = hdf5_filename[4:6]
     day = hdf5_filename[6:8]
 
-    filepath = os.path.join(paths["DATA_DIRECTORY"], file_level, year, month, day, hdf5_filename+".h5")  # choose a file
+    if path:
+        filepath = os.path.join(path, file_level, year, month, day, hdf5_filename+".h5")  # choose a file
+    else:
+        filepath = os.path.join(paths["DATA_DIRECTORY"], file_level, year, month, day, hdf5_filename+".h5")  # choose a file
 
     return filepath
 
@@ -243,11 +244,12 @@ def get_file(obspath, file_level, count, model="INFLIGHT", silent=False, open_fi
     return filename, hdf5_file
 
 
-def open_hdf5_file(hdf5_filename, path=None):
+def open_hdf5_file(hdf5_filename, path=None, silent=False):
 
     if path:
         data_directory = path
-        print("Using path %s" % path)
+        if not silent:
+            print("Using path %s" % path)
     else:
         data_directory = paths["DATA_DIRECTORY"]
 

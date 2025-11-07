@@ -62,17 +62,20 @@ FULLSCAN_DICT = {
 
     "LNO Occultation Nominal Science 1xCO2 01": [[168, 134, 169, 121, 190, 0], "lno"],
 
+    "All Fullscan Slow #2": [],  # consider as calibrations
+    "All Fullscan Slow": []
+
 }
 
 
-# MAKE_PDF = True
-MAKE_PDF = False  # list orders, name and frequency to add to spreadsheet
+MAKE_PDF = True
+# MAKE_PDF = False  # list orders, name and frequency to add to spreadsheet
 
 # CHANNELS = ["so", "lno"]
-# CHANNELS = ["so"]
-CHANNELS = ["lno"]
+CHANNELS = ["so"]
+# CHANNELS = ["lno"]
 
-N_MONTHS = 4  # make frequency statistics for this many months previous
+N_MONTHS = 3  # make frequency statistics for this many months previous
 
 
 def connect_db(db_path):
@@ -139,7 +142,7 @@ def get_planning_db_dict(table_name):
         for row in occultation_data:
             if row[1] == "NOMAD":
                 if row[17] is None and row[4] != "Grazing":
-                    print("Error: observation was not correctly planned", row)
+                    print("Error: not measured - maybe the observation was planned then cancelled?", row)
                 if row[17] is not None:
                     # add row info to dict if measured i.e. not grazing etc.
                     for i, k in enumerate(d.keys()):
@@ -310,6 +313,9 @@ for channel in CHANNELS:
                 if unique_ir_observation_name not in FULLSCAN_DICT:
                     print("### Warning: skipping %s; not found in dict (%0.1f%% of obs)" % (unique_ir_observation_name, mean_n_months))
                     continue
+                elif len(FULLSCAN_DICT[unique_ir_observation_name]) == 0:
+                    print("Skipping calibration %s" % unique_ir_observation_name)
+                    continue
                 else:
                     orders, channel = FULLSCAN_DICT[unique_ir_observation_name]
 
@@ -368,6 +374,8 @@ for channel in CHANNELS:
 
                 pdf.savefig()
                 plt.close()
+
+                print("%s,%0.2f" % (unique_ir_observation_name, mean_n_months))
 
             else:
                 print("%s\t%s\t%0.1f%%" % (s, unique_ir_observation_name, mean_n_months))

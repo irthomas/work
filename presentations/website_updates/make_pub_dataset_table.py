@@ -25,6 +25,28 @@ nomad_obs_paper_list = [
     #  "pdoi": "",
     #  "ddoi": ""},
 
+    {"title": "Mars dust and aerosol climatology from UVIS solar occultations for MY34-36",
+     "year": 2025,
+     "inst": "NOMAD-UVIS (occultation)",
+     "lead": "Zachary Flimon",
+     "pdoi": "https://doi.org/10.1029/2024JE008303",
+     "ddoi": "https://doi.org/10.18758/71021091"},
+
+    {"title": "Changes in green line dayglow emission due to an ICME",
+     "year": 2025,
+     "inst": "NOMAD-UVIS (limb)",
+     "lead": "Aadarsh Sharma",
+     "pdoi": "https://doi.org/10.1029/2024GL111745",
+     "ddoi": "https://doi.org/10.5281/zenodo.12690459"},
+
+    {"title": "NO and O2 nightglow emissions from Mars southern winter polar region",
+     "year": 2024,
+     "inst": "NOMAD-UVIS (limb)",
+     "lead": "Lauriane Soret",
+     "pdoi": "https://doi.org/10.1029/2024JE008620",
+     "ddoi": "https://doi.org/10.58119/ULG/U19BNE"},
+
+
     {"title": "Mars water vapour vertical profiles in the perihelion seasons of MY34-36",
      "year": 2024,
      "inst": "NOMAD-SO",
@@ -50,19 +72,19 @@ nomad_obs_paper_list = [
      "year": 2023,
      "inst": "NOMAD-SO",
      "lead": "Aurelien Stolzenbach",
-     "pdoi": "https://doi.org/10.1029/2022JE007276 https://doi.org/10.1029/2023JE007835",
+     "pdoi": ["https://doi.org/10.1029/2022JE007276", "https://doi.org/10.1029/2023JE007835"],
      "ddoi": "https://zenodo.org/records/7753821"},
 
     {"title": "Mars O2 visible nightglow limb profiles",
      "year": 2023,
-     "inst": "NOMAD-UVIS",
+     "inst": "NOMAD-UVIS (limb)",
      "lead": "Jean-Claude Gerard",
      "pdoi": "https://doi.org/10.1038/s41550-023-02104-8",
      "ddoi": "https://doi.org/10.18758/71021084"},
 
     {"title": "Mars ultraviolet dayglow limb profiles",
      "year": 2023,
-     "inst": "NOMAD-UVIS",
+     "inst": "NOMAD-UVIS (limb)",
      "lead": "Lauriane Soret",
      "pdoi": "https://doi.org/10.1029/2023JE007762",
      "ddoi": "https://doi.org/10.18758/71021081"},
@@ -85,7 +107,7 @@ nomad_obs_paper_list = [
      "year": 2023,
      "inst": "NOMAD-SO",
      "lead": "Loic Trompet",
-     "pdoi": "https://doi.org/10.1029/2022JE007277 https://doi.org/10.1029/2022JE007279",
+     "pdoi": ["https://doi.org/10.1029/2022JE007277", "https://doi.org/10.1029/2022JE007279"],
      "ddoi": "https://doi.org/10.18758/71021074"},
 
     {"title": "Mars water vapour vertical profiles in the perihelion season MY34-35",
@@ -111,21 +133,21 @@ nomad_obs_paper_list = [
 
     {"title": "(1) Mars ozone vertical profiles for MY34-35 and (2) comparable GEM-Mars ozone simulations",
      "year": 2022,
-     "inst": "NOMAD-UVIS and GEM-Mars",
+     "inst": "NOMAD-UVIS (occultation) and GEM-Mars",
      "lead": "(1) Michael Wolff and (2) Frank Daerden",
      "pdoi": "https://doi.org/10.1029/2022GL098821",
      "ddoi": "https://dx.doi.org/10.18758/71021070"},
 
     {"title": "Mars oxygen green and red line dayglow limb profiles",
      "year": 2022,
-     "inst": "NOMAD-UVIS",
+     "inst": "NOMAD-UVIS (limb)",
      "lead": "Lauriane Soret",
      "pdoi": "https://doi.org/10.1029/2022JE007220",
      "ddoi": "https://dx.doi.org/10.18758/71021077"},
 
     {"title": "Mars oxygen dayglow density and temperature limb profiles of the upper mesosphere and lower thermosphere",
      "year": 2022,
-     "inst": "NOMAD-UVIS",
+     "inst": "NOMAD-UVIS (limb)",
      "lead": "Shohei Aoki",
      "pdoi": "https://doi.org/10.1029/2022JE007206",
      "ddoi": "https://doi.org/10.18758/71021073"},
@@ -167,7 +189,7 @@ nomad_obs_paper_list = [
 
     {"title": "Mars oxygen green line dayglow limb profiles",
      "year": 2020,
-     "inst": "NOMAD-UVIS",
+     "inst": "NOMAD-UVIS (limb)",
      "lead": "Jean-Claude Gerard",
      "pdoi": "https://doi.org/10.1038/s41550-020-1123-2",
      "ddoi": "https://doi.org/10.18758/71021055"},
@@ -301,7 +323,15 @@ for paper in nomad_obs_paper_list:
     h += "<tr>\n"
     for key, value in paper.items():
         if key in ["pdoi", "ddoi"]:
-            h += "<td><a href='%s'>%s</a></td>" % (value, value)
+            if isinstance(value, list):
+
+                h += "<td>"
+                for each_value in value:
+                    h += "<a href='%s'>%s</a> " % (each_value, each_value)
+                h += "</td>"
+            else:
+                h += "<td><a href='%s'>%s</a></td>" % (value, value)
+
         else:
             h += "<td>%s</td>" % (value)
     h += "\n</tr>\n"
@@ -343,6 +373,7 @@ for paper in sim_paper_list:
 
 h += "</tbody></table>\n"
 
-h += "Page last updated 6th August 2024"
+h += "Page last updated 3rd September 2025"
 
-print(h)
+with open("publicly_available_datasets.html", "w") as f:
+    f.write(h)
