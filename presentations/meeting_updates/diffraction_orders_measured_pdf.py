@@ -71,8 +71,8 @@ FULLSCAN_DICT = {
 MAKE_PDF = True
 # MAKE_PDF = False  # list orders, name and frequency to add to spreadsheet
 
-# CHANNELS = ["so", "lno"]
-CHANNELS = ["so"]
+CHANNELS = ["so", "lno"]
+# CHANNELS = ["so"]
 # CHANNELS = ["lno"]
 
 N_MONTHS = 3  # make frequency statistics for this many months previous

@@ -26,9 +26,10 @@ orders_to_scale = orders to include when scaling curves to match each other (to 
 # TODO: add others here
 selected_orders = {
 
-    "Hydration band 1": {"orders_to_find": [[160, 162, 164, 166, 168, 170]], "nominal_orders": [160, 162, 164, 166, 168, 170], "orders_to_scale": [164, 166, 168, 170]},
-    # "Hydration band 2": {"orders_to_find": [[157, 160, 163, 166, 169, 172]], "nominal_orders": [157, 160, 163, 166, 169, 172], "orders_to_scale": [157, 166, 169, 172]},
+    "Hydration band 2 order stepping": {"orders_to_find": [[160, 162, 164, 166, 168, 170]], "nominal_orders": [160, 162, 164, 166, 168, 170], "orders_to_scale": [164, 166, 168, 170]},
+    "Hydration band 3 order stepping": {"orders_to_find": [[157, 160, 163, 166, 169, 172]], "nominal_orders": [157, 160, 163, 166, 169, 172], "orders_to_scale": [157, 166, 169, 172]},
     # "Carbonates": {"orders_to_find": [[174, 175, 176, 190, 191, 192]], "nominal_orders": [174, 175, 176, 190, 191, 192], "orders_to_scale": [174, 175, 176, 190, 191, 192], "linestyle": "none"},
+    # "Phyliosilicates": {"orders_to_find": [[189, 190, 191, 192, 193, 201]], "nominal_orders": [189, 190, 191, 192, 193, 201], "orders_to_scale": [189, 190, 191, 192, 193, 201], "linestyle": "none"},
 }
 
 
@@ -73,8 +74,8 @@ for name in selected_orders.keys():
             norm_vals_interp = np.interp(nominal_orders, orders, norm_vals_norm)
 
             # TODO: replace this with better rejection criteria
-            if np.min(norm_vals_interp) < 0.8:
-                continue
+            # if np.min(norm_vals_interp) < 0.8:
+            #     continue
 
             ax1a.scatter(nominal_um, norm_vals_interp)
             ax1a.plot(nominal_um, norm_vals_interp)
@@ -149,6 +150,28 @@ ax2a.set_xlim((2, 3.1))
 ax2a.set_ylim((0.025, 0.075))
 ax2a.set_xlabel("Wavelength (microns)")
 ax2a.set_ylabel("CRISM Phobos I/F")
+
+# %%
+# vals_d = {}
+# for h5 in phobos_d.keys():
+#     orders = phobos_d[h5]["orders"]
+
+#     for i, order in enumerate(orders):
+#         if order not in vals_d.keys():
+#             vals_d[order] = {"vals": [], "stds": []}
+
+#         vals_d[order]["vals"].append(phobos_d[h5]["norm_vals"][i])
+#         vals_d[order]["stds"].append(phobos_d[h5]["norm_stds"][i])
+
+#     # ix = np.where(orders == 160)[0]
+#     # if len(ix) > 0:
+#     #     vals.append(phobos_d[h5]["norm_vals"][ix][0])
+# for order in vals_d.keys():
+#     plt.figure()
+#     plt.title(order)
+#     plt.plot(vals_d[order]["vals"])
+#     # print(order, vals_d[order]["vals"])
+
 
 # fig2.subplots_adjust(bottom=0.15)
 

@@ -20,6 +20,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 DATA_PATH = r"C:\Users\iant\Documents\DATA\hdf5"
+# DATA_PATH = r"W:\data\SATELLITE\TRACE-GAS-ORBITER\NOMAD\hdf5"
 
 # h5s = [
 #     "20250407_190226_1p0a_LNO_1_DP_168",
@@ -32,6 +33,7 @@ h5s = [
     "20250407_190226_1p0a_LNO_1_DP_190",
 ]
 
+plt.figure(figsize=(12, 4))
 
 d = {}
 for h5 in h5s:
@@ -57,3 +59,4 @@ plt.title("%s: SZA Range %i - %i degrees" % (h5[0:29], min(szas_b), 80))
 plt.xlabel("Latitude")
 plt.ylabel("Reflectance Factor")
 plt.legend()
+plt.grid()

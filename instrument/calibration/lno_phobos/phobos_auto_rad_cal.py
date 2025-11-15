@@ -49,10 +49,13 @@ px_range = range(120, 280)
 # plot_level = -2  # check signal noise
 # plot_level = -1  # check bad pixels
 
-# plot_level = 0
-# plot_level = 2
-# plot_level = 3
-plot_level = 4
+# plot_level = 0  # raw line plots per bin and raw images after bad pixel, before and after offset correction
+# plot_level = 2  # line plots each bin before and after phase correction
+# plot_level = 2.5  # line plots after phase angle correction
+# plot_level = 3  # solar scaling
+plot_level = 4  # crism fit all bins seperately
+# plot_level = 4.5 # crism mean of best bins fit only
+# plot_level = 5  # nothing
 
 # PLOT_TYPES = ["bad_pixel_fits", "solar_fits"]
 PLOT_TYPES = []
@@ -67,56 +70,61 @@ offset_correction = "solar"  # first_bin, last_bin
 
 bad_pixel_type = "iteration"  # dict
 
-# derived from phase_phase_angle_correction.py
-phase_correction_coeff = -0.09683078700888664  # including solar scalar and integration time/binning correction
+ignore_edge_bins = True  # don't include bins at edge of FOV in analysis (counts unrelibale if FOV slightly off the moon)
+# ignore_edge_bins = False
 
-# remove data above this phase angle. not yet checked if working
-max_phase_angle = 180.0
+# derived from phase_phase_angle_correction.py
+phase_correction_coeff = -0.08374207277211694  # corrected negatives, taking solar spectra mean of pixels, ignoring edge bins and bad file 20250628_083013
+
+# remove data above this phase angle
+max_phase_angle = 34.0  # cuts off a couple of high phase angle observations
+# max_phase_angle = 180.0
 
 # choose only trailing or leading hemisphere. not yet implemented
 max_longitude = -999.0
 
-"""observation name:{"h5":hdf5 filename, "orders_crism":orders to fit to CRISM spectra}"""
+"""observation name:{"h5":hdf5 filename, "orders_crism":orders to fit to CRISM spectra, "bins":(optional:) manually select the bins}"""
 
 obs_types = {
-    "Hydration band 2 order stepping #1 tracking 60s": {"h5": re.compile("20250628_083013_0p3a_LNO_1_.*"), "orders_crism": [160, 168, 170]},
-    "Hydration band 2 order stepping #2 tracking 60s": {"h5": re.compile("20250622_070511_0p3a_LNO_1_.*"), "orders_crism": [160, 168, 170]},
-    "Hydration band 2 order stepping #3 tracking 60s": {"h5": re.compile("20250619_101826_0p3a_LNO_1_.*"), "orders_crism": [160, 168, 170]},
-    "Hydration band 2 order stepping #4 tracking 60s": {"h5": re.compile("20250619_022647_0p3a_LNO_1_.*"), "orders_crism": [160, 168, 170]},
+    # "Hydration band 2 order stepping #1 tracking 60s": {"h5": re.compile("20250628_083013_0p3a_LNO_1_.*"), "orders_crism": [166, 168, 170]},  # investigate
+    "Hydration band 2 order stepping #2 tracking 60s": {"h5": re.compile("20250622_070511_0p3a_LNO_1_.*"), "orders_crism": [166, 168, 170]},
+    "Hydration band 2 order stepping #3 tracking 60s": {"h5": re.compile("20250619_101826_0p3a_LNO_1_.*"), "orders_crism": [166, 168, 170]},
+    "Hydration band 2 order stepping #4 tracking 60s": {"h5": re.compile("20250619_022647_0p3a_LNO_1_.*"), "orders_crism": [166, 168, 170]},
 
-    "Hydration band 3 order stepping #1 tracking 60s": {"h5": re.compile("20250411_203101_0p3a_LNO_1_.*"), "orders_crism": [157, 160, 169, 172]},
-    "Hydration band 3 order stepping #2 tracking 60s": {"h5": re.compile("20250408_080101_0p3a_LNO_1_.*"), "orders_crism": [157, 160, 169, 172]},
-    "Hydration band 3 order stepping #3 tracking 60s": {"h5": re.compile("20250405_190547_0p3a_LNO_1_.*"), "orders_crism": [157, 160, 169, 172]},
-    "Hydration band 3 order stepping #4 tracking 60s": {"h5": re.compile("20250402_221907_0p3a_LNO_1_.*"), "orders_crism": [157, 160, 169, 172]},
-    "Hydration band 3 order stepping #5 tracking 60s": {"h5": re.compile("20250402_142717_0p3a_LNO_1_.*"), "orders_crism": [157, 160, 169, 172]},
+    "Hydration band 3 order stepping #1 tracking 60s": {"h5": re.compile("20250411_203101_0p3a_LNO_1_.*"), "orders_crism": [166, 169, 172]},
+    "Hydration band 3 order stepping #2 tracking 60s": {"h5": re.compile("20250408_080101_0p3a_LNO_1_.*"), "orders_crism": [166, 169, 172]},
+    "Hydration band 3 order stepping #3 tracking 60s": {"h5": re.compile("20250405_190547_0p3a_LNO_1_.*"), "orders_crism": [166, 169, 172]},
+    "Hydration band 3 order stepping #4 tracking 60s": {"h5": re.compile("20250402_221907_0p3a_LNO_1_.*"), "orders_crism": [166, 169, 172]},
+    "Hydration band 3 order stepping #5 tracking 60s": {"h5": re.compile("20250402_142717_0p3a_LNO_1_.*"), "orders_crism": [166, 169, 172]},
 
-    "Hydration band 2 order stepping #5 inertial 60s": {"h5": re.compile("20241229_103444_0p3a_LNO_1_.*"), "orders_crism": [160, 168, 170]},
-    "Hydration band 2 order stepping #6 inertial 60s": {"h5": re.compile("20241213_052910_0p3a_LNO_1_.*"), "orders_crism": [160, 168, 170]},
-    "Hydration band 2 order stepping #7 inertial 60s": {"h5": re.compile("20241210_084211_0p3a_LNO_1_.*"), "orders_crism": [160, 168, 170]},
-    "Hydration band 2 order stepping #8 inertial 60s": {"h5": re.compile("20241207_040411_0p3a_LNO_1_.*"), "orders_crism": [160, 168, 170]},
+    "Hydration band 2 order stepping #5 inertial 60s": {"h5": re.compile("20241229_103444_0p3a_LNO_1_.*"), "orders_crism": [166, 168, 170]},
+    "Hydration band 2 order stepping #6 inertial 60s": {"h5": re.compile("20241213_052910_0p3a_LNO_1_.*"), "orders_crism": [166, 168, 170]},
+    "Hydration band 2 order stepping #7 inertial 60s": {"h5": re.compile("20241210_084211_0p3a_LNO_1_.*"), "orders_crism": [166, 168, 170]},
+    "Hydration band 2 order stepping #8 inertial 60s": {"h5": re.compile("20241207_040411_0p3a_LNO_1_.*"), "orders_crism": [166, 168, 170]},
 
-    "Carbonates #1 inertial 60s": {"h5": re.compile("20241011_012228_0p3a_LNO_1_.*"), "orders_crism": [174, 175, 176, 190, 191, 192]},
-    "Carbonates #2 inertial 60s": {"h5": re.compile("20241004_235732_0p3a_LNO_1_.*"), "orders_crism": [174, 175, 176, 190, 191, 192]},
-    "Carbonates #3 inertial 60s": {"h5": re.compile("20241001_191914_0p3a_LNO_1_.*"), "orders_crism": [174, 175, 176, 190, 191, 192]},
-    "Carbonates #4 inertial 60s": {"h5": re.compile("20240922_210734_0p3a_LNO_1_.*"), "orders_crism": [174, 175, 176, 190, 191, 192]},
-    "Carbonates #5 inertial 60s": {"h5": re.compile("20240911_224710_0p3a_LNO_1_.*"), "orders_crism": [174, 175, 176, 190, 191, 192]},
+    # carbonates and phyllosilicates don't have a full analysis of the phase angle correction for these orders, to be done later
+    # "Carbonates #1 inertial 60s": {"h5": re.compile("20241011_012228_0p3a_LNO_1_.*"), "orders_crism": [174, 175, 176, 190, 191, 192], "bins": [1]},
+    # "Carbonates #2 inertial 60s": {"h5": re.compile("20241004_235732_0p3a_LNO_1_.*"), "orders_crism": [174, 175, 176, 190, 191, 192], "bins": [1]},
+    # "Carbonates #3 inertial 60s": {"h5": re.compile("20241001_191914_0p3a_LNO_1_.*"), "orders_crism": [174, 175, 176, 190, 191, 192], "bins": [1]},
+    # "Carbonates #4 inertial 60s": {"h5": re.compile("20240922_210734_0p3a_LNO_1_.*"), "orders_crism": [174, 175, 176, 190, 191, 192], "bins": [1]},
+    # "Carbonates #5 inertial 60s": {"h5": re.compile("20240911_224710_0p3a_LNO_1_.*"), "orders_crism": [174, 175, 176, 190, 191, 192], "bins": [1]},
 
     "Hydration band 4 orders #1 inertial 60s": {"h5": re.compile("20240831_034846_0p3a_LNO_1_.*"), "orders_crism": [169]},
     "Hydration band 4 orders #2 inertial 60s": {"h5": re.compile("20240825_022347_0p3a_LNO_1_.*"), "orders_crism": [169]},
     "Hydration band 4 orders #3 inertial 60s": {"h5": re.compile("20240819_005847_0p3a_LNO_1_.*"), "orders_crism": [169]},
     "Hydration band 4 orders #4 inertial 60s": {"h5": re.compile("20240805_163944_0p3a_LNO_1_.*"), "orders_crism": [169]},
     "Hydration band 4 orders #5 inertial 60s": {"h5": re.compile("20240702_042211_0p3a_LNO_1_.*"), "orders_crism": [169]},
-    "Hydration band 4 orders #6 inertial 60s": {"h5": re.compile("20240627_023139_0p3a_LNO_1_.*"), "orders_crism": [169]},
+    # "Hydration band 4 orders #6 inertial 60s": {"h5": re.compile("20240627_023139_0p3a_LNO_1_.*"), "orders_crism": [169]},  # investigate
     "Hydration band 4 orders #7 inertial 60s": {"h5": re.compile("20240620_092319_0p3a_LNO_1_.*"), "orders_crism": [169]},
     "Hydration band 4 orders #8 inertial 60s": {"h5": re.compile("20240614_075827_0p3a_LNO_1_.*"), "orders_crism": [169]},
 
-    "Phyllosilicates #1 inertial 60s": {"h5": re.compile("20240606_012950_0p3a_LNO_1_.*"), "orders_crism": [189, 190, 191, 192, 193, 201]},
-    "Phyllosilicates #2 inertial 60s": {"h5": re.compile("20240531_075626_0p3a_LNO_1_.*"), "orders_crism": [189, 190, 191, 192, 193, 201]},
-    "Phyllosilicates #3 inertial 60s": {"h5": re.compile("20240508_064538_0p3a_LNO_1_.*"), "orders_crism": [189, 190, 191, 192, 193, 201]},
-    "Phyllosilicates #4 inertial 60s": {"h5": re.compile("20240503_124624_0p3a_LNO_1_.*"), "orders_crism": [189, 190, 191, 192, 193, 201]},
-    "Phyllosilicates #5 inertial 60s": {"h5": re.compile("20240502_131156_0p3a_LNO_1_.*"), "orders_crism": [189, 190, 191, 192, 193, 201]},
-    "Phyllosilicates #6 inertial 60s": {"h5": re.compile("20240427_112108_0p3a_LNO_1_.*"), "orders_crism": [189, 190, 191, 192, 193, 201]},
-    "Phyllosilicates #7 inertial 60s": {"h5": re.compile("20240412_193543_0p3a_LNO_1_.*"), "orders_crism": [189, 190, 191, 192, 193, 201]},
+    # "Phyllosilicates #1 inertial 60s": {"h5": re.compile("20240606_012950_0p3a_LNO_1_.*"), "orders_crism": [189, 190, 191, 192, 193, 201]},
+    # "Phyllosilicates #2 inertial 60s": {"h5": re.compile("20240531_075626_0p3a_LNO_1_.*"), "orders_crism": [189, 190, 191, 192, 193, 201]},
+    # "Phyllosilicates #3 inertial 60s": {"h5": re.compile("20240508_064538_0p3a_LNO_1_.*"), "orders_crism": [189, 190, 191, 192, 193, 201]},
+    # "Phyllosilicates #4 inertial 60s": {"h5": re.compile("20240503_124624_0p3a_LNO_1_.*"), "orders_crism": [189, 190, 191, 192, 193, 201]},
+    # "Phyllosilicates #5 inertial 60s": {"h5": re.compile("20240502_131156_0p3a_LNO_1_.*"), "orders_crism": [189, 190, 191, 192, 193, 201]},
+    # "Phyllosilicates #6 inertial 60s": {"h5": re.compile("20240427_112108_0p3a_LNO_1_.*"), "orders_crism": [189, 190, 191, 192, 193, 201]},
+    # "Phyllosilicates #7 inertial 60s": {"h5": re.compile("20240412_193543_0p3a_LNO_1_.*"), "orders_crism": [189, 190, 191, 192, 193, 201]},
 
 
 }
@@ -143,6 +151,13 @@ for obs_type in obs_types.keys():
     # get diffraction orders from filenames
     phobos_orders = [int(s.split("_")[-1]) for s in h5s]
     phobos_unique_orders = sorted(list(set(phobos_orders)))
+
+    # get solar calibration data
+    cal_h5 = "20201222_114725_1p0a_LNO_1_CF"
+    cal_d = rad_cal_order(cal_h5, phobos_unique_orders, centre_indices=px_range, path=data_path)
+    for order in phobos_unique_orders:
+        cal_d[order]["solar_scalar"] = cal_d[order]["y_centre_mean"] / 2.0e6
+        cal_d[order]["solar_spectrum"] = cal_d[order]["y_spectrum"] / np.max(cal_d[order]["y_spectrum"])
 
     h5_prefix = h5s[0][:15]
 
@@ -194,11 +209,18 @@ for obs_type in obs_types.keys():
                 phase_angle_2d[:, row] = y_new
 
         # remove spectra outside of phase angle / longitude range
-        # compare mean phase angle for all bins
-        good_ixs = np.where(np.mean(phase_angle_2d, axis=1) < max_phase_angle)[0]
-        # resize everything to remove spectra and data
-        phase_angle_2d = phase_angle_2d[good_ixs, :]
-        y_3d = y_3d[good_ixs, :, :]
+        # get indices only for first h5 file
+        if h5_ix == 0:
+            # compare mean phase angle for all bins
+            good_phase_ixs = np.where(np.mean(phase_angle_2d, axis=1) < max_phase_angle)[0]
+
+        # resize everything from all files to remove spectra and data
+        phase_angle_2d = phase_angle_2d[good_phase_ixs, :]
+        y_3d = y_3d[good_phase_ixs, :, :]
+
+        if y_3d.shape[0] == 0:
+            # skip if all data removed
+            continue
 
         """correct for different total integration times"""
         integration_time = h5f["Channel/IntegrationTime"][0]  # detector row of top of each bin
@@ -241,8 +263,13 @@ for obs_type in obs_types.keys():
             else:
                 fitted_spectra, corr_spectra, fitted_params = fit_spectra(y_3d, solar_spectrum)
 
-        # TODO : check why binning is multiplied
-        y_spectral_mean = np.max(corr_spectra, axis=2) / total_integration_time * binning
+        # set negatives to nan
+        nan_ixs = np.where(corr_spectra == 0.0)
+        corr_spectra[nan_ixs] = np.nan
+
+        # TODO : check why binning is multiplied (only matters for 6 bin 4 order obs)
+        # y_spectral_mean = np.nanmax(corr_spectra, axis=2) / total_integration_time * binning
+        y_spectral_mean = np.mean(corr_spectra[:, :, px_range], axis=2) / total_integration_time * binning
         # print(total_integration_time, binning)
 
         if plot_level < -1:
@@ -306,14 +333,14 @@ for obs_type in obs_types.keys():
         # spectral detector pixels, scaled to solar spectrum
         counts_d[phobos_unique_order]["y_spectral_solar_scaled"] = y_spectral_solar_scaled
 
-        # average of spectral detector pixels in all frames
-        counts_d[phobos_unique_order]["y_spectral_frame_mean"] = np.mean(y_spectral_mean, axis=0)
+        # average of spectral detector pixels in all frames before phase correction
+        counts_d[phobos_unique_order]["y_spectral_frame_mean"] = np.nanmean(y_spectral_mean, axis=0)
         # stdev of spectral detector pixels in all frames
-        counts_d[phobos_unique_order]["y_spectral_frame_std"] = np.std(y_spectral_mean, axis=0)
+        counts_d[phobos_unique_order]["y_spectral_frame_std"] = np.nanstd(y_spectral_mean, axis=0)
         # average of spectral detector pixels in all frames, scaled to solar spectrum
-        counts_d[phobos_unique_order]["y_spectral_frame_solar_scaled_mean"] = np.mean(y_spectral_solar_scaled, axis=0)
+        counts_d[phobos_unique_order]["y_spectral_frame_solar_scaled_mean"] = np.nanmean(y_spectral_solar_scaled, axis=0)
         # stdev of spectral detector pixels in all frames, scaled to solar spectrum
-        counts_d[phobos_unique_order]["y_spectral_frame_solar_scaled_std"] = np.std(y_spectral_solar_scaled, axis=0)
+        counts_d[phobos_unique_order]["y_spectral_frame_solar_scaled_std"] = np.nanstd(y_spectral_solar_scaled, axis=0)
 
         counts_d[phobos_unique_order]["phase_angle"] = phase_angle_2d
         # correction for phase angle gradient (calculated elsewhere), scaled to solar spectrum
@@ -322,10 +349,32 @@ for obs_type in obs_types.keys():
         # define which are good rows
         # the selection is made on the first file and applied to the other orders
         if h5_ix == 0:
-            best_bin_ratio = counts_d[phobos_unique_order]["y_spectral_frame_mean"] / np.max(counts_d[phobos_unique_order]["y_spectral_frame_mean"])
-            # if signal is >75% of the best binned detector row, also include it in the analysis
-            good_row_indices = np.where(best_bin_ratio > 0.75)[0]
-            print("%s: %i rows have been selected - ratios:" % (h5_prefix, len(good_row_indices)), [float(f"{x:.2f}") for x in best_bin_ratio])
+
+            if "bins" in obs_types[obs_type].keys():
+                good_row_indices = obs_types[obs_type]["bins"]
+                best_bin_ratio = counts_d[phobos_unique_order]["y_spectral_frame_mean"] / np.nanmax(counts_d[phobos_unique_order]["y_spectral_frame_mean"])
+
+            elif not ignore_edge_bins:
+                best_bin_ratio = counts_d[phobos_unique_order]["y_spectral_frame_mean"] / np.nanmax(counts_d[phobos_unique_order]["y_spectral_frame_mean"])
+                # if signal is >75% of the best binned detector row, also include it in the analysis
+                good_row_indices = np.where(best_bin_ratio > 0.75)[0]
+            else:
+                bins_to_consider = np.arange(1, len(counts_d[phobos_unique_order]["y_spectral_frame_mean"])-1)
+                best_bin_ratio = counts_d[phobos_unique_order]["y_spectral_frame_mean"][bins_to_consider] / \
+                    np.nanmax(counts_d[phobos_unique_order]["y_spectral_frame_mean"][bins_to_consider])
+                # if signal is >75% of the best binned detector row, also include it in the analysis
+                good_row_indices = np.where(best_bin_ratio > 0.75)[0] + 1
+
+            print("%s: rows %s have been selected - ratios:" % (h5_prefix, str(good_row_indices)), [float(f"{x:.2f}") for x in best_bin_ratio])
+
+    # print("Signals on each bin for each order:")
+    # for phobos_unique_order in counts_d.keys():
+    #     print(phobos_unique_order, ":", counts_d[phobos_unique_order]["y_spectral_frame_mean"])
+
+    # skip whole observation if no spectra (due to phase angle / longitude criteria)
+    if len(counts_d) == 0:
+        print("Skipping", obs_type)
+        continue
 
     # all data collected, now plot it
     if plot_level < 2:
@@ -376,7 +425,7 @@ for obs_type in obs_types.keys():
         """plot vs phase angle"""
         fig, axes = plt.subplots(nrows=len(good_row_indices), ncols=1, figsize=(10, len(good_row_indices)*5), squeeze=False)
         axes = axes.flatten()
-        fig.suptitle("Spectrally binned signal for each order and detector row bin")
+        fig.suptitle("Spectrally binned signal for each order and detector row bin before phase correction")
         # plt.subplots_adjust(bottom=0.15)
 
         for axes_ix, bin_ix in enumerate(good_row_indices):
@@ -388,7 +437,7 @@ for obs_type in obs_types.keys():
                 x_plt = counts_d[order]["phase_angle"][:, bin_ix]
                 y_plt = counts_d[order]["y_spectral_mean"][:, bin_ix]
 
-                good_ix = np.where(~np.isnan(x_plt))
+                good_ix = np.where(~np.isnan(x_plt) & ~np.isnan(y_plt))
 
                 # linear fit to the data
                 poly = Polynomial.fit(x_plt[good_ix], y_plt[good_ix], 1)
@@ -413,7 +462,7 @@ for obs_type in obs_types.keys():
         """plot vs phase angle after counts correction"""
         fig, axes = plt.subplots(nrows=len(good_row_indices), ncols=1, figsize=(10, len(good_row_indices)*5), squeeze=False)
         axes = axes.flatten()
-        fig.suptitle("Spectrally binned signal for each order and detector row bin")
+        fig.suptitle("Spectrally binned signal for each order and detector row bin after phase correction")
 
     for order in phobos_unique_orders:
 
@@ -436,14 +485,17 @@ for obs_type in obs_types.keys():
             x_mean = np.mean(x_plt)
             y = counts_d[order]["y_spectral_mean"][:, bin_ix]
 
+            good_ix = np.where(~np.isnan(x_plt) & ~np.isnan(y))
+
             # correct for phase angle by applying pre-calculated gradient
-            y_plt = y - (x_plt - np.mean(x_plt)) * counts_d[order]["phase_correction"]
+            # doesn't change the y values, only reduces the standard deviation
+            y_plt = y[good_ix] - (x_plt[good_ix] - np.mean(x_plt)) * counts_d[order]["phase_correction"]
 
             # check if a gradient remains in the data after correction
-            poly = Polynomial.fit(x_plt, y_plt, 1)
-            yfit = poly(x_plt)
+            poly = Polynomial.fit(x_plt[good_ix], y_plt, 1)
+            yfit = poly(x_plt[good_ix])
 
-            counts_d[order]["y_spectral_frame_corr_mean"][bin_ix] = np.mean(y_plt)
+            counts_d[order]["y_spectral_frame_corr_mean"][bin_ix] = np.mean(y[good_ix])
             counts_d[order]["y_spectral_frame_corr_std"][bin_ix] = np.std(y_plt)
 
             solar_scalar = cal_d[order]["solar_scalar"]
@@ -456,10 +508,13 @@ for obs_type in obs_types.keys():
             # print(order, bin_ix, "SNR:", snr_before, "->", snr_after)
 
             if plot_level < 3.0:
-                axes[axes_ix].scatter(x_plt, y_plt, color=colour_d[order], label="Order %i" % order)
-                axes[axes_ix].plot([np.min(x_plt), np.max(x_plt)],
+                axes[axes_ix].scatter(x_plt[good_ix], y_plt, color=colour_d[order], label="Order %i" % order)
+                # plot flat line
+                axes[axes_ix].plot([np.min(x_plt[good_ix]), np.max(x_plt[good_ix])],
                                    [np.mean(y_plt), np.mean(y_plt)],
                                    color=colour_d[order], linestyle=linestyle)
+                # plot linear fit
+                axes[axes_ix].plot(x_plt[good_ix], yfit, color=colour_d[order], linestyle=linestyle)
 
                 if order == phobos_unique_orders[-1]:
                     axes[axes_ix].set_xlabel("Phase angle (degrees)")
@@ -467,12 +522,17 @@ for obs_type in obs_types.keys():
                     if axes_ix == 0:
                         axes[axes_ix].legend(loc="upper left")
                     axes[axes_ix].grid()
+            # stop()
         if plot_level < 3.0:
             fig.subplots_adjust(bottom=0.15)
             if SAVE_FIGURES:
                 plt.savefig("%s_lno_phobos_signal_phase_corr.png" % h5_prefix)
             if CLOSE_FIGURES:
                 plt.close()
+
+    # print("Phase corrected signals on each bin for each order:")
+    # for order in phobos_unique_orders:
+    #     print(order, [counts_d[order]["y_spectral_frame_solar_scaled_corr_mean"][bin_ix] for bin_ix in good_row_indices])
 
     if plot_level < 4:
 
@@ -527,7 +587,7 @@ for obs_type in obs_types.keys():
 
         fig2, ax2a = plt.subplots(figsize=(10, 5))
         # fig2.suptitle("Phobos Radiance Calibration: %s (%s)" % (obs_type, h5))
-        fig2.suptitle("Phobos I/F Calibration: Scaled to CRISM")
+        fig2.suptitle("Phobos I/F Calibration: Observation %s scaled to CRISM" % h5_prefix)
         ax2a.scatter(crism_d["x"], crism_d["phobos_red"], color="tab:red", marker="x", alpha=0.7, label="CRISM Phobos red")
         ax2a.scatter(crism_d["x"], crism_d["phobos_blue"], color="tab:blue", marker="x", alpha=0.7, label="CRISM Phobos blue")
 
@@ -543,65 +603,97 @@ for obs_type in obs_types.keys():
     good_bin_snrs = good_bin_means / good_bin_stds
     good_bin_snr = np.sqrt(np.sum(good_bin_snrs**2, axis=0))
 
-    # scale to crism
-    # get column-scaled data for each order
-    bin_ix = 1
-    y_column_mean_norm = {order: np.mean([counts_d[order]["y_spectral_frame_solar_scaled_corr_mean"][bin_ix]
-                                         for bin_ix in good_row_indices]) for order in phobos_unique_orders}
-    y_column_std_norm = {order: np.mean([counts_d[order]["y_spectral_frame_solar_scaled_corr_std"][bin_ix]
-                                        for bin_ix in good_row_indices]) for order in phobos_unique_orders}
+    print("SNRs per order:", good_bin_snr)
 
+    """scale to crism"""
+    # first interpolate crism to cover spectral gaps
     orders_to_scale = np.array(obs_types[obs_type]["orders_crism"])
     order_ums = [10000./cal_d[order]["x_mean"] for order in orders_to_scale]
-
-    # calculate scaling factor to calibrate to crism red and blue
-    # first interpolate crism to cover spectral gaps
     crism_red_f = interpolate.interp1d(crism_d["x"], crism_d["phobos_red"], kind="quadratic")
     crism_blue_f = interpolate.interp1d(crism_d["x"], crism_d["phobos_blue"], kind="quadratic")
 
     crism_red_interp = crism_red_f(order_ums)
     crism_blue_interp = crism_blue_f(order_ums)
 
+    """plot each bin scaled to crism"""
+    if plot_level < 4.5:
+        for bin_ix in good_row_indices:
+            y_column_mean_norm = {order: counts_d[order]["y_spectral_frame_solar_scaled_corr_mean"][bin_ix] for order in phobos_unique_orders}
+            y_column_std_norm = {order: counts_d[order]["y_spectral_frame_solar_scaled_corr_std"][bin_ix] for order in phobos_unique_orders}
+
+            # divide values for each order by crism interpolated value to that wavelength
+            # calculate scaling factor to calibrate to crism red and blue
+            # scale each bin individually
+            red_scalar = np.mean(crism_red_interp / np.asarray([y_column_mean_norm[order] for order in orders_to_scale]))
+            blue_scalar = np.mean(crism_blue_interp / np.asarray([y_column_mean_norm[order] for order in orders_to_scale]))
+
+            y_column_mean_norm_red = {order: y_column_mean_norm[order]*red_scalar for order in y_column_mean_norm.keys()}
+            y_column_mean_norm_blue = {order: y_column_mean_norm[order]*blue_scalar for order in y_column_mean_norm.keys()}
+            y_column_std_norm_red = {order: y_column_std_norm[order]*red_scalar for order in y_column_std_norm.keys()}
+            y_column_std_norm_blue = {order: y_column_std_norm[order]*blue_scalar for order in y_column_std_norm.keys()}
+
+            x_plt = [10000./cal_d[order]["x_mean"] for order in y_column_mean_norm.keys()]
+
+            y_plt1 = np.array([y_column_mean_norm_red[order] for order in y_column_mean_norm.keys()])
+            # y_err = np.array([y_column_std_norm_red[order] for order in y_column_std_norm.keys()])
+            y_err1 = y_plt1 / good_bin_snr
+
+            # ax2a.plot(x_plt, y_pl1t, color="darkred", label="LNO scaled to Phobos red")
+            ax2a.plot(x_plt, y_plt1, color="darkred", alpha=0.3)
+            ax2a.scatter(x_plt, y_plt1, color="darkred", alpha=0.3)
+
+            y_plt2 = np.array([y_column_mean_norm_blue[order] for order in y_column_mean_norm.keys()])
+            # y_err = np.array([y_column_std_norm_blue[order] for order in y_column_std_norm.keys()])
+            y_err2 = y_plt2 / good_bin_snr
+
+            # ax2a.plot(x_plt, y_plt2, color="darkblue", label="LNO scaled to Phobos blue")
+            ax2a.plot(x_plt, y_plt2, color="darkblue", alpha=0.3)
+            ax2a.scatter(x_plt, y_plt2, color="darkblue", alpha=0.3)
+
+    """plot mean of all good bins"""
+    # get column-scaled data for each order
+    y_column_mean_norm = {order: np.mean([counts_d[order]["y_spectral_frame_solar_scaled_corr_mean"][bin_ix]
+                                         for bin_ix in good_row_indices]) for order in phobos_unique_orders}
+    y_column_std_norm = {order: np.mean([counts_d[order]["y_spectral_frame_solar_scaled_corr_std"][bin_ix]
+                                        for bin_ix in good_row_indices]) for order in phobos_unique_orders}
+
     # divide values for each order by crism interpolated value to that wavelength
+    # calculate scaling factor to calibrate to crism red and blue
+    # scale mean of bins
     red_scalar = np.mean(crism_red_interp / np.asarray([y_column_mean_norm[order] for order in orders_to_scale]))
     blue_scalar = np.mean(crism_blue_interp / np.asarray([y_column_mean_norm[order] for order in orders_to_scale]))
-
-    # matching_crism_indices = np.where((crism_d["x"] > np.min(order_ums)) & (crism_d["x"] < np.max(order_ums)))[0]
-    # crism_red_mean = np.mean(crism_d["phobos_red"][matching_crism_indices])
-    # crism_blue_mean = np.mean(crism_d["phobos_blue"][matching_crism_indices])
-    # lno_mean = np.mean([y_column_mean_norm[order] for order in orders_to_scale])
-    # red_scalar = crism_red_mean / lno_mean
-    # blue_scalar = crism_blue_mean / lno_mean
 
     y_column_mean_norm_red = {order: y_column_mean_norm[order]*red_scalar for order in y_column_mean_norm.keys()}
     y_column_mean_norm_blue = {order: y_column_mean_norm[order]*blue_scalar for order in y_column_mean_norm.keys()}
     y_column_std_norm_red = {order: y_column_std_norm[order]*red_scalar for order in y_column_std_norm.keys()}
     y_column_std_norm_blue = {order: y_column_std_norm[order]*blue_scalar for order in y_column_std_norm.keys()}
 
-    print("SNRs per order:", good_bin_snr)
+    x_plt = [10000./cal_d[order]["x_mean"] for order in y_column_mean_norm.keys()]
+
+    y_plt1 = np.array([y_column_mean_norm_red[order] for order in y_column_mean_norm.keys()])
+    # y_err = np.array([y_column_std_norm_red[order] for order in y_column_std_norm.keys()])
+    y_err1 = y_plt1 / good_bin_snr
 
     if plot_level < 5:
-
-        x_plt = [10000./cal_d[order]["x_mean"] for order in y_column_mean_norm.keys()]
-
-        y_plt1 = np.array([y_column_mean_norm_red[order] for order in y_column_mean_norm.keys()])
-        # y_err = np.array([y_column_std_norm_red[order] for order in y_column_std_norm.keys()])
-        y_err1 = y_plt1 / good_bin_snr
 
         # ax2a.plot(x_plt, y_pl1t, color="darkred", label="LNO scaled to Phobos red")
         ax2a.errorbar(x_plt, y=y_plt1, yerr=y_err1, color="darkred", capsize=2, label="LNO scaled to Phobos red")
         ax2a.scatter(x_plt, y_plt1, color="darkred")
 
-        y_plt2 = np.array([y_column_mean_norm_blue[order] for order in y_column_mean_norm.keys()])
-        # y_err = np.array([y_column_std_norm_blue[order] for order in y_column_std_norm.keys()])
-        y_err2 = y_plt2 / good_bin_snr
+    y_plt2 = np.array([y_column_mean_norm_blue[order] for order in y_column_mean_norm.keys()])
+    # y_err = np.array([y_column_std_norm_blue[order] for order in y_column_std_norm.keys()])
+    y_err2 = y_plt2 / good_bin_snr
+
+    if plot_level < 5:
 
         # ax2a.plot(x_plt, y_plt2, color="darkblue", label="LNO scaled to Phobos blue")
         ax2a.errorbar(x_plt, y=y_plt2, yerr=y_err2, color="darkblue", capsize=2, label="LNO scaled to Phobos blue")
         ax2a.scatter(x_plt, y_plt2, color="darkblue")
 
-        min_phase_angle = np.min([counts_d[order]["phase_angle"] for order in counts_d.keys()])
-        mean_phase_angle = np.mean([counts_d[order]["phase_angle"] for order in counts_d.keys()])
+    min_phase_angle = np.min([counts_d[order]["phase_angle"] for order in counts_d.keys()])
+    mean_phase_angle = np.mean([counts_d[order]["phase_angle"] for order in counts_d.keys()])
+
+    if plot_level < 5:
 
         ax2a.text(0.5, 0.06, "Phase angle min=%0.2f, mean=%0.2f" % (min_phase_angle, mean_phase_angle))
 
@@ -616,15 +708,15 @@ for obs_type in obs_types.keys():
         if CLOSE_FIGURES:
             plt.close()
 
-        # lines = []
-        json_d[h5_prefix] = {
-            "orders": [int(i) for i in y_column_mean_norm.keys()],
-            "um": x_plt,
-            "norm_vals": [float(f) for f in y_column_mean_norm.values()],
-            "norm_stds": [float(f) for f in y_column_std_norm.values()],
-            "red_scaled": [float(f) for f in y_plt1],
-            "blue_scaled": [float(f) for f in y_plt2],
-        }
+    # lines = []
+    json_d[h5_prefix] = {
+        "orders": [int(i) for i in y_column_mean_norm.keys()],
+        "um": x_plt,
+        "norm_vals": [float(f) for f in y_column_mean_norm.values()],
+        "norm_stds": [float(f) for f in y_column_std_norm.values()],
+        "red_scaled": [float(f) for f in y_plt1],
+        "blue_scaled": [float(f) for f in y_plt2],
+    }
 
 with open("lno_phobos_output.json", "w", encoding="utf-8") as f:
     json.dump(json_d, f, ensure_ascii=False, indent=4)

@@ -16,6 +16,7 @@ FULL TREATMENT:
 import re
 import numpy as np
 from numpy.polynomial import Polynomial
+from scipy import interpolate
 
 import matplotlib.pyplot as plt
 from tools.file.hdf5_functions import open_hdf5_file
@@ -32,6 +33,13 @@ data_path = r"C:\Users\iant\Documents\DATA\hdf5"
 file_level = "hdf5_level_0p3a"
 
 px_range = range(120, 280)
+
+ignore_edge_bins = True  # don't include bins at edge of FOV in analysis
+# ignore_edge_bins = False
+
+selected_orders = []
+# TODO: replace with intersect1d further down
+selected_orders = [i for i in sorted(list(set(phobos_orders))) if i in range(160, 171, 2)]
 
 
 # choose dataset for finding most/least signal rows (phase angle is not representative)
@@ -64,18 +72,19 @@ if __name__ == "__main__":
     phobos_orders = [int(s.split("_")[-1]) for s in h5s]
     phobos_unique_orders = sorted(list(set(phobos_orders)))
 
-    # get solar counts from a calibration observation
-    """get solar calibration info from an LNO solar cal fullscan. This gives the sensitivity of the instrument in each order and solar radiance"""
-    # if "solar_scalars" not in globals() or "solar_spectra" not in globals():
+    # get solar calibration data
     cal_h5 = "20201222_114725_1p0a_LNO_1_CF"
-    # cal_d = {order:rad_cal_order(cal_h5, order, centre_indices=None) for order in unique_orders}
-    cal_d = {order: rad_cal_order(cal_h5, order, centre_indices=px_range, path=data_path) for order in phobos_unique_orders}
+    cal_d = rad_cal_order(cal_h5, phobos_unique_orders, centre_indices=px_range, path=data_path)
+    for order in phobos_unique_orders:
+        cal_d[order]["solar_scalar"] = cal_d[order]["y_centre_mean"] / 2.0e6
+        cal_d[order]["solar_spectrum"] = cal_d[order]["y_spectrum"] / np.max(cal_d[order]["y_spectrum"])
     solar_scalars = {order: cal_d[order]["y_centre_mean"] / 2.0e6 for order in cal_d.keys()}
     solar_spectra = {order: cal_d[order]["y_spectrum"] / np.max(cal_d[order]["y_spectrum"]) for order in cal_d.keys()}
 
     order_d = {}
 
-    phobos_unique_orders = [i for i in sorted(list(set(phobos_orders))) if i in range(160, 171, 2)]
+    if len(selected_orders) != 0:
+        phobos_unique_orders = selected_orders
 
     for order_ix, phobos_unique_order in enumerate(phobos_unique_orders):
 
@@ -107,7 +116,7 @@ if __name__ == "__main__":
         #     "20240620_092319_0p3a_LNO_1_P_165",
         # ]
 
-        regex = re.compile("(20240[6-9]|20241.|2025..).._.*_0p3a_LNO_1_P_%i" % phobos_unique_order)
+        regex = re.compile("(20240[6-9]..|20241...|202504..|2025061.|20250622)_.*_0p3a_LNO_1_P_%i" % phobos_unique_order)
         # regex = re.compile("(20240[6-9]|20241.).._.*_0p3a_LNO_1_P_%i" % phobos_unique_order)
         # regex = re.compile("2025...._.*_0p3a_LNO_1_P_%i" % phobos_unique_order)
 
@@ -168,7 +177,8 @@ if __name__ == "__main__":
                 fitted_spectra, corr_spectra, fitted_params = fit_spectra(y_all_3d, solar_spectra[phobos_unique_order])
 
             # TODO : check why better fit when binning is multiplied
-            y_spectral_mean = np.max(corr_spectra, axis=2) / total_integration_time * binning
+            # y_spectral_mean = np.max(corr_spectra, axis=2) / total_integration_time * binning
+            y_spectral_mean = np.mean(corr_spectra[:, :, px_range], axis=2) / total_integration_time * binning
             # print(total_integration_time, binning)
 
             good_angle = angle_2d[:, :]
@@ -178,6 +188,16 @@ if __name__ == "__main__":
             for frame, row in zip(nan_frames, nan_rows):
                 good_rows = np.where(~np.isnan(phase_angle_2d[frame, :]))[0]
                 phase_angle_2d[frame, row] = np.mean(phase_angle_2d[frame, good_rows])
+
+            # additional check for nans in all rows of a frame
+            if np.any(np.isnan(phase_angle_2d)):
+                for row in range(phase_angle_2d.shape[1]):
+                    x = np.arange(phase_angle_2d.shape[0])
+                    y = phase_angle_2d[:, row]
+                    nan_ixs = np.where(np.isnan(y))[0]
+                    nnan_ixs = np.where(~np.isnan(y))[0]
+                    y_new = interpolate.interp1d(x[nnan_ixs], y[nnan_ixs], fill_value="extrapolate")(x)
+                    phase_angle_2d[:, row] = y_new
 
             # scale by instrument sensitivity and solar radiance scaler
             y_spectral_mean /= solar_scalars[order]
@@ -210,7 +230,12 @@ if __name__ == "__main__":
             worst_row_ix_y = np.argmin(mean_y_rows)
             best_row_ix_y = np.argmax(mean_y_rows)
 
-            print(h5, mean_angle_rows, worst_row_ix, best_row_ix, worst_row_ix_y, best_row_ix_y)
+            print(h5, mean_y_rows, "W:", worst_row_ix, worst_row_ix_y, "B:", best_row_ix, best_row_ix_y)
+
+            if ignore_edge_bins:
+                bins_to_consider = np.arange(1, len(mean_y_rows)-1)
+                best_row_ix_y = np.argmax(mean_y_rows[bins_to_consider]) + 1
+                print(h5, mean_y_rows[bins_to_consider], best_row_ix_y)
 
             # plt.figure()
             # # plt.scatter(good_angle[:, best_row_ix], y_good_mean[:, best_row_ix])
@@ -229,15 +254,18 @@ if __name__ == "__main__":
 
             # print(y_good_mean[:, 1])
 
-            if "all_orders" in PLOT_TYPES:
-                ax1.scatter(phase_angle_2d[:, best_row_ix_y], y_spectral_mean[:, best_row_ix_y], alpha=0.4, color="C%i" % order_ix)
-            if "each_order" in PLOT_TYPES:
-                ax2.scatter(phase_angle_2d[:, best_row_ix_y], y_spectral_mean[:, best_row_ix_y], alpha=0.4, label=h5)
-
             nnan_indices = np.array([i for i, f in enumerate(phase_angle_2d[:, best_row_ix_y]) if not np.isnan(f)], dtype=int)
+            # nzero_indices = np.where(y_spectral_mean[:, best_row_ix_y] > 0.0)[0]
+            # good_indices = np.intersect1d(nnan_indices, nzero_indices)
+            good_indices = nnan_indices
 
-            all_mean_angles.extend(list(phase_angle_2d[:, best_row_ix_y][nnan_indices]))
-            all_mean_ys.extend(list(y_spectral_mean[:, best_row_ix_y][nnan_indices]))
+            if "all_orders" in PLOT_TYPES:
+                ax1.scatter(phase_angle_2d[:, best_row_ix_y][good_indices], y_spectral_mean[:, best_row_ix_y][good_indices], alpha=0.4, color="C%i" % order_ix)
+            if "each_order" in PLOT_TYPES:
+                ax2.scatter(phase_angle_2d[:, best_row_ix_y][good_indices], y_spectral_mean[:, best_row_ix_y][good_indices], alpha=0.4, label=h5)
+
+            all_mean_angles.extend(list(phase_angle_2d[:, best_row_ix_y][good_indices]))
+            all_mean_ys.extend(list(y_spectral_mean[:, best_row_ix_y][good_indices]))
 
         poly = Polynomial.fit(np.array(all_mean_angles), np.array(all_mean_ys), 1)
         yfit = poly(np.array(all_mean_angles))
@@ -253,7 +281,7 @@ if __name__ == "__main__":
             ax2.set_ylabel("Signal (counts)")
             ax2.legend()
             ax2.grid()
-            plt.savefig("lno_phase_angle_correction_order_%i.png" % phobos_unique_order)
+            fig2.savefig("lno_phase_angle_correction_order_%i.png" % phobos_unique_order)
 
         order_d[phobos_unique_order] = {"n_obs": len(h5s), "coeffs": coeffs}
 
@@ -262,7 +290,7 @@ if __name__ == "__main__":
         ax1.set_xlabel("Phase angle (degrees)")
         ax1.set_ylabel("Signal scaled by solar spectrum (counts)")
         ax1.grid()
-        plt.savefig("lno_phase_angle_correction_all_orders.png")
+        fig1.savefig("lno_phase_angle_correction_all_orders.png")
 
         # for i in range(1, n_bins-1):
     #     plt.scatter(phase_angle_2d[:, i], y_good_mean[:, i], alpha=0.2)

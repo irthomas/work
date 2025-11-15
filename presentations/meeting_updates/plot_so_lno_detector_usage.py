@@ -22,8 +22,8 @@ from tools.file.hdf5_functions import make_filelist
 from tools.general.progress_bar import progress
 
 
-channel = "LNO"
-# channel = "SO"
+# channel = "LNO"
+channel = "SO"
 
 # reload data even if already loaded?
 # get_data = True
@@ -159,7 +159,7 @@ ax1b.text(usage_days[0], channel_mttf + 500, "%s detector mean time to failure" 
 # fig1.savefig("%s_operating_hours.png" %(channel.upper()))
 
 
-#extrapolate in time
+# extrapolate in time
 reductions = [0.0, 0.25]  # , 0.5]
 
 for reduction in reductions:

@@ -28,6 +28,7 @@ def min_solar(params, args):
 
 def fit_solar_spectrum(spectrum, first_guess, solar_spectrum):
     # least squares doesn't work here?
+    # res = minimize(min_solar, first_guess, args=[spectrum, solar_spectrum], method="Nelder-Mead", bounds=((0.0, 1000.0), (-999.0, 999.0)))
     res = minimize(min_solar, first_guess, args=[spectrum, solar_spectrum], method="Nelder-Mead")
 
     scaled_spectrum = scale_spectrum(res.x, solar_spectrum)
@@ -57,6 +58,8 @@ def fit_spectra(y_3d, solar_spectrum, plot=[[]]):
 
             # params are: scaler, offset
             scaled_spectrum, corr_spectrum, params = fit_solar_spectrum(spectrum, first_guess, solar_spectrum)
+
+            # stop()
 
             fitted_spectra[frame, row, :] = scaled_spectrum
             corr_spectra[frame, row, :] = corr_spectrum

@@ -74,31 +74,35 @@ def read_cal_file(cal_h5, path=None):
     return {"orders": orders, "y_norm": y_norm, "t": t, "bins": bins}
 
 
-def rad_cal_order(cal_h5, order, centre_indices=None, path=None):
+def rad_cal_order(cal_h5, orders, centre_indices=None, path=None):
 
     d = read_cal_file(cal_h5, path=path)
 
     unique_bins = sorted(list(set(d["bins"])))
     centre_bins = unique_bins[6:-6]
 
-    ix = [i for i, (bin_, order_) in enumerate(zip(d["bins"], d["orders"])) if bin_ in centre_bins and order_ == order]
-    # print(order, ix[0:10])
-    y_frame = d["y_norm"][ix, :]
+    solar_cal_d = {}
 
-    # mean of repeated order spectra
-    y_spectrum = np.mean(y_frame, axis=0)
+    for order in orders:
+        ix = [i for i, (bin_, order_) in enumerate(zip(d["bins"], d["orders"])) if bin_ in centre_bins and order_ == order]
+        # print(order, ix[0:10])
+        y_frame = d["y_norm"][ix, :]
 
-    # get mean of spectrum (either all or specific pixels)
-    if not centre_indices:
-        y_centre_mean = np.mean(y_spectrum)
-    else:
-        y_centre_mean = np.mean(y_spectrum[centre_indices])
+        # mean of repeated order spectra
+        y_spectrum = np.mean(y_frame, axis=0)
 
-    # convert to wavenumbers
-    x = nu_mp(order, np.arange(320.), d["t"])
+        # get mean of spectrum (either all or specific pixels)
+        if not centre_indices:
+            y_centre_mean = np.mean(y_spectrum)
+        else:
+            y_centre_mean = np.mean(y_spectrum[centre_indices])
 
-    # return {"x":x, "y_frame":y_frame, "y_spectrum":y_spectrum, "solar_b":solar_b, "counts_per_rad":counts_per_rad}
-    return {"x": x, "y_spectrum": y_spectrum, "x_mean": np.mean(x), "y_centre_mean": y_centre_mean}
+        # convert to wavenumbers
+        x = nu_mp(order, np.arange(320.), d["t"])
+
+        # return {"x":x, "y_frame":y_frame, "y_spectrum":y_spectrum, "solar_b":solar_b, "counts_per_rad":counts_per_rad}
+        solar_cal_d[order] = {"x": x, "y_spectrum": y_spectrum, "x_mean": np.mean(x), "y_centre_mean": y_centre_mean}
+    return solar_cal_d
 
 
 # cal_h5 = "20201222_114725_1p0a_LNO_1_CF"
