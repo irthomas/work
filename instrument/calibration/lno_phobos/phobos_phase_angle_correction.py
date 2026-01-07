@@ -17,6 +17,7 @@ import re
 import numpy as np
 from numpy.polynomial import Polynomial
 from scipy import interpolate
+import json
 
 import matplotlib.pyplot as plt
 from tools.file.hdf5_functions import open_hdf5_file
@@ -32,17 +33,25 @@ data_path = r"C:\Users\iant\Documents\DATA\hdf5"
 
 file_level = "hdf5_level_0p3a"
 
-px_range = range(120, 280)
+# pixel range to consider for mean of high res spectra
+px_range = range(190, 210)
+# px_range = range(150, 250)  # full peak centred
+# px_range = range(120, 280)
+# px_range = [-1]  # take maximum of raw spectrum
 
 ignore_edge_bins = True  # don't include bins at edge of FOV in analysis
 # ignore_edge_bins = False
 
-selected_orders = []
-# TODO: replace with intersect1d further down
-selected_orders = [i for i in sorted(list(set(phobos_orders))) if i in range(160, 171, 2)]
+# selected_orders = range(210)
+selected_orders = [160, 162, 164, 166, 168, 170]
+# selected_orders = range(174, 210)
+
+# offset_correction = "solar"  # first_bin, last_bin not yet implemented in this version
+offset_correction = "mean_shape"  # get mean phobos spectral shape from a json
 
 
-# choose dataset for finding most/least signal rows (phase angle is not representative)
+# choose dataset for checking most/least signal rows (phase angle is not representative)
+# not used for bin selection; instead uses best signals.
 dset_name = "EmissionAngle"
 # dset_name = "IncidenceAngle"
 # dset_name = "PhaseAngle"
@@ -52,7 +61,8 @@ PLOT_TYPES = [""]
 
 # PLOT_TYPES = ["raw_frames"]
 # PLOT_TYPES = ["angles"]
-PLOT_TYPES = ["all_orders", "each_order"]
+# PLOT_TYPES = ["all_orders", "each_order"]
+PLOT_TYPES = ["all_orders"]
 # PLOT_TYPES = ["each_order"]
 # PLOT_TYPES = ["bad_pixel_fits"]
 # PLOT_TYPES = ["solar_fits"]
@@ -72,6 +82,8 @@ if __name__ == "__main__":
     phobos_orders = [int(s.split("_")[-1]) for s in h5s]
     phobos_unique_orders = sorted(list(set(phobos_orders)))
 
+    phobos_unique_orders = [i for i in sorted(list(set(phobos_orders))) if i in selected_orders]
+
     # get solar calibration data
     cal_h5 = "20201222_114725_1p0a_LNO_1_CF"
     cal_d = rad_cal_order(cal_h5, phobos_unique_orders, centre_indices=px_range, path=data_path)
@@ -82,9 +94,6 @@ if __name__ == "__main__":
     solar_spectra = {order: cal_d[order]["y_spectrum"] / np.max(cal_d[order]["y_spectrum"]) for order in cal_d.keys()}
 
     order_d = {}
-
-    if len(selected_orders) != 0:
-        phobos_unique_orders = selected_orders
 
     for order_ix, phobos_unique_order in enumerate(phobos_unique_orders):
 
@@ -135,6 +144,7 @@ if __name__ == "__main__":
         for h5_ix, (h5, h5f) in enumerate(zip(h5s, h5fs)):
 
             # print(h5)
+            h5_prefix = h5[:15]
 
             obs_dt_strs_all = h5f["Geometry/ObservationDateTime"][...]
 
@@ -171,10 +181,28 @@ if __name__ == "__main__":
                 y_all_3d = bad_pixel_correction(y_all_3d)
 
             """fit to solar spectrum to correct offset"""
-            if "solar_fits" in PLOT_TYPES:
-                fitted_spectra, corr_spectra, fitted_params = fit_spectra(y_all_3d, solar_spectra[phobos_unique_order], plot=[[1, 0], [1, 1], [1, 2]])
-            else:
-                fitted_spectra, corr_spectra, fitted_params = fit_spectra(y_all_3d, solar_spectra[phobos_unique_order])
+            if offset_correction == "solar":
+                ideal_spectrum = cal_d[phobos_unique_order]["solar_spectrum"]
+
+            elif offset_correction == "mean_shape":
+                # load json already prepopulated with mean shapes
+                with open("lno_phobos_mean_shapes.json", "r") as f:
+                    mean_shape_d = json.load(f)
+                mean_shape_d = {int(k): np.asarray(v) for k, v in mean_shape_d[h5_prefix].items()}
+                ideal_spectrum = mean_shape_d[phobos_unique_order]
+
+            if offset_correction in ["solar", "mean_shape"]:
+                if "offset_fits" in PLOT_TYPES:
+                    title = "NOMAD-LNO observation %s:" % h5_prefix
+                    fitted_spectra, corr_spectra, fitted_params = fit_spectra(y_all_3d, ideal_spectrum, plot=[[1, 4], [1, 5]], title=title)
+                else:
+                    fitted_spectra, corr_spectra, fitted_params = fit_spectra(y_all_3d, ideal_spectrum)
+
+            # """fit to solar spectrum to correct offset"""
+            # if "solar_fits" in PLOT_TYPES:
+            #     fitted_spectra, corr_spectra, fitted_params = fit_spectra(y_all_3d, solar_spectra[phobos_unique_order], plot=[[1, 0], [1, 1], [1, 2]])
+            # else:
+            #     fitted_spectra, corr_spectra, fitted_params = fit_spectra(y_all_3d, solar_spectra[phobos_unique_order])
 
             # TODO : check why better fit when binning is multiplied
             # y_spectral_mean = np.max(corr_spectra, axis=2) / total_integration_time * binning
@@ -272,8 +300,8 @@ if __name__ == "__main__":
 
         coeffs = poly.convert().coef
         if "all_orders" in PLOT_TYPES:
-            ax1.plot(np.array(all_mean_angles), yfit, label=phobos_unique_order, color="C%i" % order_ix)
-            ax1.text(10.0, max(yfit)+1, ",".join(["%0.5e" % f for f in poly.convert().coef]))
+            ax1.plot(np.array(all_mean_angles), yfit, label="Order %i" % phobos_unique_order, color="C%i" % order_ix)
+            ax1.text(10.0, order_ix/2.5+6.5, ",".join(["%0.5e" % f for f in poly.convert().coef]), color="C%i" % order_ix)
         if "each_order" in PLOT_TYPES:
             ax2.plot(np.array(all_mean_angles), yfit)
             ax2.text(10.0, max(yfit)+1, ",".join(["%0.5e" % f for f in poly.convert().coef]))

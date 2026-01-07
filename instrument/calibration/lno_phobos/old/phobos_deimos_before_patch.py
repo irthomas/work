@@ -16,9 +16,14 @@ import matplotlib.pyplot as plt
 
 from tools.file.hdf5_functions import make_filelist2
 
+data_path = r"W:\data\SATELLITE\TRACE-GAS-ORBITER\NOMAD\hdf5"
+# data_path = r"C:\Users\iant\Documents\DATA\hdf5"
 
-SAVE_FIGS = True
-# SAVE_FIGS = False
+file_level = "hdf5_level_0p3a"
+
+
+# SAVE_FIGS = True
+SAVE_FIGS = False
 
 # set up subplots
 fig = plt.figure(figsize=(16, 10), constrained_layout=True)
@@ -33,39 +38,39 @@ ax = [[ax1a, ax1c], [ax1b, ax1d]]
 
 
 file_info = {
-    # "20210921_132947_0p2a_LNO_1_P":{"px_range":range(120, 280), "frame_range":[0, -1], "aspect":3.},
-    # "20210921_132947_0p2a_UVIS_P":{"px_range":range(500, 1000), "frame_range":[0, -1], "aspect":0.3},
+    # "20210921_132947_0p3a_LNO_1_P": {"px_range": range(120, 280), "frame_range": [0, -1], "aspect": 3., "boresight": "TGO -Y"},
+    # "20210921_132947_0p3a_UVIS_P": {"px_range": range(500, 1000), "frame_range": [0, -1], "aspect": 0.3, "boresight": "TGO -Y"},
 
-    # "20210927_224950_0p2a_LNO_1_P":{"px_range":range(120, 280), "frame_range":[0, -1], "aspect":3.},
-    # "20210927_224950_0p2a_UVIS_P":{"px_range":range(500, 1000), "frame_range":[0, -1], "aspect":0.3},
+    # "20210927_224950_0p3a_LNO_1_P": {"px_range": range(120, 280), "frame_range": [0, -1], "aspect": 3., "boresight": "TGO -Y"},
+    # "20210927_224950_0p2a_UVIS_P": {"px_range": range(500, 1000), "frame_range": [0, -1], "aspect": 0.3, "boresight": "TGO -Y"},
+    # "20210927_224950_0p3a_LNO_1_P": {"px_range": range(120, 280), "frame_range": [9, 35], "aspect": 3., "boresight": "TGO -Y"},
+    # "20210927_224950_0p2a_UVIS_P": {"px_range": range(500, 1000), "frame_range": [6, 24], "aspect": 0.3, "boresight": "TGO -Y"},
+    # "20210927_224950_0p2a_LNO_1_P":{"px_range":range(120, 280), "frame_range":[70, -1], "aspect":3., "boresight":"TGO -Y"},
+    # "20210927_224950_0p2a_UVIS_P":{"px_range":range(500, 1000), "frame_range":[45, 80], "aspect":0.3, "boresight":"TGO -Y"},
 
-    # "20210927_224950_0p2a_LNO_1_P":{"px_range":range(120, 280), "frame_range":[9, 35], "aspect":3.},
-    # "20210927_224950_0p2a_UVIS_P":{"px_range":range(500, 1000), "frame_range":[6, 24], "aspect":0.3},
-
-    # "20210927_224950_0p2a_LNO_1_P":{"px_range":range(120, 280), "frame_range":[70, -1], "aspect":3.},
-    # "20210927_224950_0p2a_UVIS_P":{"px_range":range(500, 1000), "frame_range":[45, 80], "aspect":0.3},
-
-    # "20211110_012749_0p2a_LNO_1_P":{"px_range":range(120, 280), "frame_range":[0, -1], "aspect":3., "boresight":"TGO -Y"},
+    # "20211110_012749_0p3a_LNO_1_P": {"px_range": range(120, 280), "frame_range": [0, -1], "aspect": 3., "boresight": "TGO -Y"},
     # "20211110_012749_0p2a_UVIS_P":{"px_range":range(500, 1000), "frame_range":[0, -1], "aspect":0.3, "boresight":"TGO -Y"},
 
-    # "20211112_221419_0p2a_LNO_1_P":{"px_range":range(120, 280), "frame_range":[0, -1], "aspect":3., "boresight":"UVIS"},
+    # "20211112_221419_0p3a_LNO_1_P": {"px_range": range(120, 280), "frame_range": [0, -1], "aspect": 3., "boresight": "UVIS"},
     # "20211112_221419_0p2a_UVIS_P":{"px_range":range(500, 1000), "frame_range":[0, -1], "aspect":0.3, "boresight":"UVIS"},
 
-    # "20211123_173753_0p3a_LNO_1_P": {"px_range": range(120, 280), "frame_range": [0, -1], "aspect": 3., "boresight": "LNO"},
-    # "20211123_173753_0p3a_UVIS_P": {"px_range": range(500, 1000), "frame_range": [0, -1], "aspect": 0.3, "boresight": "LNO"},
+    "20211123_173753_0p3a_LNO_1_P": {"px_range": range(120, 280), "frame_range": [0, -1], "aspect": 3., "boresight": "LNO"},
 
-    # "20211229_072837_0p2a_LNO_1_Q":{"px_range":range(120, 280), "frame_range":[0, -1], "aspect":3., "boresight":"LNO"},
-    # "20211229_072837_0p2a_UVIS_Q":{"px_range":range(500, 1000), "frame_range":[0, -1], "aspect":0.3, "boresight":"LNO"},
+    # "20211129_190326_0p3a_LNO_1_P": {"px_range": range(120, 280), "frame_range": [0, -1], "aspect": 3., "boresight": "LNO"},
+
+    # "20211205_123658_0p3a_LNO_1_P": {"px_range": range(120, 280), "frame_range": [0, -1], "aspect": 3., "boresight": "LNO"},
+
+    # "20211222_200834_0p3a_LNO_1_P": {"px_range": range(120, 280), "frame_range": [0, -1], "aspect": 3., "boresight": "LNO"},
 
     # "20220102_015237_0p2a_LNO_1_Q": {"px_range": range(120, 280), "frame_range": [0, -1], "aspect": 3., "boresight": "LNO"},
     # "20220102_015237_0p2a_UVIS_Q": {"px_range": range(500, 1000), "frame_range": [0, -1], "aspect": 0.3, "boresight": "LNO"},
 
-    "20251003_044802_0p3a_LNO_1_X_169": {"px_range": range(120, 280), "frame_range": [0, -1], "aspect": 12., "boresight": "LNO"},  # Atlas
-    "20251003_044802_0p3b_UVIS_X": {"px_range": range(500, 1000), "frame_range": [0, -1], "aspect": 0.25, "boresight": "LNO"},
+    # "20251003_044802_0p3a_LNO_1_X_169": {"px_range": range(120, 280), "frame_range": [0, -1], "aspect": 12., "boresight": "LNO"},  # Atlas
+    # "20251003_044802_0p3b_UVIS_X": {"px_range": range(500, 1000), "frame_range": [0, -1], "aspect": 0.25, "boresight": "LNO"},
 
 
-    "20251003_044802_0p3a_LNO_1_X_169": {"px_range": range(120, 280), "frame_range": [0, -1], "aspect": 12., "boresight": "LNO"},  # Atlas
-    "20251003_044802_0p3b_UVIS_X": {"px_range": range(500, 1000), "frame_range": [0, -1], "aspect": 0.25, "boresight": "LNO"},
+    # "20251003_044802_0p3a_LNO_1_X_169": {"px_range": range(120, 280), "frame_range": [0, -1], "aspect": 12., "boresight": "LNO"},  # Atlas
+    # "20251003_044802_0p3b_UVIS_X": {"px_range": range(500, 1000), "frame_range": [0, -1], "aspect": 0.25, "boresight": "LNO"},
 }
 
 
@@ -74,7 +79,7 @@ for i, filename in enumerate(file_info.keys()):
 
     file_level = "hdf5_level_" + filename.split("_")[2]
 
-    hdf5_files, _, _ = make_filelist2(regex, file_level, path=r"C:\Users\iant\Documents\DATA\hdf5")  # open file, get matching filename
+    hdf5_files, _, _ = make_filelist2(regex, file_level, path=data_path)  # open file, get matching filename
 
     hdf5_file = hdf5_files[0]  # take first found file only
 
@@ -121,20 +126,20 @@ for i, filename in enumerate(file_info.keys()):
     y_mean_px[y_mean_px < (mean-std*std_cutoff)] = mean
 
     y_mean_frames = np.mean(y_mean_px, axis=0)  # mean of chosen frames and pixels
-    # y_mean_rows = np.nanmean(y_mean_px, axis=1)
+    y_mean_rows = np.nanmean(y_mean_px, axis=1)
 
-    # plt.figure(figsize=(8, 5), constrained_layout=True)
-    # im1 = plt.imshow(y_mean_px.T, aspect="auto")
-    # plt.title("Raw signal on detector from early observation")
-    # plt.ylabel("Binned detector row index (spatial direction)")
-    # plt.xlabel("Detector frame index (temporal direction)")
+    plt.figure(figsize=(8, 5), constrained_layout=True)
+    im1 = plt.imshow(y_mean_px.T, aspect="auto")
+    plt.title("Raw signal on detector from early observation")
+    plt.ylabel("Binned detector row index (spatial direction)")
+    plt.xlabel("Detector frame index (temporal direction)")
 
-    # cbar1 = plt.colorbar(im1)
-    # cbar1.set_label("Signal on each binned detector row", rotation=270, labelpad=10)
+    cbar1 = plt.colorbar(im1)
+    cbar1.set_label("Signal on each binned detector row", rotation=270, labelpad=10)
 
     # plt.savefig("lno_phobos_raw_signal_uncorrected.png")
 
-    # y_frame_corr = y_mean_px - y_mean_rows[:, None]
+    y_frame_corr = y_mean_px - y_mean_rows[:, None]
 
     aspect = file_info[filename]["aspect"]  # plotting aspect ratio
 
@@ -158,11 +163,11 @@ for i, filename in enumerate(file_info.keys()):
     ax[i][0].grid()
     ax[i][1].grid()
 
-    # if "LNO" in filename:
-    #     plt.figure()
-    #     plt.plot(np.mean(y_all[frame_range[0]:frame_range[1], 11, :], axis=0), "k--")
-    #     plt.plot(np.mean(y_all[frame_range[0]:frame_range[1], 10, :], axis=0), "k.")
-    #     plt.plot(np.mean(y_all[frame_range[0]:frame_range[1], 12, :], axis=0), "k.")
+    if "LNO" in filename:
+        plt.figure()
+        plt.plot(np.mean(y_all[frame_range[0]:frame_range[1], 11, :], axis=0), "k--")
+        plt.plot(np.mean(y_all[frame_range[0]:frame_range[1], 10, :], axis=0), "k.")
+        plt.plot(np.mean(y_all[frame_range[0]:frame_range[1], 12, :], axis=0), "k.")
 
     # if "UVIS" in filename:
     #     plt.figure(figsize=(10, 5), constrained_layout=True)

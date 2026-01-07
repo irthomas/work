@@ -19,10 +19,11 @@ import json
 
 
 # list of years to get publications for
-YEARS = [2018, 2019, 2020, 2021, 2022, 2023, 2024]
+# YEARS = [2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025]
+YEARS = [2024]
 
 # search for these authors
-AUTHOR_NAMES = ["Vandaele", "Mahieux", "Daerden", "Vanhellemont", "Ducreux"]
+AUTHOR_NAMES = ["Vandaele", "Mahieux", "Daerden", "Vanhellemont", "Ducreux", "Viscardy"]
 
 
 # for titles not found by searching for authors - must be added manually!
@@ -106,16 +107,24 @@ def get_bira_pubs_by_year(year):
     URL = URLbase+'items/find-by-metadata-field?expand=parentCollection,metadata'
 
     # We will send the search instructions in json format
-    header = {"content-type": "application/json"}
+    header = {
+        "content-type": "application/json"
+    }
     req_dict = {
         "key": "dc.date",
         "value": str(year),
-        "language": None
+        # "language": None
     }
 
     # Do the request
     req = requests.post(url=URL, data=json.dumps(req_dict), headers=header)
-    req_data = req.json()
+    if req.ok:
+        req_data = req.json()
+    else:
+        print("Error in request: %s", req.text)
+        print(URL)
+        print(req_dict)
+        return []
     # ndata = len(req_data)
     # nfound=0
     # print('Found total number of publications: ',ndata)

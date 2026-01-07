@@ -130,25 +130,25 @@ for i in range(y_frame_fft.shape[0]):
 
         plt.tight_layout()
 
-# plt.figure(figsize=(8, 5), constrained_layout=True)
-# im1 = plt.imshow(y_frame_corr.T, aspect="auto")
-# plt.title("Offset corrected signal on detector from early observation")
-# plt.ylabel("Binned detector row index (spatial direction)")
-# plt.xlabel("Detector frame index (temporal direction)")
+plt.figure(figsize=(8, 5), constrained_layout=True)
+im1 = plt.imshow(y_frame_corr.T, aspect="auto")
+plt.title("Offset corrected signal on detector from early observation")
+plt.ylabel("Binned detector row index (spatial direction)")
+plt.xlabel("Detector frame index (temporal direction)")
 
-# cbar1 = plt.colorbar(im1)
-# cbar1.set_label("Signal on each binned detector row", rotation=270, labelpad=10)
+cbar1 = plt.colorbar(im1)
+cbar1.set_label("Signal on each binned detector row", rotation=270, labelpad=10)
 
-# plt.savefig("lno_phobos_raw_signal_offset_corrected.png")
+plt.savefig("lno_phobos_raw_signal_offset_corrected.png")
 
-# plt.figure(figsize=(8, 5), constrained_layout=True)
-# im2 = plt.imshow(y_frame_fft.T[6:18, :], aspect="auto", extent=(-0.5, len(y_frame_fft)-0.5, 18-0.5, 6-0.5))
-# plt.title("Raw signal on detector after oscillation correction")
-# plt.ylabel("Binned detector row index (spatial direction)")
-# plt.xlabel("Detector frame index (temporal direction)")
+plt.figure(figsize=(8, 5), constrained_layout=True)
+im2 = plt.imshow(y_frame_fft.T[6:18, :], aspect="auto", extent=(-0.5, len(y_frame_fft)-0.5, 18-0.5, 6-0.5))
+plt.title("Raw signal on detector after oscillation correction")
+plt.ylabel("Binned detector row index (spatial direction)")
+plt.xlabel("Detector frame index (temporal direction)")
 
-# cbar2 = plt.colorbar(im2)
-# cbar2.set_label("Signal on each binned detector row", rotation=270, labelpad=10)
+cbar2 = plt.colorbar(im2)
+cbar2.set_label("Signal on each binned detector row", rotation=270, labelpad=10)
 
 # plt.savefig("lno_phobos_raw_signal_osc_corrected.png")
 

@@ -1,10 +1,13 @@
 # -*- coding: utf-8 -*-
-"""
+r"""
 Created on Fri Oct  3 10:14:11 2025
 
 @author: iant
 
 DOWNLOAD SINGLE MISSING HDF5 FILE FROM WEBDAV (WITH HERA BACKUP) TO LOCAL COMPUTER
+
+#download_h5("20240915_141221_1p0a_UVIS_CL.h5", path=r"C:\Users\iant\Documents\DATA\hdf5")
+            
 """
 
 
@@ -30,7 +33,7 @@ HERA_ROOT_PATH = "/bira-iasb/data/SATELLITE/TRACE-GAS-ORBITER/NOMAD/hdf5/"
 HERA_PASSWORD = passwords["hera"]
 
 
-def download_h5(h5, path=None):
+def download_h5(h5, path=None, try_webdav=True):
 
     if path:
         DATA_DIRECTORY = path
@@ -49,32 +52,37 @@ def download_h5(h5, path=None):
 
     os.makedirs(local_dir_path, exist_ok=True)
 
-    print("Downloading from webdav %s" % h5)
+    print("Downloading from webdav %s" % webdav_h5_path)
 
     try:
-        response = requests.get(webdav_h5_path, auth=HTTPBasicAuth(WEBDAV_USER, WEBDAV_PASSWORD))
-        if response.ok:
-            with open(local_h5_path, 'wb') as f:
-                f.write(response.content)
-        else:
+        ssh = paramiko.SSHClient()
+        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        ssh.connect(hostname=HERA_URL, username=HERA_USER, password=HERA_PASSWORD)
+        sftp = ssh.open_sftp()
 
-            if response.status_code != 404:
-                print(response.text)
+        if try_webdav:
 
+            response = requests.get(webdav_h5_path, auth=HTTPBasicAuth(WEBDAV_USER, WEBDAV_PASSWORD))
+            if response.ok:
+                with open(local_h5_path, 'wb') as f:
+                    f.write(response.content)
             else:
-                print("Retrying from datastore %s" % h5)
-                ssh = paramiko.SSHClient()
-                ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-                ssh.connect(hostname=HERA_URL, username=HERA_USER, password=HERA_PASSWORD)
-                sftp = ssh.open_sftp()
 
-                sftp_h5_path = posixpath.join(HERA_ROOT_PATH, level, year, month, day, h5)
+                if response.status_code != 404:
+                    print(response.text)
 
-                print("Downloading from hera %s" % h5)
-                sftp.get(sftp_h5_path, local_h5_path)
-
-                sftp.close()
-                ssh.close()
+                else:
+                    sftp_h5_path = posixpath.join(HERA_ROOT_PATH, level, year, month, day, h5)
+                    print("Retrying from hera %s" % sftp_h5_path)
+                    sftp.get(sftp_h5_path, local_h5_path)
+        else:
+            sftp_h5_path = posixpath.join(HERA_ROOT_PATH, level, year, month, day, h5)
+            print("Downloading from hera %s" % sftp_h5_path)
+            sftp.get(sftp_h5_path, local_h5_path)
 
     except Exception as e:
-        print(e)
+        print("Error:", e)
+
+    finally:
+        sftp.close()
+        ssh.close()

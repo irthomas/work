@@ -98,36 +98,61 @@ def get_hdf5_filename_list(root_directory, check_for_calibration_file=False):
     return data_filenames_sorted
 
 
-def get_hdf5_filename_list2(regex, file_level, path=None):
+def get_hdf5_filename_list2(regex, file_level, path=None, silent=False, pre_psp=False):
     """take a full regex of the form YYYYMMDD_ and search for all possible files"""
 
     regex_ymd = re.compile(regex.pattern.split("_")[0])
 
-    dt_start = datetime(2018, 3, 1)
+    if pre_psp:
+        dt_start = datetime(2016, 3, 1)
+    else:
+        dt_start = datetime(2018, 3, 1)
+
     dt_end = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
 
     pos_ymds = [datetime.strftime(dt_start + timedelta(days=x), "%Y%m%d") for x in range((dt_end-dt_start).days + 1)]
 
     matching_ymds = list(filter(regex_ymd.search, pos_ymds))
 
-    print("Searching for matching full regex for %i matching dirs" % len(matching_ymds))
+    if not silent:
+        print("Searching for matching full regex for %i matching dirs" % len(matching_ymds))
     filepaths = []
     filenames = []
-    for matching_ymd in progress(matching_ymds):
-        year = matching_ymd[0:4]
-        month = matching_ymd[4:6]
-        day = matching_ymd[6:8]
-        path_pre = os.path.join(path, file_level, year, month, day)
-        if not os.path.exists(path_pre):
-            continue
 
-        dir_filepaths = glob.glob(path_pre + os.sep + "*.h5")
-        dir_basenames = [os.path.basename(s).split(".")[0] for s in dir_filepaths]
-        # matching_filenames = list(filter(regex.search, basenames))
+    if not silent:
 
-        matching_ixs = [i for i, s in enumerate(dir_basenames) if regex.search(s)]
-        filepaths.extend([dir_filepaths[i] for i in matching_ixs])
-        filenames.extend([dir_basenames[i] for i in matching_ixs])
+        for matching_ymd in progress(matching_ymds):
+            year = matching_ymd[0:4]
+            month = matching_ymd[4:6]
+            day = matching_ymd[6:8]
+            path_pre = os.path.join(path, file_level, year, month, day)
+            if not os.path.exists(path_pre):
+                continue
+
+            dir_filepaths = glob.glob(path_pre + os.sep + "*.h5")
+            dir_basenames = [os.path.basename(s).split(".")[0] for s in dir_filepaths]
+            # matching_filenames = list(filter(regex.search, basenames))
+
+            matching_ixs = [i for i, s in enumerate(dir_basenames) if regex.search(s)]
+            filepaths.extend([dir_filepaths[i] for i in matching_ixs])
+            filenames.extend([dir_basenames[i] for i in matching_ixs])
+
+    else:
+        for matching_ymd in matching_ymds:
+            year = matching_ymd[0:4]
+            month = matching_ymd[4:6]
+            day = matching_ymd[6:8]
+            path_pre = os.path.join(path, file_level, year, month, day)
+            if not os.path.exists(path_pre):
+                continue
+
+            dir_filepaths = glob.glob(path_pre + os.sep + "*.h5")
+            dir_basenames = [os.path.basename(s).split(".")[0] for s in dir_filepaths]
+            # matching_filenames = list(filter(regex.search, basenames))
+
+            matching_ixs = [i for i, s in enumerate(dir_basenames) if regex.search(s)]
+            filepaths.extend([dir_filepaths[i] for i in matching_ixs])
+            filenames.extend([dir_basenames[i] for i in matching_ixs])
 
     return filenames, filepaths
 
@@ -313,25 +338,34 @@ def make_filelist(obs_paths, file_level, model="INFLIGHT", silent=False, open_fi
     return hdf5_files_out, hdf5_filenames_out, titles
 
 
-def make_filelist2(regex, file_level, open_files=True, path=None):
+def make_filelist2(regex, file_level, open_files=True, path=None, silent=False):
     """make list of filenames containing matching attributes and datasets"""
     """new version uses full regex"""
     if path:
         root_path = path
-        print("Using path %s" % path)
+        if not silent:
+            print("Using path %s" % path)
     else:
         root_path = paths["DATA_DIRECTORY"]
 
-    h5s, h5_paths = get_hdf5_filename_list2(regex, file_level, path=root_path)
-    print("%i matching files found for regex %s" % (len(h5s), regex.pattern))
+    h5s, h5_paths = get_hdf5_filename_list2(regex, file_level, path=root_path, silent=silent)
+    if not silent:
+        print("%i matching files found for regex %s" % (len(h5s), regex.pattern))
 
     h5fs = []
     if open_files:
-        for i, filepath in enumerate(progress(h5_paths)):
-            if os.path.exists(filepath):
-                h5fs.append(h5py.File(filepath, "r"))
-            else:
-                print("Error file %s does not exist" % filepath)
+        if not silent:
+            for i, filepath in enumerate(progress(h5_paths)):
+                if os.path.exists(filepath):
+                    h5fs.append(h5py.File(filepath, "r"))
+                else:
+                    print("Error file %s does not exist" % filepath)
+        else:
+            for i, filepath in enumerate(h5_paths):
+                if os.path.exists(filepath):
+                    h5fs.append(h5py.File(filepath, "r"))
+                else:
+                    print("Error file %s does not exist" % filepath)
 
     return h5fs, h5s, h5_paths
 

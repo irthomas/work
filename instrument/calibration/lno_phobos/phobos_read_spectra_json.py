@@ -26,15 +26,17 @@ orders_to_scale = orders to include when scaling curves to match each other (to 
 # TODO: add others here
 selected_orders = {
 
-    "Hydration band 2 order stepping": {"orders_to_find": [[160, 162, 164, 166, 168, 170]], "nominal_orders": [160, 162, 164, 166, 168, 170], "orders_to_scale": [164, 166, 168, 170]},
-    "Hydration band 3 order stepping": {"orders_to_find": [[157, 160, 163, 166, 169, 172]], "nominal_orders": [157, 160, 163, 166, 169, 172], "orders_to_scale": [157, 166, 169, 172]},
-    # "Carbonates": {"orders_to_find": [[174, 175, 176, 190, 191, 192]], "nominal_orders": [174, 175, 176, 190, 191, 192], "orders_to_scale": [174, 175, 176, 190, 191, 192], "linestyle": "none"},
+    # "Hydration band 2 order stepping": {"orders_to_find": [[160, 162, 164, 166, 168, 170]], "nominal_orders": [160, 162, 164, 166, 168, 170], "orders_to_scale": [164, 166, 168, 170]},
+    "Hydration band 3 order stepping": {"orders_to_find": [[157, 160, 163, 166, 169, 172]], "nominal_orders": [157, 160, 163, 166, 169, 172], "orders_to_scale": [166, 169, 172]},
+    "Hydration band 4 orders": {"orders_to_find": [[163, 165, 167, 169]], "nominal_orders": [163, 165, 167, 169], "orders_to_scale": [169]},
+    # "Carbonates": {"orders_to_find": [[174, 175, 176]], "nominal_orders": [174, 175, 176], "orders_to_scale": [174, 175, 176]},
+    # "Carbonates b": {"orders_to_find": [[190, 191, 192]], "nominal_orders": [190, 191, 192], "orders_to_scale": [190, 191, 192]},
     # "Phyliosilicates": {"orders_to_find": [[189, 190, 191, 192, 193, 201]], "nominal_orders": [189, 190, 191, 192, 193, 201], "orders_to_scale": [189, 190, 191, 192, 193, 201], "linestyle": "none"},
 }
 
 
 # open previously saved spectra
-with open("lno_phobos_output.json", "r") as f:
+with open("lno_phobos_output_all34.json", "r") as f:
     phobos_d = json.load(f)
 
 # convert json to numpy arrays
@@ -53,7 +55,7 @@ ax2a.scatter(crism_d["x"], crism_d["phobos_blue"], color="tab:blue", marker="x",
 
 
 order_text_on_plot = []
-for name in selected_orders.keys():
+for name_ix, name in enumerate(selected_orders.keys()):
 
     nominal_orders = np.asarray(selected_orders[name]["nominal_orders"])
 
@@ -109,6 +111,9 @@ for name in selected_orders.keys():
 
     # calculate scaling factor to calibrate to crism red
     matching_crism_indices = np.where((crism_d["x"] > np.min(orders_to_scale_um)) & (crism_d["x"] < np.max(orders_to_scale_um)))[0]
+    if len(matching_crism_indices) == 0:
+        # if no match found, get nearest point
+        matching_crism_indices = np.argmin(np.abs(crism_d["x"] - orders_to_scale_um))
     crism_red_mean = np.mean(crism_d["phobos_red"][matching_crism_indices])
     crism_blue_mean = np.mean(crism_d["phobos_blue"][matching_crism_indices])
     lno_mean = np.mean(interp_mean[order_ixs])
@@ -132,8 +137,12 @@ for name in selected_orders.keys():
     # if "linestyle" in selected_orders[name].keys():
     # ls = selected_orders[name]["linestyle"]
 
-    ax2a.errorbar(x_plt, y=y_plt1, yerr=y_err1, color="darkred", capsize=2, label="LNO scaled to Phobos red")
-    ax2a.errorbar(x_plt, y=y_plt2, yerr=y_err2, color="darkblue", capsize=2, label="LNO scaled to Phobos blue")
+    if name_ix == 0:
+        ax2a.errorbar(x_plt, y=y_plt1, yerr=y_err1, color="darkred", capsize=2, label="LNO scaled to Phobos red")
+        ax2a.errorbar(x_plt, y=y_plt2, yerr=y_err2, color="darkblue", capsize=2, label="LNO scaled to Phobos blue")
+    else:
+        ax2a.errorbar(x_plt, y=y_plt1, yerr=y_err1, color="darkred", capsize=2)
+        ax2a.errorbar(x_plt, y=y_plt2, yerr=y_err2, color="darkblue", capsize=2)
 
     ax2a.scatter(x_plt, y_plt1, color="darkred")
     ax2a.scatter(x_plt, y_plt2, color="darkblue")
@@ -141,6 +150,8 @@ for name in selected_orders.keys():
     for x, y, order in zip(x_plt-0.015, y_plt2+(x_plt/40.0)-0.06, nominal_orders):
         # just label each order once
         if order not in order_text_on_plot:
+            if order > 180:
+                y += (x/30-0.07)
             ax2a.text(x, y, order)
             order_text_on_plot.append(order)
 
@@ -151,7 +162,7 @@ ax2a.set_ylim((0.025, 0.075))
 ax2a.set_xlabel("Wavelength (microns)")
 ax2a.set_ylabel("CRISM Phobos I/F")
 
-# %%
+
 # vals_d = {}
 # for h5 in phobos_d.keys():
 #     orders = phobos_d[h5]["orders"]

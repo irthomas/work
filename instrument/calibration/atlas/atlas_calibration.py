@@ -4,7 +4,7 @@ Created on Wed Nov 12 16:12:13 2025
 
 @author: iant
 
-ANALYSE ATLAS COMET OBS USING NEW LNO PIPELINE
+ANALYSE ATLAS COMET OBS USING NEW LNO OFFSET CORRECTION
 
 
 """
@@ -18,7 +18,7 @@ import re
 from numpy.polynomial import Polynomial
 from scipy import interpolate
 
-# from instrument.nomad_lno_instrument_v01 import m_aotf
+from instrument.nomad_lno_instrument_v01 import nu_mp
 # from instrument.calibration.lno_phobos.solar_inflight_cal import rad_cal_order
 
 from tools.file.hdf5_functions import open_hdf5_file
@@ -30,6 +30,8 @@ from tools.file.hdf5_functions import make_filelist2
 from instrument.calibration.lno_phobos.solar_inflight_cal import rad_cal_order
 from instrument.calibration.lno_phobos.lno_offset_correction_phobos import fit_spectra
 from instrument.calibration.lno_phobos.lno_bad_pixel_correction_phobos import bad_pixel_correction
+
+from instrument.calibration.lno_phobos.phobos_save_mean_shape_test import save_phobos_ideal_spectrum
 
 
 # data_path = r"W:\data\SATELLITE\TRACE-GAS-ORBITER\NOMAD\hdf5"
@@ -47,9 +49,9 @@ px_range = range(120, 280)
 # plot_level = -2  # check signal noise
 # plot_level = -1  # check bad pixels
 
-plot_level = 0
+# plot_level = 0
 # plot_level = 2
-# plot_level = 3
+plot_level = 3
 # plot_level = 4
 
 # PLOT_TYPES = ["bad_pixel_fits", "solar_fits"]
@@ -97,11 +99,11 @@ for obs_type in obs_types.keys():
 
         """get solar calibration info from an LNO solar cal fullscan if the data for this order is not yet processed.
         This gives the sensitivity of the instrument in each order and solar radiance"""
-        if order not in cal_d.keys():
-            cal_h5 = "20201222_114725_1p0a_LNO_1_CF"
-            cal_d[order] = rad_cal_order(cal_h5, order, centre_indices=px_range, path=data_path)
-            cal_d[order]["solar_scalar"] = cal_d[order]["y_centre_mean"] / 2.0e6
-            cal_d[order]["solar_spectrum"] = cal_d[order]["y_spectrum"] / np.max(cal_d[order]["y_spectrum"])
+        # get solar calibration data
+        cal_h5 = "20201222_114725_1p0a_LNO_1_CF"
+        cal_d = rad_cal_order(cal_h5, [order], centre_indices=px_range, path=data_path, silent=True)
+        cal_d[order]["solar_scalar"] = cal_d[order]["y_centre_mean"] / 2.0e6
+        cal_d[order]["solar_spectrum"] = cal_d[order]["y_spectrum"] / np.max(cal_d[order]["y_spectrum"])
 
         # get detector row binning
         top_bins = h5f["Science/Bins"][:, 0]  # detector row of top of each bin
@@ -216,6 +218,9 @@ for obs_type in obs_types.keys():
             counts_d[order] = {}
 
         # add info to dictionary
+        # raw spectra after bad pixel + offset correction
+        counts_d[order]["y_3d"] = y_3d
+        counts_d[order]["fitted_params"] = fitted_params  # scalar, offset
         # spectral detector pixels for a single order are averaged together
         counts_d[order]["y_spectral_mean"] = y_spectral_mean
         # spectral detector pixels, scaled to solar spectrum
@@ -234,6 +239,26 @@ for obs_type in obs_types.keys():
         bin_ratios = counts_d[order]["y_spectral_frame_mean"]
         print("%s: %s" % (h5, str([float(f"{x:.2f}") for x in bin_ratios])))
 
+    mean_shapes_d = save_phobos_ideal_spectrum(counts_d, [0, 1, 2, 3, 4, 5, 6, 7], plot=False, title="%s" % h5, min_spectra=20)
+
+    x = nu_mp(order, np.arange(320), -10)
+
+    plt.figure()
+    for bin_ix in mean_shapes_d[order].keys():
+        spectrum = mean_shapes_d[order][bin_ix]
+        if bin_ix in [3, 4]:
+            colour = "k"
+            alpha = 1.0
+        else:
+            colour = "b"
+            alpha = 0.5
+        plt.plot(x, spectrum, color=colour, alpha=alpha, label="Bin %i" % bin_ix)
+    plt.legend()
+    plt.title("ATLAS mean spectra: %s" % h5)
+    plt.grid()
+    plt.xlabel("Wavenumber (cm-1)")
+    plt.ylabel("Raw signal after bad pixel and offset correction")
+
     # all data collected, now plot it
     # if plot_level < 2:
     #     # plot solar calibration spectra
@@ -246,7 +271,7 @@ for obs_type in obs_types.keys():
     #     plt.xlabel("Detector pixel number")
     #     plt.ylabel("Raw solar signal (counts)")
     #     plt.grid()
-        # plt.savefig("lno_phobos_solar_cal_spectra.png")
+    # plt.savefig("lno_phobos_solar_cal_spectra.png")
 
     if plot_level < 2.5:
 

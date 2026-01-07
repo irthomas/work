@@ -37,7 +37,7 @@ def fit_solar_spectrum(spectrum, first_guess, solar_spectrum):
     return scaled_spectrum, corr_spectrum, res.x
 
 
-def fit_spectra(y_3d, solar_spectrum, plot=[[]]):
+def fit_spectra(y_3d, solar_spectrum, plot=[[]], title=""):
     """correct offsets in input 3d array of raw spectra with a fit to the solar spectrum, replacing data by best fit solar spectrum
     y_3d has dimensions frames x rows x wavelengths and plot is list of [row x frame] index lists"""
 
@@ -70,9 +70,12 @@ def fit_spectra(y_3d, solar_spectrum, plot=[[]]):
                     if row == plot_ix[0] and frame == plot_ix[1]:
 
                         fig, ax = plt.subplots()
-                        ax.set_title("Offset correction check, row=%i, frame=%i" % (row, frame))
-                        ax.plot(y_3d[frame, row, :], alpha=0.5)
-                        ax.plot(fitted_spectra[frame, row, :], alpha=0.5)
-                        ax.plot(corr_spectra[frame, row, :], alpha=0.5)
+                        ax.set_title("%s offset correction, row=%i, frame=%i" % (title, row, frame))
+                        ax.plot(y_3d[frame, row, :], alpha=0.5, label="High-resolution LNO spectrum")
+                        ax.plot(fitted_spectra[frame, row, :], alpha=0.5, label="Solar fitted spectrum")
+                        ax.plot(corr_spectra[frame, row, :], alpha=0.5, label="Offset-corrected fitted spectrum")
+                        ax.set_xlabel("Pixel number")
+                        ax.set_ylabel("Raw signal (counts)")
+                        ax.legend()
 
     return fitted_spectra, corr_spectra, fitted_params

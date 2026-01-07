@@ -43,9 +43,9 @@ def planck(xscale, temp):  # planck function W/cm2/sr/cm-1
     return ((c1*xscale**3.0)/(np.exp(c2*xscale/temp)-1.0)) / 1000.0 / 1.0e4  # mW to W, m2 to cm2
 
 
-def read_cal_file(cal_h5, path=None):
+def read_cal_file(cal_h5, path=None, silent=False):
 
-    h5_f = open_hdf5_file(cal_h5, path=path)
+    h5_f = open_hdf5_file(cal_h5, path=path, silent=silent)
 
     y_f = h5_f["Science/Y"][...]
     bins = h5_f["Science/Bins"][:, 0]
@@ -74,9 +74,9 @@ def read_cal_file(cal_h5, path=None):
     return {"orders": orders, "y_norm": y_norm, "t": t, "bins": bins}
 
 
-def rad_cal_order(cal_h5, orders, centre_indices=None, path=None):
+def rad_cal_order(cal_h5, orders, centre_indices=None, path=None, silent=False):
 
-    d = read_cal_file(cal_h5, path=path)
+    d = read_cal_file(cal_h5, path=path, silent=silent)
 
     unique_bins = sorted(list(set(d["bins"])))
     centre_bins = unique_bins[6:-6]
@@ -95,7 +95,10 @@ def rad_cal_order(cal_h5, orders, centre_indices=None, path=None):
         if not centre_indices:
             y_centre_mean = np.mean(y_spectrum)
         else:
-            y_centre_mean = np.mean(y_spectrum[centre_indices])
+            if centre_indices[0] == -1:
+                y_centre_mean = np.max(y_spectrum[:])
+            else:
+                y_centre_mean = np.mean(y_spectrum[centre_indices])
 
         # convert to wavenumbers
         x = nu_mp(order, np.arange(320.), d["t"])

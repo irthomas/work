@@ -37,14 +37,30 @@ from tools.spice.rotation_matrix_from_vectors import rotation_matrix_from_vector
 
 
 # bin_numbers = [0, 1, 2, 3]
-bin_numbers = [1, 2]
+# bin_numbers = [1, 2]
+bin_numbers = [1]
+
+# SAVE_FIGURES = False
+SAVE_FIGURES = True
+
+CLOSE_FIGURES = False
+# CLOSE_FIGURES = True
 
 
 LNO_DETECTOR_CENTRE_LINE = 152
 
 # PLOT_TYPES = ["groundtrack_surface", "groundtrack_illum_start", "groundtrack_illum_end", "groundtrack_illum_combined"]
 PLOT_TYPES = ["groundtrack_illum_combined"]
-N_STEPS = 10
+
+# which points to plot on map
+# PLOT_POINTS = ["sub_observer", "sub_solar"]
+PLOT_POINTS = ["sub_observer"]
+
+# how many FOV frames to plot; set to -1 for all
+N_STEPS = -1
+# N_STEPS = 10
+
+
 # data_path = r"W:\data\SATELLITE\TRACE-GAS-ORBITER\NOMAD\hdf5"
 data_path = r"C:\Users\iant\Documents\DATA\hdf5"
 
@@ -180,7 +196,7 @@ if __name__ == "__main__":
     # tracking only in 2025+
     h5s = [
         # "20250628_083013_0p3a_LNO_1_P_166",
-        # "20250622_070511_0p3a_LNO_1_P_166",
+        "20250622_070511_0p3a_LNO_1_P_166",
         # "20250619_101826_0p3a_LNO_1_P_166",
         # "20250619_022647_0p3a_LNO_1_P_166",
         # "20250411_203101_0p3a_LNO_1_P_166",
@@ -191,10 +207,10 @@ if __name__ == "__main__":
         "20241229_103444_0p3a_LNO_1_P_166",
         "20241213_052910_0p3a_LNO_1_P_166",
         "20241210_084211_0p3a_LNO_1_P_166",
-        # "20241207_040411_0p3a_LNO_1_P_166",
-        # "20241011_012228_0p3a_LNO_1_P_174",
-        # "20241004_235732_0p3a_LNO_1_P_174",
-        # "20241001_191914_0p3a_LNO_1_P_174",
+        "20241207_040411_0p3a_LNO_1_P_166",
+        "20241011_012228_0p3a_LNO_1_P_174",
+        "20241004_235732_0p3a_LNO_1_P_174",
+        "20241001_191914_0p3a_LNO_1_P_174",
         # "20240922_210734_0p3a_LNO_1_P_174",
         # "20240911_224710_0p3a_LNO_1_P_174",
         # "20240831_034846_0p3a_LNO_1_P_165",
@@ -212,6 +228,8 @@ if __name__ == "__main__":
         h5_f = open_hdf5_file(h5, path=data_path)
 
         obs_dt_strs_all = h5_f["Geometry/ObservationDateTime"][...]
+
+        h5_prefix = h5[:15]
 
         if "0p1a" in h5:
             bins = np.ndarray.flatten(h5_f["Science/Bins"][:, :, 0])  # detector row of top of each bin
@@ -268,21 +286,27 @@ if __name__ == "__main__":
             if "groundtrack_surface" in PLOT_TYPES:
                 # plot ground tracks on surface model
                 fig1, ax1 = plt.subplots(figsize=(12, 7), constrained_layout=True)
-                fig1.suptitle("Phobos surface height and groundtrack for %s bin %i\nRed = observation start; blue = observation end" % (h5, bin_number))
+                fig1.suptitle("Phobos surface height and groundtrack for %s bin %i\nRed = observation start; blue = observation end" % (h5_prefix, bin_number))
                 ax1.grid()
                 ax1.set_xlabel("Longitude")
                 ax1.set_ylabel("Latitude")
                 ax1.set_xlim((-180, 180))
                 ax1.set_ylim((-90, 90))
 
-                plot_ixs = np.linspace(len(d["et_s"])*0.05, len(d["et_s"])*0.95-1, N_STEPS, dtype=int)  # avoid first and last observations
+                if N_STEPS == -1:
+                    plot_ixs = np.linspace(len(d["et_s"])*0.05, len(d["et_s"])*0.95-1, dtype=int)  # avoid first and last observations
+                else:
+                    plot_ixs = np.linspace(len(d["et_s"])*0.05, len(d["et_s"])*0.95-1, N_STEPS, dtype=int)  # avoid first and last observations
+
                 for i in plot_ixs:
 
                     rect = [(dp[point]["lon_s"][i], dp[point]["lat_s"][i]) for point in dp.keys()]
                     ax1.add_patch(Polygon(rect, alpha=0.7, fill=False, closed=False, color=colours[i], linewidth=3))
 
-                ax1.scatter(d["obs_lon_s"][plot_ixs], d["obs_lat_s"][plot_ixs], color=np.array(colours)[plot_ixs, :], marker="x", label="Sub-Observer")
-                ax1.scatter(d["sun_lon_s"][plot_ixs], d["sun_lat_s"][plot_ixs], color=np.array(colours)[plot_ixs, :], label="Sub-Solar", alpha=0.5)
+                if "sub_observer" in PLOT_POINTS:
+                    ax1.scatter(d["obs_lon_s"][plot_ixs], d["obs_lat_s"][plot_ixs], color=np.array(colours)[plot_ixs, :], marker="x", label="Sub-Observer")
+                if "sub_solar" in PLOT_POINTS:
+                    ax1.scatter(d["sun_lon_s"][plot_ixs], d["sun_lat_s"][plot_ixs], color=np.array(colours)[plot_ixs, :], label="Sub-Solar", alpha=0.5)
 
                 phobos_surface = get_phobos_viking_data()
                 im1 = ax1.imshow(phobos_surface, extent=(-180, 180, -90, 90), alpha=0.7, aspect=1.1, cmap="binary_r")
@@ -312,7 +336,7 @@ if __name__ == "__main__":
 
                 fig2, ax2 = plt.subplots(figsize=(12, 7), constrained_layout=True)
                 fig2.suptitle("Phobos solar zenith angles for %s bin %i (%s)\nRed = observation start; blue = observation end" %
-                              (h5, bin_number, {0: "start", -1: "end"}[frame_index]))
+                              (h5_prefix, bin_number, {0: "start", -1: "end"}[frame_index]))
                 ax2.grid()
                 ax2.set_xlabel("Longitude")
                 ax2.set_ylabel("Latitude")
@@ -328,14 +352,20 @@ if __name__ == "__main__":
                                            SPICE_ABERRATION_CORRECTION, SPICE_OBSERVER, surf_xyzs[index])
                         phobos_illumination[len(lats)-1-lat_ix, lon_ix] = ilumin[3] * SP_DPR
 
-                plot_ixs = np.linspace(len(d["et_s"])*0.05, len(d["et_s"])*0.95-1, N_STEPS, dtype=int)  # avoid first and last observations
+                if N_STEPS == -1:
+                    plot_ixs = np.linspace(len(d["et_s"])*0.05, len(d["et_s"])*0.95-1, dtype=int)  # avoid first and last observations
+                else:
+                    plot_ixs = np.linspace(len(d["et_s"])*0.05, len(d["et_s"])*0.95-1, N_STEPS, dtype=int)  # avoid first and last observations
+
                 for i in plot_ixs:
 
                     rect = [(dp[point]["lon_s"][i], dp[point]["lat_s"][i]) for point in dp.keys()]
                     ax2.add_patch(Polygon(rect, alpha=0.7, fill=False, closed=False, color=colours[i], linewidth=3))
 
-                ax2.scatter(d["obs_lon_s"][plot_ixs], d["obs_lat_s"][plot_ixs], color=np.array(colours)[plot_ixs, :], marker="x", label="Sub-Observer")
-                ax2.scatter(d["sun_lon_s"][plot_ixs], d["sun_lat_s"][plot_ixs], color=np.array(colours)[plot_ixs, :], label="Sub-Solar", alpha=0.5)
+                if "sub_observer" in PLOT_POINTS:
+                    ax2.scatter(d["obs_lon_s"][plot_ixs], d["obs_lat_s"][plot_ixs], color=np.array(colours)[plot_ixs, :], marker="x", label="Sub-Observer")
+                if "sub_solar" in PLOT_POINTS:
+                    ax2.scatter(d["sun_lon_s"][plot_ixs], d["sun_lat_s"][plot_ixs], color=np.array(colours)[plot_ixs, :], label="Sub-Solar", alpha=0.5)
 
                 cmap = LinearSegmentedColormap.from_list("", colors=["white", "black", "black"], N=256)
 
@@ -362,7 +392,7 @@ if __name__ == "__main__":
 
                 fig2, ax2 = plt.subplots(figsize=(12, 7), constrained_layout=True)
                 fig2.suptitle("Phobos mean start and end solar illumination angles for %s bin %i\nRed = observation start; blue = observation end" %
-                              (h5, bin_number))
+                              (h5_prefix, bin_number))
                 ax2.grid()
                 ax2.set_xlabel("Longitude")
                 ax2.set_ylabel("Latitude")
@@ -372,7 +402,7 @@ if __name__ == "__main__":
                 # sum up the start and end to give a combined shaded map
                 phobos_illumination = np.zeros((len(lats), len(lons)))
                 for frame_index in illum_indices:
-                    print(h5, bin_number, frame_index)
+                    print("%s: bin %i, index %i" % (h5, bin_number, frame_index))
                     et = d["et_s"][frame_index]
 
                     for lon_ix, lon in enumerate(lons):
@@ -392,7 +422,11 @@ if __name__ == "__main__":
                 cbar2 = fig2.colorbar(im2, orientation='vertical')
                 cbar2.set_label("Mean start and end solar zenith angle (degrees)", rotation=270, labelpad=15)
 
-                plot_ixs = np.linspace(1.0+len(d["et_s"])*0.05, (len(d["et_s"])-1.0)*0.95, N_STEPS, dtype=int)  # avoid first and last observations
+                if N_STEPS == -1:
+                    plot_ixs = np.linspace(1.0+len(d["et_s"])*0.05, (len(d["et_s"])-1.0)*0.95, dtype=int)  # avoid first and last observations
+                else:
+                    plot_ixs = np.linspace(1.0+len(d["et_s"])*0.05, (len(d["et_s"])-1.0)*0.95, N_STEPS, dtype=int)  # avoid first and last observations
+
                 print("plot indices:", len(d["et_s"]), plot_ixs)
 
                 for i in plot_ixs:
@@ -400,12 +434,16 @@ if __name__ == "__main__":
                     rect = [(dp[point]["lon_s"][i], dp[point]["lat_s"][i]) for point in dp.keys()]
                     ax2.add_patch(Polygon(rect, alpha=0.7, fill=False, closed=False, color=colours[i], linewidth=3))
 
-                ax2.scatter(d["obs_lon_s"][plot_ixs], d["obs_lat_s"][plot_ixs], color=np.array(colours)[plot_ixs, :], marker="x", label="Sub-Observer")
-                ax2.scatter(d["sun_lon_s"][plot_ixs], d["sun_lat_s"][plot_ixs], color=np.array(colours)[plot_ixs, :], label="Sub-Solar", alpha=1.0)
+                if "sub_observer" in PLOT_POINTS:
+                    ax2.scatter(d["obs_lon_s"][plot_ixs], d["obs_lat_s"][plot_ixs], color=np.array(colours)[plot_ixs, :], marker="x", label="Sub-Observer")
+                if "sub_solar" in PLOT_POINTS:
+                    ax2.scatter(d["sun_lon_s"][plot_ixs], d["sun_lat_s"][plot_ixs], color=np.array(colours)[plot_ixs, :], label="Sub-Solar", alpha=1.0)
 
                 ax2.legend()
-                fig2.savefig("phobos_sza_%s_bin_%i_combined.png" % (h5, bin_number))
-                plt.close()
+                if SAVE_FIGURES:
+                    fig2.savefig("phobos_sza_%s_bin_%i_combined.png" % (h5, bin_number))
+                if CLOSE_FIGURES:
+                    plt.close()
 
         # # save illumination conditions of footprint perimeters to file
         # for i in range(0, len(d["et_s"])):
