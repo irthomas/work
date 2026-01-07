@@ -1,0 +1,6 @@
+{
+    "terminal.integrated.env.windows": {
+        "PYTHONPATH": "${workspaceFolder}",
+},
+"jupyter.notebookFileRoot": "C:\\Users\\iant\\Dropbox\\NOMAD\\Python"
+}

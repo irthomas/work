@@ -92,15 +92,32 @@ def write_hdf5_from_dict_simple(hdf5_filename_new, dataset_dict):
     import h5py
     with h5py.File(hdf5_filename_new+".h5", "w") as f:
 
-        for node, data in dataset_dict.items():
-            dtype = data.dtype
+        for node1, data1 in dataset_dict.items():
+            if isinstance(data1, dict):
+                for node2, data2 in data1.items():
+                    dtype2 = data2.dtype
 
-            if data.size > 1:
-                compression = "gzip"
-                shuffle = True
+                    if data2.size > 1:
+                        compression = "gzip"
+                        shuffle = True
+                    else:
+                        compression = None
+                        shuffle = False
+
+                    f.require_group(node1)
+
+        #            print(node, data.shape, data, data.size)
+                    f[node1].create_dataset(node2, data=data2, dtype=dtype2, compression=compression, shuffle=shuffle)
+
             else:
-                compression = None
-                shuffle = False
+                dtype1 = data1.dtype
 
-#            print(node, data.shape, data, data.size)
-            f.create_dataset(node, data=data, dtype=dtype, compression=compression, shuffle=shuffle)
+                if data1.size > 1:
+                    compression = "gzip"
+                    shuffle = True
+                else:
+                    compression = None
+                    shuffle = False
+
+    #            print(node, data.shape, data, data.size)
+                f.create_dataset(node1, data=data1, dtype=dtype1, compression=compression, shuffle=shuffle)

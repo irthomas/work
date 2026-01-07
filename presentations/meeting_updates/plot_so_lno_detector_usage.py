@@ -22,40 +22,36 @@ from tools.file.hdf5_functions import make_filelist
 from tools.general.progress_bar import progress
 
 
-# channel = "LNO"
 channels = ["LNO", "SO"]
 
-#reload data even if already loaded?
+# reload data even if already loaded?
 # get_data = True
 get_data = False
 
-#save figures?
+# save figures?
 save_fig = True
 # save_fig = False
 
 
-#when calculating projected future operating time, how many days in the past to consider?
+# when calculating projected future operating time, how many days in the past to consider?
 N_DAYS_PROJECT_BACK = 90
 # N_DAYS_PROJECT_BACK = 30
 
 
 HDF5_DT_FORMAT = "%Y %b %d %H:%M:%S.%f"
 
-
 def get_daily_usage(channel, regex, file_level):
     h5_filepaths, h5_filenames, _ = make_filelist(regex, file_level, silent=True, open_files=False, path=ROOT_DIR)
-    
-    
+
     h5_prefixes = []
     dates = {}
-    
+
     for h5_ix, (h5_filepath, h5) in enumerate(progress(list(zip(h5_filepaths, h5_filenames)))):
-        
-        h5_prefix = "%s" %(h5[0:15])
-        
-        #if h5_prefix already found, skip file
+
+        h5_prefix = "%s" % (h5[0:15])
+
+        # if h5_prefix already found, skip file
         if h5_prefix not in h5_prefixes:
-            
             #all H, L, 1, 2, unmerged etc can be ignored as duration time taken from TC20
 
             h5_prefixes.append(h5_prefix)
@@ -63,19 +59,19 @@ def get_daily_usage(channel, regex, file_level):
             h5_f = h5py.File(h5_filepath, "r")
             
             """get actual duration"""
-            duration = float(h5_f["Telecommand20/%sDurationTime" %channel.upper()][...]) #from switch on to switch off
+            duration = float(h5_f["Telecommand20/%sDurationTime" % channel.upper()][...])  # from switch on to switch off
 
-        
             year = h5[0:4]
             month = h5[4:6]
             day = h5[6:8]
-            
+
             date = datetime(year=int(year), month=int(month), day=int(day))
-            
+
             if date not in dates.keys():
                 dates[date] = 0
             dates[date] += duration
     return dates
+
 
 
 for channel in channels:
@@ -211,3 +207,5 @@ for channel in channels:
     
     if save_fig:
         fig1.savefig("%s_operating_hours_extrapolated.png" %(channel.upper()))
+
+

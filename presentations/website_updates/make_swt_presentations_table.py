@@ -52,15 +52,17 @@ header_dict = {
     23: "SWT23: Matsushima, Japan (14-17 March 2023)",
     24: "SWT24: Potenza, Italy (5-7 September 2023)",
     25: "SWT25: Newcastle Upon Tyne, UK (12-14 March 2024)",
+    26: "SWT26: NASA Goddard, USA (5-6 December 2024)",
+    27: "SWT27: Almuñécar, near Granada (3-5 June 2025)",
+    28: "SWT28: BIRA-IASB, Brussels and online (17-18 November 2025)",
 }
 
 # swt_numbers = [20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6]
-swt_numbers = [25]
+swt_numbers = [28]
 dir_list = os.listdir(meeting_dir)
 
 
 h = ""
-# h = "<html><head></head><body>\n"
 
 for swt_number in swt_numbers:
     print("Running SWT number %i" % swt_number)
