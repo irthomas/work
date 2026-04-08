@@ -15,6 +15,8 @@ from instrument.nomad_lno_instrument_v01 import nu_mp
 from tools.datasets.get_phobos_crism_data import get_phobos_crism_data
 
 
+plot_types = ["reff"]
+
 crism_d = get_phobos_crism_data()
 
 
@@ -36,7 +38,7 @@ selected_orders = {
 
 
 # open previously saved spectra
-with open("lno_phobos_output_all34.json", "r") as f:
+with open("lno_phobos_output.json", "r") as f:
     phobos_d = json.load(f)
 
 # convert json to numpy arrays
@@ -45,8 +47,8 @@ for h5 in phobos_d.keys():
         phobos_d[h5][key] = np.asarray(phobos_d[h5][key])
 
 
-fig1, ax1a = plt.subplots(figsize=(12, 7))
-fig1.suptitle("LNO Phobos Observations Radiometric Scaling")
+# fig1, ax1a = plt.subplots(figsize=(12, 7))
+# fig1.suptitle("LNO Phobos Observations Radiometric Scaling")
 
 fig2, ax2a = plt.subplots(figsize=(12, 7))
 fig2.suptitle("Phobos Radiometric Scaling")
@@ -54,6 +56,48 @@ ax2a.scatter(crism_d["x"], crism_d["phobos_red"], color="tab:red", marker="x", a
 ax2a.scatter(crism_d["x"], crism_d["phobos_blue"], color="tab:blue", marker="x", alpha=0.7, label="CRISM Phobos blue (Fraeman et al. 2014)")
 
 
+if "reff" in plot_types:
+    reff_d = {}
+    for i, h5 in enumerate(phobos_d.keys()):
+        ums = phobos_d[h5]["um"]
+        reffs = phobos_d[h5]["reff"]
+        if i == 0:
+            label = "LNO I/F absolute calibration at 41 degrees phase angle"
+        else:
+            label = ""
+        ax2a.scatter(ums, reffs, color="k", label=label, alpha=0.2)
+        ax2a.plot(ums, reffs, color="k", label=label, alpha=0.2)
+        for i in range(len(ums)):
+            if ums[i] not in reff_d.keys():
+                reff_d[ums[i]] = {"raw": []}
+            reff_d[ums[i]]["raw"].append(reffs[i])
+    for um in reff_d.keys():
+        reff_d[um]["raw"] = np.asarray(reff_d[um]["raw"])
+        reff_d[um]["mean"] = np.mean(np.asarray(reff_d[um]["raw"]))
+        reff_d[um]["std"] = np.std(np.asarray(reff_d[um]["raw"]))
+
+    ums = [um for um in sorted(reff_d.keys())]
+    means = [reff_d[um]["mean"] for um in sorted(reff_d.keys())]
+    stds = [reff_d[um]["std"] for um in sorted(reff_d.keys())]
+    ax2a.scatter(ums, means, color="k", label="Mean LNO I/F absolute calibration")
+    # ax2a.plot(ums, means, color="k")
+    ax2a.errorbar(ums, y=means, yerr=stds, color="k")
+    ax2a.legend()
+
+    ax2a.grid()
+    ax2a.legend()
+    ax2a.set_xlabel("Wavelength (microns)")
+    ax2a.set_ylabel("CRISM and LNO Phobos I/F")
+    fig2.savefig("lno_if_absolute_calibration.png")
+    ax2a.set_xlim((2, 3.1))
+    # ax2a.set_ylim((0.025, 0.075))
+    fig2.savefig("lno_if_absolute_calibration_zoom.png")
+
+    # for um in reff_d.keys():
+    #     ax2a.scatter(um, np.mean(reff_d[um]) color="k")
+    # ax2a.plot(ums, reffs)
+
+stop()
 order_text_on_plot = []
 for name_ix, name in enumerate(selected_orders.keys()):
 

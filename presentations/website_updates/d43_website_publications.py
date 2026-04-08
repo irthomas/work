@@ -20,15 +20,16 @@ import json
 
 # list of years to get publications for
 # YEARS = [2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025]
-YEARS = [2024]
+YEARS = [2025]
 
 # search for these authors
-AUTHOR_NAMES = ["Vandaele", "Mahieux", "Daerden", "Vanhellemont", "Ducreux", "Viscardy"]
+AUTHOR_NAMES = ["Vandaele", "Mahieux", "Daerden", "Vanhellemont", "Ducreux", "Viscardy", "Robert, S."]
 
 
 # for titles not found by searching for authors - must be added manually!
 EXTRA_PAPERS = [
     "Possible Effects of Volcanic Eruptions on the Modern Atmosphere of Venus",
+    # "Volcanic gas plumes’ effect on the spectrum of Venus",
 ]
 
 

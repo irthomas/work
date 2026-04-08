@@ -110,7 +110,7 @@ def get_hdf5_filename_list2(regex, file_level, path=None, silent=False, pre_psp=
 
     dt_end = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
 
-    pos_ymds = [datetime.strftime(dt_start + timedelta(days=x), "%Y%m%d") for x in range((dt_end-dt_start).days + 1)]
+    pos_ymds = [datetime.strftime(dt_start + timedelta(days=x), "%Y%m%d") for x in range((dt_end - dt_start).days + 1)]
 
     matching_ymds = list(filter(regex_ymd.search, pos_ymds))
 
@@ -169,9 +169,9 @@ def get_filepath(hdf5_filename, path=None):
     day = hdf5_filename[6:8]
 
     if path:
-        filepath = os.path.join(path, file_level, year, month, day, hdf5_filename+".h5")  # choose a file
+        filepath = os.path.join(path, file_level, year, month, day, hdf5_filename + ".h5")  # choose a file
     else:
-        filepath = os.path.join(paths["DATA_DIRECTORY"], file_level, year, month, day, hdf5_filename+".h5")  # choose a file
+        filepath = os.path.join(paths["DATA_DIRECTORY"], file_level, year, month, day, hdf5_filename + ".h5")  # choose a file
 
     return filepath
 
@@ -243,9 +243,9 @@ def get_file(obspath, file_level, count, model="INFLIGHT", silent=False, open_fi
             # DATASTORE_DIRECTORY_IN = DATASTORE_PATHS["DATASTORE_DIRECTORY"]
 
     if DATASTORE_PATHS["DIRECTORY_STRUCTURE"]:
-        filename = os.path.join(DATA_DIRECTORY_IN, file_level, year, month, day, obspath+".h5")  # choose a file
+        filename = os.path.join(DATA_DIRECTORY_IN, file_level, year, month, day, obspath + ".h5")  # choose a file
     else:
-        filename = os.path.join(DATA_DIRECTORY_IN, obspath+".h5")  # choose a file
+        filename = os.path.join(DATA_DIRECTORY_IN, obspath + ".h5")  # choose a file
 
     if os.path.exists(filename):
         if not silent:
@@ -282,7 +282,7 @@ def open_hdf5_file(hdf5_filename, path=None, silent=False):
     month = hdf5_filename[4:6]
     day = hdf5_filename[6:8]
     file_level = "hdf5_level_%s" % hdf5_filename[16:20]
-    hdf5_filepath = os.path.join(data_directory, file_level, year, month, day, hdf5_filename+".h5")
+    hdf5_filepath = os.path.join(data_directory, file_level, year, month, day, hdf5_filename + ".h5")
     hdf5_file = h5py.File(hdf5_filepath, "r")
 
     return hdf5_file
@@ -338,7 +338,7 @@ def make_filelist(obs_paths, file_level, model="INFLIGHT", silent=False, open_fi
     return hdf5_files_out, hdf5_filenames_out, titles
 
 
-def make_filelist2(regex, file_level, open_files=True, path=None, silent=False):
+def make_filelist2(regex, file_level, open_files=True, path=None, silent=False, pre_psp=True):
     """make list of filenames containing matching attributes and datasets"""
     """new version uses full regex"""
     if path:
@@ -348,7 +348,7 @@ def make_filelist2(regex, file_level, open_files=True, path=None, silent=False):
     else:
         root_path = paths["DATA_DIRECTORY"]
 
-    h5s, h5_paths = get_hdf5_filename_list2(regex, file_level, path=root_path, silent=silent)
+    h5s, h5_paths = get_hdf5_filename_list2(regex, file_level, path=root_path, silent=silent, pre_psp=pre_psp)
     if not silent:
         print("%i matching files found for regex %s" % (len(h5s), regex.pattern))
 
@@ -374,7 +374,7 @@ def write_file(file_name, lines_to_write):
     """function to write text file"""
     txtFile = open(file_name, 'w')
     for line_to_write in lines_to_write:
-        txtFile.write(line_to_write+'\n')
+        txtFile.write(line_to_write + '\n')
     txtFile.close()
 
 

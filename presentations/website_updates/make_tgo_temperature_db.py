@@ -12,6 +12,7 @@ READ IN SQL DB, SMOOTH AND OUTPUT N INTERPOLATED POINTS TO NEW DB FOR THE WEBSIT
 
 import os
 import numpy as np
+import h5py
 
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
@@ -80,23 +81,29 @@ lno_small = lno_smooth[::SMOOTH_STEPS]
 ts_small = ts[::SMOOTH_STEPS]
 
 # write out to new sqlite db
-print("Writing to new database file")
-with sql_db("red_heaters_temp.db") as new_db:
-    if CLEAR_DB:
-        print("Clearing existing database if it exists")
-        new_db.query("DROP TABLE IF EXISTS temps")
-        new_db.query("CREATE TABLE temps (id INTEGER PRIMARY KEY AUTOINCREMENT, ts datetime NOT NULL, lno decimal NOT NULL)")
+# print("Writing to new database file")
+# with sql_db("red_heaters_temp.db") as new_db:
+#     if CLEAR_DB:
+#         print("Clearing existing database if it exists")
+#         new_db.query("DROP TABLE IF EXISTS temps")
+#         new_db.query("CREATE TABLE temps (id INTEGER PRIMARY KEY AUTOINCREMENT, ts datetime NOT NULL, lno decimal NOT NULL)")
 
-    # loop through each line, adding temperatures to db
-    for i, (ts, lno) in enumerate(progress(list(zip(ts_small, lno_small)))):
-        # if np.mod(i, 1000) == 0:
-        #     print("%i/%i" % (i, ts_small.size))
-        new_db.query(["INSERT INTO temps (ts, lno) VALUES (?, ?)", (ts, lno)])
+#     # loop through each line, adding temperatures to db
+#     for i, (ts, lno) in enumerate(progress(list(zip(ts_small, lno_small)))):
+#         # if np.mod(i, 1000) == 0:
+#         #     print("%i/%i" % (i, ts_small.size))
+#         new_db.query(["INSERT INTO temps (ts, lno) VALUES (?, ?)", (ts, lno)])
 
-plt.figure(figsize=(20, 6), constrained_layout=True)
-plt.title("NOMAD LNO Temperature")
-plt.plot(ts_small, lno_small)
-plt.grid()
-plt.xlabel("Date")
-plt.ylabel("Temperature of LNO (nominal)")
-plt.savefig("nomad_temperature_full_mission.png")
+# plt.figure(figsize=(20, 6), constrained_layout=True)
+# plt.title("NOMAD LNO Temperature")
+# plt.plot(ts_small, lno_small)
+# plt.grid()
+# plt.xlabel("Date")
+# plt.ylabel("Temperature of LNO (nominal)")
+# plt.savefig("nomad_temperature_full_mission.png")
+
+# write out to h5
+ts_small = [datetime.strftime(s, "%Y %b %d %H:%M:%S") for s in ts_small]
+with h5py.File("lno_temperatures.h5", "w") as h5:
+    h5.create_dataset("ts", (len(ts_small), 1), dtype="S50", data=ts_small, compression="gzip", shuffle=True)
+    h5.create_dataset("lno", (len(lno_small), 1), dtype=float, data=lno_small, compression="gzip", shuffle=True)

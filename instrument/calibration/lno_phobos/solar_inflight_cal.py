@@ -56,7 +56,7 @@ def read_cal_file(cal_h5, path=None, silent=False):
     naccs_f = h5_f["Channel/NumberOfAccumulations"][0]
     t_f = h5_f["Temperature/NominalLNO"][...]
 
-    it = np.float32(it_f) / 1.0e3  # microseconds to seconds
+    it = np.float32(it_f) / 1.0e3  # milliseconds to seconds
     naccs = np.float32(naccs_f)/2.0  # assume LNO nadir background subtraction is on
     binning = np.float32(binning_f) + 1.0  # binning starts at zero
     t = np.mean(t_f)
