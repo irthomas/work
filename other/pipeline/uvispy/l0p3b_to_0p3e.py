@@ -24,7 +24,7 @@ from numpy.polynomial import Polynomial
 
 
 __project__ = "NOMAD"
-__author__ = "Ian Thomas, adapted from code by Yannick Willame"
+__author__ = "Ian Thomas and Yannick Willame"
 __contact__ = "ian.thomas@aeronomie.be"
 
 
@@ -120,6 +120,16 @@ CRIT_MASK = {
 }
 
 
+def ozone_band():
+    """basic fit to a hartley band to give general shape"""
+
+    x = np.arange(200, 300, 1)
+    y = (1 - np.exp(-((x - 255.5)**2) / (2 * 18.5**2)) + ((((((1.566054e-11 * x - 2.362383e-08) * x + 1.476562e-05) * x - 4.894615e-03
+                                                             ) * x + 0.907583634129) * x - 89.2597818528) * x + 3637.9058292))
+
+    return x, y
+
+
 """from 0p2b to 0p3b: modified"""
 
 
@@ -141,7 +151,6 @@ def define_roi(vstart, xpix_1b):
     mat_bin_roi = np.zeros((xpix_1b.shape[0], int(np.max(n_lines_roi))), dtype=bool)
     # mat_bin_roi = np.zeros((xpix_1b.shape[0], int(np.max(n_lines_roi))), dtype=float)
 
-    # TODO: replace with floats to solve sawtooth
     for ipix in range(i_line_bottom_start.shape[0]):
         mat_bin_roi[ipix, int(i_start_line_roi[ipix] - np.min(i_start_line_roi)):int(i_end_line_roi[ipix] - np.min(i_start_line_roi)) + 1] = 1
 
@@ -166,7 +175,6 @@ def define_bounded_roi(vstart, xpix_1b):
     mat_bin_roi = np.zeros((xpix_1b.shape[0], int(np.max(n_lines_roi))), dtype=bool)
     # mat_bin_roi = np.zeros((xpix_1b.shape[0], int(np.max(n_lines_roi))), dtype=float)
 
-    # TODO: replace with floats to solve sawtooth
     for ipix in range(i_line_bottom_start.shape[0]):
         mat_bin_roi[ipix, int(i_start_line_roi[ipix] - np.min(i_start_line_roi)):int(i_end_line_roi[ipix] - np.min(i_start_line_roi)) + 1] = 1
 
@@ -374,24 +382,23 @@ def straylight_fitpoly2(i_start_line_ccd, nbr_ccd_lines, i_start_line_bin_roi, n
     else:
         straylight_spectrum = np.full(nbr_lambda_pixels, np.nan)
 
-    # else:
-    #     straylight_spectrum = np.full(nbr_lambda_pixels, np.nan)
-    #     obs_method_performed_on_lambda = np.zeros(nbr_lambda_pixels)
-
     return straylight_spectrum, obs_method_performed_on_lambda
 
+# code to plot 1.0a data
 
 # src= "/bira-iasb/data/SATELLITE/TRACE-GAS-ORBITER/NOMAD/hdf5/20240101_090648_0p3b_UVIS_I.h5"
 # src= "/bira-iasb/data/SATELLITE/TRACE-GAS-ORBITER/NOMAD/hdf5/hdf5_level_0p3b/2024/01/01/20240101_090648_0p3b_UVIS_I.h5"
 # dst= "/bira-iasb/data/SATELLITE/TRACE-GAS-ORBITER/NOMAD/hdf5/hdf5_level_0p3e/2024/01/01/20240101_090648_0p3e_UVIS_I.h5"
 
-src = "20230126_081530_0p3b_UVIS_I.h5"  # binned
+# src = "20230126_081530_0p3b_UVIS_I.h5"  # binned
 # src = "20180522_051504_0p3b_UVIS_I.h5"  # missing last rows
-# src = "20180522_051504_0p3b_UVIS_I.h5"  # good?
+# src = "20180522_051504_0p3b_UVIS_I.h5"  # unbinned, missing last rows, too many noisy flagged
 # src = "20240819_202356_0p3b_UVIS_I.h5"  # binned high ozone?
 
-# src = "20240818_165255_0p3b_UVIS_I.h5"
+# src = "20240818_165255_0p3b_UVIS_I.h5" # binned high ozone steep T loss
 
+
+src = "20240516_130419_0p3b_UVIS_I.h5"  # unbinned, solar line peak seen
 
 # filepaths = glob.glob(r"W:\data\SATELLITE\TRACE-GAS-ORBITER\NOMAD\hdf5\hdf5_level_0p3b\2024\10\20\*UVIS_I.h5")
 
@@ -399,6 +406,17 @@ src = "20230126_081530_0p3b_UVIS_I.h5"  # binned
 dst = os.path.basename(src).replace("0p3b", "0p3e")
 #     if os.path.exists(dst):
 #         os.remove(dst)
+
+"""code to plot transmittance of existing file"""
+# with h5py.File(r"W:\data\SATELLITE\TRACE-GAS-ORBITER\NOMAD\hdf5\hdf5_level_1p0a\%s\%s\%s\%s" %(src[0:4], src[4:6], src[6:8], src.replace("0p3b","1p0a")), "r") as h5:
+#     x = h5["Science/X"][0, :]
+#     y = h5["Science/Y"][...]
+# plt.figure()
+# plt.plot(x, y[40:70, :].T, "k", alpha=0.5)
+# plt.title(src.replace("0p3b","1p0a"))
+# plt.xlabel("Wavelength (nm)")
+# plt.ylabel("Transmittance")
+# plt.grid()
 
 
 # def remove_straylight(src, dst):
@@ -434,6 +452,7 @@ if True:
 
         CircuitNoise = np.swapaxes(f['Science/CircuitNoise'], 0, 1)
         YNb = f['Science/YNb'][frame_ixs_type4]
+        # stop()
 
     logger.info("%s: acq_mode=%i, nbr_lambda_pixels=%i, vstart=%i, vend=%i, nbr_ccd_lines=%i, Yshape=%s",
                 hdf5_basename, acq_mode, nbr_lambda_pixels, vstart, vend, nbr_ccd_lines, Y.shape)
@@ -442,8 +461,47 @@ if True:
         print('lambda_IASB_v1: manual')
         x_calib_ref = 'lambda_IASB_v1'
 
+    # manual rightward shift of atmos spectra
+    # y_shifted = np.zeros_like(Y)
+    # y_shifted[:1023, :, 125:140] = np.copy(Y[1:, :, 125:140]) / 100
+
+    # Y_orig = np.copy(Y[:, :, :])
+    # Y[:, :, :] -= y_shifted
+
+    # a = Y_orig[:, :, 132]
+    # c = Y[:, :, 132]
+    # Y[173, 34:46, 132] -= 100
+    # Y[173, :, 132] -= (Y[174, :, 132] - Y[173, :, 132]) / 3
+
+    # not working
+    # for i in range(168, 160, -1):
+    #     Y[i, :, 132] -= (Y[i + 1, :, 132] - Y[i, :, 132]) / 3
+
+    # modified lines. More reduction helps far UV but introduces more wiggles
+    # Y[:, 38:42, 130] -= 140
+    # Y[:, 38:42, 131] -= 150
+    # Y[:, 38:42, 132] -= 160
+    # Y[:, 38:42, 133] -= 180
+
+    # set all lines equal
+    # Y[:, :, 132] = Y[:, :, 131]
+    # Y[:, :, 133] = Y[:, :, 131]
+
+    # # change illuminated region only
+    # Y[:, 36:44, 132] = Y[:, 36:44, 131] - 60
+    # Y[:, 36:44, 133] = Y[:, 36:44, 131] - 70
+
     # mat_bin_roi is the boolean matrix defining the illuminated pixel indices
     start_line_bin_roi, end_line_bin_roi, nbr_bin_roi_lines, mat_bin_roi = define_roi(vstart, xpix_1b)
+
+    # plot raw frame
+    # plt.figure(figsize=(10, 4))
+    # im = plt.imshow(Y[:, :, 123].T, aspect="auto", extent=[xpix_1b[0], xpix_1b[-1], vstart + nbr_ccd_lines, vstart], vmax=np.max(Y[:, :, 123]) * 0.75)
+    # plt.title("UVIS occultation raw detector frame")
+    # plt.xlabel("Spectral dimension")
+    # plt.ylabel("Detector row")
+    # cbar = plt.colorbar(im)
+    # cbar.set_label("Raw counts", rotation=270, labelpad=20)
 
     iStartLineROI = min(start_line_bin_roi)
     iEndLineROI = max(end_line_bin_roi)
@@ -471,6 +529,7 @@ if True:
     if "rises_falls" in PLOT_TYPES:
         fig1, (ax1a, ax1b) = plt.subplots(ncols=2, figsize=(16, 10))
 
+    print("Find illumination zone for each column and frame")
     for i, nm in enumerate(nms):
         nm_ix = np.argmin(np.abs(x[:, 0] - nm))
 
@@ -544,6 +603,7 @@ if True:
     x_new = np.floor(xpix_1b + (xnb_bin / 2)).astype(int)
 
     """Calculate for all columns. Only for pFM occultation at present"""
+    print("Make illumination mask")
     px_ixs = np.arange(nbr_lambda_pixels)
 
     ix_non_illum_top, ix_non_illum_bottom = define_top_bottom_non_illuminated_lines(x_new)
@@ -566,7 +626,7 @@ if True:
             partial_illum = bottom_rounded - fit_line_bottom_start[col_ix] + 0.5
             illum_matrix[col_ix, bottom_rounded, obs_ix] = 1 - partial_illum
 
-            # define non-illuninated regions
+            # define non-illuminated regions
             non_illum_matrix[col_ix, 0:(ix_non_illum_top[col_ix] - vstart), obs_ix] = 1
             non_illum_matrix[col_ix, (ix_non_illum_bottom[col_ix] - vstart):, obs_ix] = 1
 
@@ -595,53 +655,59 @@ if True:
 
     # new: make region of interest ymask for each frame 0 = non illuminated, 1=illuminated, nan = bad
     ymaskframesBinROI = np.repeat(mat_bin_roi[:, :, None], nbr_obs, axis=2).astype(float)
-    ymaskROI = ymaskframes + illum_matrix
+    # FIXME put ymask back
+    # ymaskROI = ymaskframes + illum_matrix
+    ymaskROI = illum_matrix
+
     # ymaskROI = ymaskframes + ymaskframesBinROI
 
     """vertically bin data"""
     # new: do the binning here
-    Y_bins = np.nansum(Y * ymaskROI, axis=1)
-    U2_bins = np.nansum(YError * ymaskROI, axis=1)
-    U2SysNL_bins = np.nansum(YErrorSysNL * ymaskROI, axis=1)
+    # Y_bins = np.nansum(Y * ymaskROI, axis=1) / np.nansum(ymaskROI, axis=1)
+    U2_bins = np.nansum(YError * ymaskROI, axis=1) / np.nansum(ymaskROI, axis=1)
+    U2SysNL_bins = np.nansum(YErrorSysNL * ymaskROI, axis=1) / np.nansum(ymaskROI, axis=1)
     nbr_bin_mat = np.nansum(ymaskROI, axis=1)  # number of good illuminated rows per pixel per frame
-    nbr_satur_mat = np.sum(np.isnan(ymaskROI), axis=1)  # number of saturated and hot pixels now per pixel per frame
+    # nbr_satur_mat = np.sum(np.isnan(ymaskROI), axis=1)  # number of saturated and hot pixels now per pixel per frame
 
     # Create the hot pixel/saturation masks
     ymask = (nbr_bin_mat <= (nbr_bin_roi_lines[:, None] * 0.5)).astype(np.uint8)
-    vect_saturated = (nbr_satur_mat >= (nbr_bin_roi_lines[:, None] * 0.5))
+    # vect_saturated = (nbr_satur_mat >= (nbr_bin_roi_lines[:, None] * 0.5))
 
     # Mask the data
-    Y_bins = np.where(~ymask, Y_bins, np.nan)
+    # Y_bins = np.where(~ymask, Y_bins, np.nan)
     U2_bins = np.where(~ymask, U2_bins, np.nan)
 
     # Replace infinities with NaN
-    Y_bins[np.isinf(Y_bins)] = np.nan
+    # Y_bins[np.isinf(Y_bins)] = np.nan
     U2_bins[np.isinf(U2_bins)] = np.nan
 
-    data_SmeaRem = Y_bins
+    # data_SmeaRem = Y_bins
     u2_data_SmeaRem = U2_bins
     u2_data_SysNL = U2SysNL_bins
     # nbrBinMat = nbr_bin_mat
-    VectSaturated = vect_saturated
+    # VectSaturated = vect_saturated
 
     u2_data_Rdm = (u2_data_SmeaRem / (nbr_bin_mat**2))  # error obtained up to here were random error -> to be saved in h5 file
     u2_data_SysNL = (u2_data_SysNL / (nbr_bin_mat**2))
 
     # data_OM is the same as matlab
-    data_OM = (data_SmeaRem / nbr_bin_mat)
-    data_OM2 = (data_SmeaRem / nbr_bin_mat)
+    # data_OM = (data_SmeaRem / nbr_bin_mat)
+    # data_OM2 = (data_SmeaRem / nbr_bin_mat)
     u2_data_OM = u2_data_Rdm + u2_data_SysNL  # add the systematic error due to Non-Linearity correction (if applied)
     # Straylight_OM = np.full_like(data_SmeaRem, np.nan)
-    Straylight_OM2 = np.full_like(data_SmeaRem, np.nan)
+    Straylight_OM2 = np.zeros((Y.shape[0], Y.shape[2]))
 
     yvalidflag = np.zeros(nbr_obs, dtype=np.uint8)
 
     """straylight"""
     BP_N_ITERS = 3
-    straylight_frames = np.zeros_like(Y)
+    straylight_frames = np.zeros_like(Y)  # 3d fitted straylight polynomial frames
 
     # use calculated values, each variable is 3d here
-    ynon_maskROI = ymaskframes + non_illum_matrix
+
+    # FIXME put ymask back
+    # ynon_maskROI = ymaskframes + non_illum_matrix
+    ynon_maskROI = non_illum_matrix
     Ynon = Y * ynon_maskROI
 
     # first get list of frames where sufficient signal
@@ -649,15 +715,20 @@ if True:
     middle_col_sums = np.nansum(Ynon[middle_col_ix, :, :], axis=0)
     middle_col_trans = middle_col_sums / np.nanmax(middle_col_sums)
 
+    print("Remove straylight")
     for frame_ix in range(nbr_obs):
+
+        if frame_ix not in [121, 122, 130, 131, 132, 133]:
+            continue
+
         # for frame_ix in range(1):
-        frame = Ynon[:, :, frame_ix]
+        frame = np.copy(Ynon[:, :, frame_ix])
         frame_non_illum_ixs = np.where((frame != 0) & ~np.isnan(frame))
 
         # only fit quadratic and report error if signal sufficient
         if middle_col_trans[frame_ix] > 0.1:
-            poly_degree = 2
-            chisq_cutoff = 10
+            poly_degree = 1
+            chisq_cutoff = 11
         elif middle_col_trans[frame_ix] > 0.03:  # if low signal, fit linear
             poly_degree = 1
             chisq_cutoff = 20
@@ -665,8 +736,8 @@ if True:
             poly_degree = 1
             chisq_cutoff = 99e99
 
-        straylight_frame = np.full_like(frame, np.nan)
-        obs_method_performed_on_lambda = np.ones(nbr_lambda_pixels)
+        # straylight_frame = np.full_like(frame, np.nan)
+        # obs_method_performed_on_lambda = np.ones(nbr_lambda_pixels)
         straylight_spectrum = np.zeros(nbr_lambda_pixels)
 
         for col_ix in range(nbr_lambda_pixels):
@@ -676,13 +747,12 @@ if True:
 
                 poly = Polynomial.fit(non_illum_ixs, frame[col_ix, non_illum_ixs], poly_degree)
                 straylight = poly(np.arange(nbr_ccd_lines))
-                chisq_px = (frame[col_ix, non_illum_ixs] - poly(non_illum_ixs))**2 / poly(non_illum_ixs)
-                chisq = np.sum(chisq_px) / len(non_illum_ixs)
+                chisq_px = (frame[col_ix, non_illum_ixs] - poly(non_illum_ixs))**2 / (poly(non_illum_ixs) + 500)  # 500 offset to get away from zero
                 bad_ix = np.where(chisq_px == np.max(chisq_px))[0][0]
                 frame[col_ix, non_illum_ixs[bad_ix]] = straylight[non_illum_ixs[bad_ix]]
             poly = Polynomial.fit(non_illum_ixs, frame[col_ix, non_illum_ixs], poly_degree)
             straylight = poly(np.arange(nbr_ccd_lines))
-            chisq_px = (frame[col_ix, non_illum_ixs] - poly(non_illum_ixs))**2 / poly(non_illum_ixs)
+            chisq_px = (frame[col_ix, non_illum_ixs] - poly(non_illum_ixs))**2 / (poly(non_illum_ixs) + 500)
             chisq = np.sum(np.abs(chisq_px)) / len(non_illum_ixs)
 
             if chisq > chisq_cutoff:
@@ -693,13 +763,12 @@ if True:
 
                     poly = Polynomial.fit(non_illum_ixs, frame[col_ix, non_illum_ixs], poly_degree)
                     straylight = poly(np.arange(nbr_ccd_lines))
-                    chisq_px = (frame[col_ix, non_illum_ixs] - poly(non_illum_ixs))**2 / poly(non_illum_ixs)
-                    chisq = np.sum(np.abs(chisq_px)) / len(non_illum_ixs)
+                    chisq_px = (frame[col_ix, non_illum_ixs] - poly(non_illum_ixs))**2 / (poly(non_illum_ixs) + 500)
                     bad_ix = np.where(chisq_px == np.max(chisq_px))[0][0]
                     frame[col_ix, non_illum_ixs[bad_ix]] = straylight[non_illum_ixs[bad_ix]]
                 poly = Polynomial.fit(non_illum_ixs, frame[col_ix, non_illum_ixs], poly_degree)
                 straylight = poly(np.arange(nbr_ccd_lines))
-                chisq_px = (frame[col_ix, non_illum_ixs] - poly(non_illum_ixs))**2 / poly(non_illum_ixs)
+                chisq_px = (frame[col_ix, non_illum_ixs] - poly(non_illum_ixs))**2 / (poly(non_illum_ixs) + 500)
                 chisq = np.sum(np.abs(chisq_px)) / len(non_illum_ixs)
 
                 print(frame_ix, col_ix, middle_col_trans[frame_ix], chisq)
@@ -749,13 +818,13 @@ if True:
 
             straylight_frames[col_ix, :, frame_ix] = straylight
 
-            # if col_ix == 21 and middle_col_trans[frame_ix] < 0.97:
+            # if col_ix == 173 and middle_col_trans[frame_ix] < 0.97:
             #     plt.plot(frame[col_ix, :])
             #     plt.scatter(non_illum_ixs, frame[col_ix, non_illum_ixs])
             #     plt.plot(straylight)
 
         Straylight_OM2[:, frame_ix] = straylight_spectrum
-        data_OM[:, frame_ix] -= straylight_spectrum
+        # data_OM[:, frame_ix] -= straylight_spectrum
         yvalidflag[frame_ix] = 1
 
         print(frame_ix, middle_col_trans[frame_ix], chisq)
@@ -768,136 +837,47 @@ if True:
     #     # plt.plot(Y[i, :, 400:410])
     #     # plt.plot(Ynon[i, :, 400:410])
     #     plt.ylim(-100, 12000)
-    #     plt.plot(Y[i, :, 162:172])
+    #     plt.plot(Y[i, :, 132])
     #     plt.plot(Ynon[i, :, 162:172])
 
-    Y_no_straylight = Y - straylight_frames
+    Y_no_straylight = Y - straylight_frames  # 3d raw data - straylight frames
 
-    data_OM = np.nansum(Y_no_straylight, axis=1)  # raw sum including top and bottom straylight
+    Y_no_sl_illum = Y_no_straylight * ymaskROI
 
-    plt.figure()
-    plt.plot(data_OM[:, 400:410] / np.nanmax(data_OM[:, 400:410], axis=0)[None, :])
+    # FIXME decide which one best
+    # data_OM = np.nansum(Y_no_straylight, axis=1)  # raw sum including top and bottom zones
+    data_OM = np.nansum(Y_no_sl_illum, axis=1)  # sum not including top and bottom zones
 
-    # check illuminated lines
-    Yillum = Y_no_straylight * ymaskROI
-    data_OM = np.nansum(Yillum, axis=1)  # selected illuminated rows after straylight correction
-
-    for i in [0, 1, 2, 3, 4, 13, 21, 23]:  # range(0, 121, 10):
-        plt.figure()
-        plt.title(i)
-        if src == "20230126_081530_0p3b_UVIS_I.h5":
-            # plt.ylim(-100, 6000)
-            # plt.plot(Y_no_straylight[i, :, 400:410])
-            plt.plot(Yillum[i, :, 400:410] / np.nanmax(Yillum[i, :, 400:410], axis=0)[None, :])
-        # plt.ylim(-100, 12000)
-        # plt.plot(Y[i, :, 162:172])
-        # plt.plot(Ynon[i, :, 162:172])
+    if src == "20230126_081530_0p3b_UVIS_I.h5":
+        plot_ixs = [400, 410]
+        plot_col_ixs = [0, 1, 2, 3, 4, 13, 21, 23]
+    elif src == "20240516_130419_0p3b_UVIS_I.h5":
+        plot_ixs = [100, 110]
+        plot_col_ixs = [168, 173, 178]
+    else:
+        plot_ixs = [100, 110]
+        plot_col_ixs = [0, 1, 2, 3, 4, 13, 21, 23]
 
     # plt.figure()
-    # for i in range(5, nbr_obs, 10):
-    #     for j in range(5, nbr_lambda_pixels, 130):
-    #         plt.plot(Ynon[j, :, i])
+    # plt.title("Normalised binned spectra")
+    # plt.plot(data_OM[:, plot_ixs[0]:plot_ixs[1]] / np.nanmax(data_OM[:, plot_ixs[0]:plot_ixs[1]], axis=0)[None, :])
+    # plt.grid()
+    # plt.xlabel("Pixel Number")
+    # plt.ylabel("Counts (normalised)")
 
-    # first_pix_to_treat = 0
-    # last_pix_to_treat = nbr_lambda_pixels
+    # check illuminated lines
+    # Yillum = Y_no_straylight * ymaskROI
+    # data_OM = np.nansum(Yillum, axis=1)  # selected illuminated rows after straylight correction
 
-    # i_line_top_start, i_line_bottom_start = define_top_bottom_non_illuminated_lines(x_new)
-
-    # # i_line_bottom_start and top start are the same as matlab except the last value!
-    # i_line_bottom_start = (i_line_bottom_start + 1 - vstart)
-    # i_line_top_start = (i_line_top_start + 1 - vstart)
-    # i_line_bottom_start[-1] -= 1
-    # i_line_top_start[-1] += 1
-
-    # for i_obs in range(nbr_obs):
-    #     # if itypedata[i_obs] == 4:  # science measurement
-    #     # Straylight calculation
-
-    #     num_line = np.arange(Y[:, :, i_obs].shape[1]) + 1  # same as matlab
-    #     yes_enough_signal = test_enough_signal_present(Y[:, :, i_obs], YMask[:, :, i_obs], np.max(start_line_bin_roi), np.min(nbr_bin_roi_lines), xpix_1b)
-    #     # print(yes_enough_signal)
-
-    #     straylight_frame = np.full_like(Y[:, :, i_obs], np.nan)
-    #     obs_method_performed_on_lambda = np.zeros(nbr_lambda_pixels)
-
-    #     straylight_spectrum = np.zeros(len(range(first_pix_to_treat, last_pix_to_treat)))
-
-    #     # i_lambda is one less than matlab
-    #     for i_lambda in range(first_pix_to_treat, last_pix_to_treat):
-    #         y_line = Y[i_lambda, :, i_obs]
-
-    #         if not yes_enough_signal:
-    #             temp_x = np.arange(1, i_line_bottom_start[i_lambda] + 1).astype(int)
-    #             temp_x_ok = temp_x[~YMask[i_lambda, temp_x - 1, i_obs].astype(bool)]
-
-    #             if len(temp_x_ok) > 1:
-    #                 p_bottom = np.polyfit(temp_x_ok, y_line[temp_x_ok - 1], 1)
-    #                 y_line[temp_x - 1] = np.polyval(p_bottom, temp_x)
-
-    #             temp_x = np.arange(i_line_top_start[i_lambda], len(y_line) + 1).astype(int)
-    #             temp_x_ok = temp_x[~YMask[i_lambda, temp_x - 1, i_obs].astype(bool)]
-
-    #             if len(temp_x_ok) > 1:
-    #                 p_top = np.polyfit(temp_x_ok, y_line[temp_x_ok - 1], 1)
-    #                 y_line[temp_x - 1] = np.polyval(p_top, temp_x)
-
-    #         obs_method_performed_on_lambda[i_lambda] = 1
-
-    #         nbr_pts_adj = 8  # for occultation
-    #         weight = np.zeros_like(y_line)
-
-    #         # weight true indices are the same as matlab
-    #         if (i_line_bottom_start[i_lambda] >= 3) and (i_line_top_start[i_lambda] <= (nbr_ccd_lines - 2)):
-    #             weight[int(max(0, i_line_bottom_start[i_lambda] - (nbr_pts_adj + 2))):int(i_line_bottom_start[i_lambda]) - 1] = 1
-    #             weight[int(i_line_top_start[i_lambda]):int(min(len(y_line), i_line_top_start[i_lambda] + (nbr_pts_adj + 1)))] = 1
-    #         else:
-    #             obs_method_performed_on_lambda[i_lambda] = 0
-
-    #         weight2 = weight.astype(bool) & ~YMask[i_lambda, :, i_obs].astype(bool) & ~np.isnan(y_line)
-
-    #         if np.sum(weight2) > 0:
-    #             p = np.polyfit(num_line[weight2], y_line[weight2], 2)
-    #             # this gives the same values as matlab
-    #             straylight_frame[i_lambda, :] = np.polyval(p, num_line)
-
-    #             # if i_lambda == 0:
-    #             # print([(i,v) for i,v in enumerate(weight2)])
-    #             # print(num_line[weight2], y_line[weight2], straylight_frame[i_lambda, :])
-    #             # print(straylight_frame[i_lambda, :])
-
-    #         else:
-    #             straylight_frame[i_lambda, :] = np.nan
-
-    #         # index values offset by 1
-    #         num_line_illum = np.arange(start_line_bin_roi[i_lambda], start_line_bin_roi[i_lambda] + nbr_bin_roi_lines[i_lambda])
-    #         # if i_lambda == 0:
-    #         # print(num_line_illum)
-
-    #         straylight_spectrum[i_lambda] = np.nansum(
-    #             straylight_frame[i_lambda, num_line_illum] *
-    #             (YMask[i_lambda, num_line_illum, i_obs] < CRIT_MASK["HotPixelsKept"])
-    #         ) / np.nansum(YMask[i_lambda, num_line_illum, i_obs] < CRIT_MASK["HotPixelsKept"])
-
-    #     straylight_spectrum[:int(first_pix_to_treat)] = 0
-
-    #     vect_no_nan = ~np.isnan(straylight_spectrum)
-    #     if np.sum(vect_no_nan) > 1:
-    #         if np.sum(vect_no_nan) < len(vect_no_nan):
-    #             interp_func = interp1d(x_new[vect_no_nan], straylight_spectrum[vect_no_nan], kind='linear', bounds_error=False, fill_value='extrapolate')
-    #             straylight_spectrum = interp_func(x_new)
-    #         else:
-    #             straylight_spectrum = straylight_spectrum
-    #     else:
-    #         straylight_spectrum = np.full(nbr_lambda_pixels, np.nan)
-
-    #     data_OM2[:, i_obs] -= straylight_spectrum
-    #     Straylight_OM[:, i_obs] = straylight_spectrum
-    #     yvalidflag[i_obs] = 1 if np.sum(~np.isnan(data_OM[:, i_obs])) > 0.5 else 0
-
-        # stop()
-        # else:
-        #     data_OM[:, i_obs] = np.nan
-        #     yvalidflag[i_obs] = 0  # set to non valid measurement
+    # for i in plot_col_ixs:  # range(0, 121, 10):
+    #     plt.figure()
+    #     plt.title(i)
+    #     plt.ylim(-100, 6000)
+    #     plt.ylim(-100, 12000)
+    #     plt.plot(Y_no_straylight[i, :, plot_ixs[0]:plot_ixs[1]]) # raw Y minus straylight curve
+    #     plt.plot(Yillum[i, :, plot_ixs[0]:plot_ixs[1]] / np.nanmax(Yillum[i, :, plot_ixs[0]:plot_ixs[1]], axis=0)[None, :])
+    #     plt.plot(Y[i, :, plot_ixs[0]:plot_ixs[1]])  # raw Y
+    #     plt.plot(Ynon[i, :, plot_ixs[0]:plot_ixs[1]])  # straylight curves only
 
     # Handling NaNs and transposing
     u2_data_Rdm[np.isinf(u2_data_Rdm)] = np.nan
@@ -912,26 +892,6 @@ if True:
 
     # Convert XNbBin to uint8
     xnb_bin = xnb_bin.astype(np.uint8)
-
-    # # Resizing due to too many NaNs in SO measurements
-    # if nbr_lambda_pixels > np.sum(obs_method_performed_on_lambda):
-    #     nbr_lambda_pixels = np.sum(obs_method_performed_on_lambda)
-
-    #     mask = obs_method_performed_on_lambda.astype(bool)
-
-    #     data_OM = data_OM[mask, :]
-    #     u2_data_OM = u2_data_OM[mask, :]
-    #     u2_data_Sys_OM = u2_data_Sys_OM[mask, :]
-    #     u2_data_Rdm = u2_data_Rdm[mask, :]
-    #     Straylight_OM = Straylight_OM[mask, :]
-    #     ymask = ymask[mask, :]
-    #     ymaskROI = ymaskROI[mask, :, :]
-    #     CircuitNoise = CircuitNoise[mask, :]
-    #     x = x[mask, :]
-
-    #     YNb[:] = nbr_lambda_pixels
-    #     xnb_bin = xnb_bin[mask].astype(np.uint8)
-    #     xpix_1b = xpix_1b[mask]
 
     d_out["Science/Y"] = data_OM.astype(np.float32)
     d_out["Science/YMask"] = ymask
@@ -951,7 +911,6 @@ if True:
     d_out["Science/YMaskROI"] = ymaskROI
     d_out["Channel/VStart_YMaskROI_0b"] = np.uint8(VStart_YMaskROI_0b)
 
-    # TODO: remove plotting
     y_plot = d_out["Science/Y"].T
 
     if src == '20230126_081530_0p3b_UVIS_I.h5':
@@ -960,6 +919,67 @@ if True:
     elif src == '20180522_051504_0p3b_UVIS_I.h5':
         toa_frames = [50, 75]
         plot_frames = [150, 165]
+    elif src == "20240516_130419_0p3b_UVIS_I.h5":
+        toa_frames = [121, 123]
+        plot_frames = [130, 134]
+        # plot_frames = [125, 140]
+        # investigate frames 130-132
+        # frame_ix = 130
+        # col 167 is good, 173 is bad
+        # a = Y_no_straylight[:, :, frame_ix] / Y_no_straylight[:, :, 75]
+        # plt.figure(); plt.imshow(a.T, aspect="auto", vmax=1, vmin=0)
+        # plt.figure(); plt.plot(np.sum(a[:, 37:45], axis=1))
+        # b = straylight_frames[:, :, frame_ix] / straylight_frames[:, :, 75]
+        # plt.figure(); plt.imshow(b.T, aspect="auto", vmax=1, vmin=0)
+        # plt.figure(); plt.imshow(Y_no_straylight[:, :, frame_ix].T, aspect="auto", vmax=5000)
+        # plt.figure(); plt.imshow(straylight_frames[:, :, frame_ix], aspect="auto")
+        # plt.figure(); plt.imshow(straylight_frames[:, :, frame_ix], aspect="auto")
+
+        # c = np.sum(straylight_frames[167, :, :], axis=0)
+        # d = np.sum(straylight_frames[173, :, :], axis=0)
+        # plt.figure()
+        # plt.plot(c / max(c))
+        # plt.plot(d / max(d))
+        # plt.figure()
+        # plt.plot((c / max(c)) / (d / max(d)))  # ratio of normalised TOA straylight to normalised atmos straylight
+        # plt.figure()
+        # plt.plot(straylight_frames[167, :, 123])
+        # plt.plot(straylight_frames[173, :, 123])
+        # plt.plot(straylight_frames[167, :, 122])
+        # plt.plot(straylight_frames[173, :, 122])
+        # plt.plot(straylight_frames[167, :, 132])
+        # plt.plot(straylight_frames[173, :, 132])
+        # straylight is very very similar in value between col 167 and 173
+        # peak in transmittance spectra due to Y?
+
+        # plt.figure()
+        # a = np.nansum(Y_no_sl_illum[173, :, :], axis=0)
+        # b = np.nansum(Y_no_sl_illum[167, :, :], axis=0)
+        # plt.plot((a / b)[119:140])
+        # plt.ylim((0.3, 0.6))
+        # # compare
+        # a = np.nansum(Y_no_sl_illum[167, :, :], axis=0)
+        # b = np.nansum(Y_no_sl_illum[189, :, :], axis=0)
+        # plt.plot((a / b)[119:140]-0.2)
+
+        # plt.figure()
+        # aa = []
+        # for i in [164, 166, 167, 176, 179, 180, 187, 189, 190, 195]:
+        #     a = np.nansum(Y_no_sl_illum[i, :, :], axis=0)[119:140]
+        #     aa.append(a / max(a))
+        #     plt.plot(np.arange(1024)[119:140], a/max(a), label=i)
+        # aa = np.mean(np.asarray(aa), axis=0)
+
+        # for i in [171, 172, 173, 174, 182, 184]:
+        #     a = np.nansum(Y_no_sl_illum[i, :, :], axis=0)[119:140]
+        #     plt.plot(np.arange(1024)[119:140], (a / max(a)), label=i, linestyle="--")
+        # plt.legend()
+
+        # xo3, yo3 = ozone_band()
+        # plt.figure()
+        # plt.plot(x[:, 0], np.sum(Y_no_straylight[:, :, 132], axis=1) / np.sum(Y_no_straylight[:, :, 123], axis=1))
+        # plt.plot(xo3, (yo3 / 3) + 0.4)
+
     else:
         toa_frames = [50, 75]
         plot_frames = [100, 200]
@@ -968,82 +988,107 @@ if True:
     y_cal = y_plot / toa[None, :]
     plt.figure(figsize=(10, 10))
     # plt.plot(y_cal[380:420, :].T, "k")
-    plt.plot(y_cal[plot_frames[0]:plot_frames[1], :].T, "k")
+    plt.plot(y_cal[plot_frames[0]:plot_frames[1], :].T, "k", alpha=0.5)
+    for i in np.arange(y_cal.shape[0])[plot_frames[0]:plot_frames[1]]:
+        plt.text(100, y_cal[i, 100] + 0.05, i)
+    plt.title(src)
+    plt.xlabel("Pixel number")
+    plt.ylabel("Transmittance")
+    plt.grid()
     # check for changes
-    plt.savefig("uvis_trans_%s.png" % (str(datetime.now())[:19].replace("-", "_").replace(" ", "_").replace(":", "_")), dpi=200)
+    # plt.savefig("uvis_trans_%s.png" % (str(datetime.now())[:19].replace("-", "_").replace(" ", "_").replace(":", "_")), dpi=200)
+
+    # compare to diff in raw spectra
+    # plt.figure()
+    # plt.plot(y_cal[132, :].T, "k", alpha=0.5)
+    # diff = np.diff(y_plot[132, :]) / y_plot[132, :-1]
+    # plt.plot(np.arange(1023) - 1, diff / max(diff) / 10 + 0.5)
+
+    # trans interpolation of good pixels to find deviation of bad pixels
+    # not yet working
+    # good_px_ixs = np.asarray([164, 166, 167, 176, 179, 180, 187, 189, 190, 195])
+    # x = np.arange(1024)
+    # x_new = np.arange(164, 194)
+    # for i in [132]:
+    #     y = y_cal[i, :]
+    #     y_interp = np.interp(x, good_px_ixs, y[good_px_ixs])
+    # plt.figure()
+    # plt.plot(x, y)
+    # plt.plot(x, y_interp)
 
     # indrec = np.argwhere(itypedata == 4)[:, 0]
-    indrec = np.arange(nbr_obs)
-    logger.info("NSpec old=%i, NSpec new=%i", len(itypedata), len(indrec))
+    # indrec = np.arange(nbr_obs)
+    # logger.info("NSpec old=%i, NSpec new=%i", len(itypedata), len(indrec))
 
-    with h5py.File(src, 'r') as hdf5FileIn:
-        with h5py.File(dst, 'w') as hdf5FileOut:
+    """save to file"""
+    # with h5py.File(src, 'r') as hdf5FileIn:
+    #     with h5py.File(dst, 'w') as hdf5FileOut:
 
-            # generics.copyAttributesExcept(hdf5FileIn, hdf5FileOut, OUTPUT_VERSION, ATTRIBUTES_TO_BE_REMOVED)
+    #         # generics.copyAttributesExcept(hdf5FileIn, hdf5FileOut, OUTPUT_VERSION, ATTRIBUTES_TO_BE_REMOVED)
 
-            hdf5FileOut.attrs["NSpec"] = len(indrec)
+    #         hdf5FileOut.attrs["NSpec"] = len(indrec)
 
-            # # don't copy all datasets to new file
-            # for dset_path, dset in generics.iter_datasets(hdf5FileIn):
-            #     # print(dset_path)
-            #     if dset_path in DATASETS_TO_BE_REMOVED:  # don't copy
-            #         # print("Not copying %s" %dset_path)
-            #         continue
+    #         # don't copy all datasets to new file
+    #         for dset_path, dset in generics.iter_datasets(hdf5FileIn):
+    #             # print(dset_path)
+    #             if dset_path in DATASETS_TO_BE_REMOVED:  # don't copy
+    #                 # print("Not copying %s" %dset_path)
+    #                 continue
 
-            #     dest = generics.createIntermediateGroups(hdf5FileOut, dset_path.split("/")[:-1])
+    #             dest = generics.createIntermediateGroups(hdf5FileOut, dset_path.split("/")[:-1])
 
-            #     if any([i in dset_path for i in DATASETS_NOT_TO_BE_RESHAPED]):
-            #         hdf5FileIn.copy(dset_path, dest)
-            #         # print("Copying but not reshaping %s" %dset_path)
-            #         continue
+    #             if any([i in dset_path for i in DATASETS_NOT_TO_BE_RESHAPED]):
+    #                 hdf5FileIn.copy(dset_path, dest)
+    #                 # print("Copying but not reshaping %s" %dset_path)
+    #                 continue
 
-            #     dsetcopy = np.array(dset)
-            #     # print("%s dataset is being reshaped (shape=%s)" %(dset_path, dsetcopy.shape))
-            #     if dsetcopy.ndim == 0:
-            #         hdf5FileOut.create_dataset(dset_path, dtype=dset.dtype, data=dsetcopy)
-            #     elif dsetcopy.ndim == 1:  # if 1D, use compression
-            #         # print("Length = %i" %dsetcopy.shape[0])
-            #         hdf5FileOut.create_dataset(dset_path, dtype=dset.dtype, data=dsetcopy[indrec], compression="gzip", shuffle=True)
-            #     elif len(dsetcopy.shape) == 2:  # if 2D, use compression
-            #         # print("Length = (%i, %i)" %(dsetcopy.shape[0], dsetcopy.shape[1]))
-            #         hdf5FileOut.create_dataset(dset_path, dtype=dset.dtype, data=dsetcopy[indrec, :], compression="gzip", shuffle=True)
-            #     elif len(dsetcopy.shape) == 3:  # if 3D, use compression
-            #         # print("Length = (%i, %i)" %(dsetcopy.shape[0], dsetcopy.shape[1]))
-            #         hdf5FileOut.create_dataset(dset_path, dtype=dset.dtype, data=dsetcopy[indrec, :, :], compression="gzip", shuffle=True)
+    #             dsetcopy = np.array(dset)
+    #             # print("%s dataset is being reshaped (shape=%s)" %(dset_path, dsetcopy.shape))
+    #             if dsetcopy.ndim == 0:
+    #                 hdf5FileOut.create_dataset(dset_path, dtype=dset.dtype, data=dsetcopy)
+    #             elif dsetcopy.ndim == 1:  # if 1D, use compression
+    #                 # print("Length = %i" %dsetcopy.shape[0])
+    #                 hdf5FileOut.create_dataset(dset_path, dtype=dset.dtype, data=dsetcopy[indrec], compression="gzip", shuffle=True)
+    #             elif len(dsetcopy.shape) == 2:  # if 2D, use compression
+    #                 # print("Length = (%i, %i)" %(dsetcopy.shape[0], dsetcopy.shape[1]))
+    #                 hdf5FileOut.create_dataset(dset_path, dtype=dset.dtype, data=dsetcopy[indrec, :], compression="gzip", shuffle=True)
+    #             elif len(dsetcopy.shape) == 3:  # if 3D, use compression
+    #                 # print("Length = (%i, %i)" %(dsetcopy.shape[0], dsetcopy.shape[1]))
+    #                 hdf5FileOut.create_dataset(dset_path, dtype=dset.dtype, data=dsetcopy[indrec, :, :], compression="gzip", shuffle=True)
 
-            for key, value in d_out.items():
-                # print("%s dataset (shape=%i)" %(key, len(value.shape)))
-                if key == "Science/YMask":
-                    dtype = "uint8"
-                else:
-                    dtype = "float32"
+    #         for key, value in d_out.items():
+    #             # print("%s dataset (shape=%i)" %(key, len(value.shape)))
+    #             if key == "Science/YMask":
+    #                 dtype = "uint8"
+    #             else:
+    #                 dtype = "float32"
 
-                if value.ndim == 1:
-                    if any([i in key for i in DATASETS_NOT_TO_BE_RESHAPED]):
-                        hdf5FileOut.create_dataset(key, data=value, dtype=dtype, compression="gzip", shuffle=True)
-                    else:
-                        dset = value[indrec]
-                        hdf5FileOut.create_dataset(key, data=dset, dtype=dtype, compression="gzip", shuffle=True)
-                        # logger.info("Output dataset %s has shape %s", key, dset.shape)
-                elif value.ndim == 2:
-                    if any([i in key for i in DATASETS_NOT_TO_BE_RESHAPED]):
-                        hdf5FileOut.create_dataset(key, data=value.T, dtype=dtype, chunks=(
-                            value.shape[1], min(24, value.shape[0])), compression="gzip", compression_opts=4)
-                    else:
-                        dset = value.T[indrec, :]
-                        hdf5FileOut.create_dataset(key, data=dset, dtype=dtype, chunks=(
-                            len(indrec), min(24, value.shape[0])), compression="gzip", compression_opts=4)
-                        # logger.info("Output dataset %s has shape %s", key, dset.shape)
-                elif value.ndim == 3:
-                    if any([i in key for i in DATASETS_NOT_TO_BE_RESHAPED]):
-                        hdf5FileOut.create_dataset(key, data=np.swapaxes(value, 0, 2), dtype=dtype, chunks=(
-                            1, 1, value.shape[0]), compression="gzip", compression_opts=4)
-                    else:
-                        dset = np.swapaxes(value, 0, 2)[indrec, :, :]
-                        hdf5FileOut.create_dataset(key, data=dset, dtype=dtype, chunks=(1, 1, value.shape[0]), compression="gzip", compression_opts=4)
-                        # logger.info("Output dataset %s has shape %s", key, dset.shape)
-                else:
-                    hdf5FileOut.create_dataset(key, data=value, dtype=dtype)
+    #             if value.ndim == 1:
+    #                 if any([i in key for i in DATASETS_NOT_TO_BE_RESHAPED]):
+    #                     hdf5FileOut.create_dataset(key, data=value, dtype=dtype, compression="gzip", shuffle=True)
+    #                 else:
+    #                     dset = value[indrec]
+    #                     hdf5FileOut.create_dataset(key, data=dset, dtype=dtype, compression="gzip", shuffle=True)
+    #                     # logger.info("Output dataset %s has shape %s", key, dset.shape)
+    #             elif value.ndim == 2:
+    #                 if any([i in key for i in DATASETS_NOT_TO_BE_RESHAPED]):
+    #                     hdf5FileOut.create_dataset(key, data=value.T, dtype=dtype, chunks=(
+    #                         value.shape[1], min(24, value.shape[0])), compression="gzip", compression_opts=4)
+    #                 else:
+    #                     dset = value.T[indrec, :]
+    #                     hdf5FileOut.create_dataset(key, data=dset, dtype=dtype, chunks=(
+    #                         len(indrec), min(24, value.shape[0])), compression="gzip", compression_opts=4)
+    #                     # logger.info("Output dataset %s has shape %s", key, dset.shape)
+    #             elif value.ndim == 3:
+    #                 if any([i in key for i in DATASETS_NOT_TO_BE_RESHAPED]):
+    #                     hdf5FileOut.create_dataset(key, data=np.swapaxes(value, 0, 2), dtype=dtype, chunks=(
+    #                         1, 1, value.shape[0]), compression="gzip", compression_opts=4)
+    #                 else:
+    #                     dset = np.swapaxes(value, 0, 2)[indrec, :, :]
+    #                     hdf5FileOut.create_dataset(key, data=dset, dtype=dtype, chunks=(1, 1, value.shape[0]), compression="gzip", compression_opts=4)
+    #                     # logger.info("Output dataset %s has shape %s", key, dset.shape)
+    #             else:
+    #                 hdf5FileOut.create_dataset(key, data=value, dtype=dtype)
 
 
 # def convert(hdf5file_path):
