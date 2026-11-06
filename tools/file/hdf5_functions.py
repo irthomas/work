@@ -218,7 +218,8 @@ def get_file(obspath, file_level, count, model="INFLIGHT", silent=False, open_fi
     day = obspath[6:8]
 
     if path:
-        print("Using path %s" % path)
+        if not silent:
+            print("Using path %s" % path)
         DATA_DIRECTORY_IN = path
 
     else:
@@ -288,12 +289,13 @@ def open_hdf5_file(hdf5_filename, path=None, silent=False):
     return hdf5_file
 
 
-def make_filelist(obs_paths, file_level, model="INFLIGHT", silent=False, open_files=True, path=None, full_path=False):
+def make_filelist(obs_paths, file_level, model="INFLIGHT", silent=False, open_files=True, path=None, full_path=False, skipbad=True):
     """make list of filenames containing matching attributes and datasets"""
     """new version uses regex"""
     if path:
         DATA_DIRECTORY_IN = path
-        print("Using path %s" % path)
+        if not silent:
+            print("Using path %s" % path)
     else:
         if model == "INFLIGHT":
             DATA_DIRECTORY_IN = paths["DATA_DIRECTORY"]
@@ -323,7 +325,7 @@ def make_filelist(obs_paths, file_level, model="INFLIGHT", silent=False, open_fi
             if bad_file_prefix in obspath:
                 badFile = True
                 found_bad_file = bad_file_prefix
-        if badFile:
+        if badFile and skipbad:
             print("Warning: Bad file %s (%s) not added to list" % (obspath, BAD_FILE_DICTIONARY[found_bad_file]))
         else:
             filename, hdf5_file = get_file(obspath, file_level, fileIndex, model=model, silent=silent, open_files=open_files, path=path)

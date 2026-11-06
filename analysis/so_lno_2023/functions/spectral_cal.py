@@ -16,6 +16,13 @@ def lt22_p0_shift(t):
     return p0
 
 
+def lt22_t_shift(p):
+    """inverse first pixel (temperature shift) Loic Feb 22"""
+
+    t = p / -0.8276  # pixel / (px/°C)
+    return t
+
+
 def lt22_waven(order, t, channel="so", coeffs=False):
     """spectral calibration Loic Feb 22. Get pixel wavenumbers from order + temperature"""
 
@@ -49,9 +56,9 @@ def get_orders_nu(channel, orders, t, px_ixs=np.arange(320)):
 
     orders_d = {}
     for order in orders:
-        if channel == "so":
+        if channel.lower() == "so":
             px_nus = lt22_waven(order, t)[px_ixs]
-        if channel == "lno":
+        if channel.lower() == "lno":
             px_nus = nu_mp(order, px_ixs, t)
 
         orders_d[order] = {"px_nus": px_nus, "px_ixs": px_ixs}
@@ -68,7 +75,7 @@ G2 = 9.409476e-8
 
 def nu0_aotf(A, G0=G0, G1=G1, G2=G2):
     """aotf frequency to aotf centre in wavenumbers. Liuzzi 2019"""
-    nu0 = G0 + A*(G1 + A*G2)
+    nu0 = G0 + A * (G1 + A * G2)
     return nu0
 
 
@@ -93,5 +100,5 @@ F2 = 3.942616548909985e-09
 def nu_mp(m, p, t, F0=F0, F1=F1, F2=F2):
     """pixel number and order to wavenumber calibration. Liuzzi et al. 2018"""
     p0 = t_p0(t)
-    f = (F0 + (p+p0)*(F1 + F2*(p+p0)))*m
+    f = (F0 + (p + p0) * (F1 + F2 * (p + p0))) * m
     return f

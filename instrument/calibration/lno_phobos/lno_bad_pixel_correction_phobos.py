@@ -23,7 +23,7 @@ def bad_pixel_correction(y_3d, n_loops=15, plot=[[]]):
                 y = y_3d_new[frame, row, :]
                 poly = Polynomial.fit(x, y, 5)
                 yfit = poly(x)
-                dev = np.abs(y-yfit)
+                dev = np.abs(y - yfit)
                 bad_ix = np.where(dev == np.max(dev))
                 y[bad_ix] = yfit[bad_ix]
                 y_3d_new[frame, row, :] = y

@@ -32,6 +32,8 @@ BIAS IS 1146 +- 3 COUNTS PER DETECTOR ROW I.E. MULTIPLY BY NUMBER OF ROWS TO GET
 
 
 """
+import glob
+import os
 import re
 import numpy as np
 from datetime import datetime
@@ -47,54 +49,99 @@ from numpy.polynomial import Polynomial
 
 import math
 
-NOISE_AMP = 2.0  # for "20190102_092151_0p1d_LNO_1_D_169" mid_ix = 125
-# NOISE_AMP = 1.9  # for "20190102_092151_0p1d_LNO_1_D_169" mid_ix = 125
-CORR_FACT = 1.03  # for "20190102_092151_0p1d_LNO_1_D_169" mid_ix = 125
+ref_h5s = [
+    "20190102_092151_0p1d_LNO_1_D_169",  # 2 subdomains, low SZA
+    "20250612_015742_0p1d_LNO_1_D_169",  # 3 subd, SZA~9 degrees
+    "20180607_070613_0p1d_LNO_1_D_169",  # 4 subd, SZA~7
+]
 
 # data_path = r"W:\data\SATELLITE\TRACE-GAS-ORBITER\NOMAD\hdf5"
 data_path = r"C:\Users\iant\Documents\DATA\hdf5"
 # # download_h5(h5, path=r"C:\Users\iant\Documents\DATA\hdf5")
+file_level = "hdf5_level_0p1d"
 
+# search through all files to find good signal
+filelist = glob.glob(os.path.join(data_path, file_level, "2025", "**", "*.h5"), recursive=True)
 
-""" load a random LNO nadir spectrum"""
-# mean counts 500 around px 180-220 for binning=12, 14 accs and 200ms IT with 33600 ms px (int * naccs/2 * binning+1)
-# std around 36 counts across all pixels, exp=5
+ref_h5s = [os.path.basename(s)[:-3] for s in filelist]
+for ref_h5 in ref_h5s:
+    if ref_h5 == "20190102_092151_0p1d_LNO_1_D_169":
+        mid_ix = 125
+        NOISE_AMP = 2.0
+        CORR_FACT = 1.03
+        # mid_ix = 10
+        # NOISE_AMP = 1.8
+        # CORR_FACT = 1.55
+    if ref_h5 == "20250612_015742_0p1d_LNO_1_D_169":
+        mid_ix = 125
+        NOISE_AMP = 2.15
+        CORR_FACT = 1.11
+    if ref_h5 == "20180607_070613_0p1d_LNO_1_D_169":
+        mid_ix = 125
+        # NOISE_AMP = 4.1
+        NOISE_AMP = 1.8
+        CORR_FACT = 1.05
 
-# get a mean spectrum and standard dev
-ref_h5 = "20190102_092151_0p1d_LNO_1_D_169"
-ref_h5f = open_hdf5_file(ref_h5, path=data_path)
+    mid_ix = -1
 
-# get detector row binning
-top_bins = ref_h5f["Science/Bins"][:, 0]  # detector row of top of each bin
-unique_bins = sorted(list(set(top_bins)))
-n_bins = len(unique_bins)
+    """ load a random LNO nadir spectrum"""
+    # mean counts 500 around px 180-220 for binning=12, 14 accs and 200ms IT with 33600 ms px (int * naccs/2 * binning+1)
+    # std around 36 counts across all pixels, exp=5
 
-binning = int(ref_h5f["Channel/Binning"][0] + 1)
-intt = ref_h5f["Channel/IntegrationTime"][0]
-nacc = ref_h5f["Channel/NumberOfAccumulations"][0]
-intt_acq = intt * int(nacc / 2)
+    # get a mean spectrum and standard dev
+    ref_h5f = open_hdf5_file(ref_h5, path=data_path, silent=True)
 
-# real detector bins
-sim_d = {"intt": intt, "wtop": unique_bins[0], "wbottom": unique_bins[-1] + binning, "nacc": nacc, "binning": binning, "nreps": 1}
-sim_d["wheight"] = sim_d["wbottom"] - sim_d["wtop"]
-sim_d["nsubd"] = 24 / (sim_d["wheight"] / sim_d["binning"])
+    # get detector row binning
+    top_bins = ref_h5f["Science/Bins"][:, 0]  # detector row of top of each bin
+    unique_bins = sorted(list(set(top_bins)))
+    n_bins = len(unique_bins)
 
-# get y, reshape to 3d
-y_all = ref_h5f["Science/Y"][...]
-y_3d = np.reshape(y_all, [-1, n_bins, y_all.shape[1]])
+    binning = int(ref_h5f["Channel/Binning"][0] + 1)
+    intt = ref_h5f["Channel/IntegrationTime"][0]
+    nacc = ref_h5f["Channel/NumberOfAccumulations"][0]
+    intt_acq = intt * int(nacc / 2)
 
-mid_ix = int(y_3d.shape[0] / 2)
-meas_spectrum = np.sum(y_3d[mid_ix, :, :], axis=0)  # mean of bins in frame
+    # get y, reshape to 3d
+    y_all = ref_h5f["Science/Y"][...]
+    y_3d = np.reshape(y_all, [-1, n_bins, y_all.shape[1]])
 
-exponent = ref_h5f["Channel/Exponent"][mid_ix]
+    y_sum_frames = np.sum(y_3d, axis=(1, 2))
+    y_sum_frames_norm = y_sum_frames / intt_acq
 
-smoothed = savgol_filter(meas_spectrum, 11, 2)  # smoothed but follows absorptions
-smoothed2 = savgol_filter(meas_spectrum, 51, 2)  # general shape only
-# get error vs heavily smoothed spectrum
+    # real detector bins
+    sim_d = {"intt": intt, "wtop": unique_bins[0], "wbottom": unique_bins[-1] + binning, "nacc": nacc, "binning": binning, "nreps": 1}
+    sim_d["wheight"] = sim_d["wbottom"] - sim_d["wtop"]
+    sim_d["nsubd"] = 24 / (sim_d["wheight"] / sim_d["binning"])
+
+    if mid_ix == -1:
+        mid_ix = int(y_3d.shape[0] / 2)
+    meas_spectrum = np.sum(y_3d[mid_ix, :, :], axis=0)  # sum of the bins in the frame
+
+    exponent = ref_h5f["Channel/Exponent"][mid_ix]  # exponent of chosen frame
+
+    # smoothed = savgol_filter(meas_spectrum, 11, 2)  # smoothed but follows absorptions
+    smoothed2 = savgol_filter(meas_spectrum, 51, 2)  # general shape only
+    # get error vs heavily smoothed spectrum
+
+    plt.plot(y_sum_frames_norm)
+    plt.scatter(mid_ix, y_sum_frames_norm[mid_ix])
+
+    ixs = np.where((y_sum_frames_norm > 250) & (y_sum_frames_norm < 280))[0]
+    print(ref_h5, ixs)
+
+    if
+
+    # plt.plot(meas_spectrum, label="%s %i orders" % (ref_h5, sim_d["nsubd"]))
+
+plt.legend()
+stop()
+
+# here use meas_spectrum to remove worst pixels
+
 y_errors = meas_spectrum - smoothed2
 
 # get the general smoothed shape of an LNO spectrum after bg subtraction
-LNO_SHAPE = smoothed / sim_d["wheight"] / intt_acq  # counts per row per millisecond per acc
+LNO_SHAPE = smoothed2 / sim_d["wheight"] / intt_acq  # counts per row per millisecond per acc
 
 
 def execution_time(win_height, integ_time, n_accum):
@@ -294,7 +341,7 @@ fig1, ax1 = plt.subplots()
 # MC analysis
 sim_spectra = []
 diff_sim_spectra = []
-mean_sim_diff = []
+stdev_sim_diff = []
 exps = []
 
 peaks = []
@@ -302,20 +349,26 @@ stdevs = []
 snrs = []
 # TODO: simulated diff is too high compared to measurement. Changing exponent doesn't change simulated diff, need another measure
 # TODO: check if changing wbottom changes measured SNR or simulated SNR
-chosen_exp = -1
+chosen_exp = 4
 print("Simulating an exponent of", chosen_exp)
 for i in progress(range(100)):
     sim_spectrum, exp = sim_accum_spectrum(sim_d["wheight"], sim_d["intt"], sim_d["nacc"], sim_d["binning"], apply_exp_f=True, exponent=chosen_exp)
     sim_spectra.append(sim_spectrum)
     exps.append(exp)
-    diff_sim_spectrum = np.diff(sim_spectrum)
-    diff_sim_spectra.append(diff_sim_spectrum)
-    mean_sim_diff.append(np.mean(np.abs(diff_sim_spectrum)))
 
-    if i == 0:
-        ax1.plot(sim_spectrum, label="Sum of bins (simulated)", alpha=0.1)
-    else:
-        ax1.plot(sim_spectrum, alpha=0.3)
+    # before getting diff, fit baseline shape
+    smoothed3 = savgol_filter(sim_spectrum, 51, 2)  # general shape only
+    sim_shape_removed = sim_spectrum - smoothed3
+
+    diff_sim_spectrum = np.diff(sim_shape_removed)
+    diff_sim_spectra.append(diff_sim_spectrum)
+    stdev_sim_diff.append(np.std(diff_sim_spectrum))
+
+    # if i == 0:
+    #     ax1.plot(sim_spectrum, label="Sum of bins (simulated)", alpha=0.1)
+    # else:
+    #     ax1.plot(sim_spectrum, alpha=0.3)
+    # ax1.plot(smoothed2, alpha=0.1)
 
     sim_smoothed2 = savgol_filter(sim_spectrum, 51, 2)  # general shape only
     # get error vs heavily smoothed spectrum
@@ -325,44 +378,52 @@ for i in progress(range(100)):
     stdevs.append(np.std(sim_error))
     snrs.append(np.max(sim_smoothed2) / np.std(sim_error))
 
-print("Measured exponent:", exponent)
-print("Simulated exponent range:", np.min(exps), "to", np.max(exps))
-print("Measured peak:", np.max(smoothed2), "Stdev:", np.std(y_errors), "SNR:", np.max(smoothed2) / np.std(y_errors))
-print("Simulated peak:", np.mean(peaks), "+-", np.std(peaks), "Stdev:", np.mean(stdevs), "+-", np.std(stdevs), "SNR:", np.mean(snrs), "+-", np.std(snrs))
-
-
-ax1.plot(meas_spectrum, "k--", label="Sum of bins (measured)")
-# ax1.plot(smoothed, label="Light smoothing")
-# ax1.plot(smoothed2, label="Heavy smoothing")
-ax1.legend()
-ax1.grid()
-ax1.set_xlabel("Pixel number (spectral dimension)")
-ax1.set_ylabel("Counts")
-# sim_spectra = np.asarray(sim_spectra[0])
-# exps = np.asarray(exps)
-
-# plt.plot(sim_spectra.T, "b--")
-# mean_sim_spectrum = np.mean(spectra, axis=0)
-# plt.plot(mean_sim_spectrum, "b--", label="Mean simulation")
-
-# Simulated SNR
-
-
-plt.legend()
+sim_spectra = np.asarray(sim_spectra)
+diff_sim_spectra = np.asarray(diff_sim_spectra)
 
 # remove bad pixel manually
 meas_spectrum_no_bp = np.copy(meas_spectrum)
 meas_spectrum_no_bp[40] = np.mean((meas_spectrum_no_bp[39], meas_spectrum_no_bp[41]))
 
-diff_sim_spectra = np.diff(sim_spectra)
-diff_meas_spectrum = np.diff(meas_spectrum_no_bp)
+print("Measured exponent:", exponent)
+print("Simulated exponent range:", np.min(exps), "to", np.max(exps))
+print("Measured peak:", np.max(smoothed2), "Stdev:", np.std(y_errors), "SNR:", np.max(smoothed2) / np.std(y_errors))
+print("Simulated peak:", np.mean(peaks), "+-", np.std(peaks), "Stdev:", np.mean(stdevs), "+-", np.std(stdevs), "SNR:", np.mean(snrs), "+-", np.std(snrs))
 
-# plt.figure()
-# plt.title("Diffs")
-# plt.plot(diff_sim_spectra.T, label="Simulated spectrum")
-# plt.plot(diff_meas_spectrum, label="Measured spectrum")
+ax1.plot(sim_spectra[0, :], "b--", label="LNO exponent simulation")
+# ax1.plot(sim_spectra.T, "b--", alpha=0.1)
+ax1.plot(meas_spectrum_no_bp, "k--", label="Sum of bins (measured)")
+# ax1.plot(smoothed, label="Light smoothing")
+# ax1.plot(smoothed2, label="Heavy smoothing")
+ax1.legend()
+ax1.grid()
+ax1.set_title(ref_h5)
+ax1.set_xlabel("Pixel number (spectral dimension)")
+ax1.set_ylabel("Counts")
+
+# exps = np.asarray(exps)
+# mean_sim_spectrum = np.mean(spectra, axis=0)
+# plt.plot(mean_sim_spectrum, "b--", label="Mean simulation")
 # plt.legend()
 
-print("Simulated diff:", np.mean(mean_sim_diff), "vs measured diff:", np.mean(np.abs(diff_meas_spectrum)))
+
+diff_meas_spectrum = np.diff(meas_spectrum_no_bp)
+
+plt.figure()
+plt.title("Diffs")
+# plt.plot(diff_sim_spectra.T, label="Simulated spectrum", alpha=0.5)
+plt.plot(diff_meas_spectrum, label="Measured spectrum", alpha=0.5)
+plt.legend()
+# for i in range(diff_sim_spectra.shape[0]):
+#     plt.axhline(np.std(diff_sim_spectra[i, :]), c="C%i" % i)
+#     plt.axhline(-np.std(diff_sim_spectra[i, :]), c="C%i" % i)
+
+# plt.axhline(np.std(diff_meas_spectrum), c="C2")
+# plt.axhline(-np.std(diff_meas_spectrum), c="C2")
+
+
+print("Simulated mean difference after baseline removal:", np.mean(stdev_sim_diff), "vs measured diff:", np.std(diff_meas_spectrum))
 
 # print("Sim peak:", np.mean(peaks), "+-", np.std(peaks), "Stdev:", np.mean(stdevs), "+-", np.std(stdevs), "SNR:", np.mean(peaks) / np.mean(stdevs))
+
+print("Correction factor = %0.2f" % (CORR_FACT / (np.mean(peaks) / np.max(smoothed2))), NOISE_AMP * (np.mean(snrs) / (np.max(smoothed2) / np.std(y_errors))))

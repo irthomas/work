@@ -14,16 +14,59 @@ WRITE PUBLICLY AVAILABLE DATASET TABLE
      "ddoi":""},
 
 """
+from datetime import datetime
 
 
 nomad_obs_paper_list = [
 
     # {"title": "",
-    #  "year": 2024,
+    #  "year": 2026,
     #  "inst": "NOMAD",
     #  "lead": "",
     #  "pdoi": "",
     #  "ddoi": ""},
+
+    {"title": "Dust and ice cloud optical depths in MY34-38",
+     "year": 2026,
+     "inst": "NOMAD-UVIS (nadir)",
+     "lead": "Yannick Willame",
+     "pdoi": "https://doi.org/10.1029/2025JE009633",
+     "ddoi": "https://doi.org/10.18758/69qazhkk"},
+
+    {"title": "Water vapour nadir column abundances in MY34-38",
+     "year": 2026,
+     "inst": "NOMAD-LNO",
+     "lead": "Francois Hendrick",
+     "pdoi": "https://doi.org/10.1029/2025JE009592",
+     "ddoi": "https://doi.org/10.18758/txmf1fej"},
+
+    {"title": "Mars water vapour vertical distribution in MY34-37: Part 2",
+     "year": 2026,
+     "inst": "NOMAD-SO",
+     "lead": "Adrian Brines",
+     "pdoi": "https://doi.org/10.1029/2025JE009191",
+     "ddoi": "https://zenodo.org/records/14384256"},
+
+    {"title": "Mars water vapour vertical distribution in MY34-37: Part 1",
+     "year": 2026,
+     "inst": "NOMAD-SO",
+     "lead": "Adrian Brines",
+     "pdoi": "https://doi.org/10.1029/2024JE008916",
+     "ddoi": "https://zenodo.org/records/15146458"},
+
+    {"title": "Atmospheric water escape from Mars triggered by a dust storm in MY37",
+     "year": 2026,
+     "inst": "NOMAD-SO",
+     "lead": "Adrian Brines",
+     "pdoi": "https://doi.org/10.1038/s43247-025-03157-5",
+     "ddoi": "https://zenodo.org/records/17797042"},
+
+    {"title": "Upper limits of CH4 and OCS in MY34-36",
+     "year": 2025,
+     "inst": "NOMAD-SO",
+     "lead": "Miguel Escudero-Jiménez",
+     "pdoi": "https://doi.org/10.1016/j.icarus.2025.116923",
+     "ddoi": "https://zenodo.org/records/17368530"},
 
     {"title": "Mars dust and aerosol climatology from UVIS solar occultations for MY34-36",
      "year": 2025,
@@ -319,40 +362,58 @@ for header in headers:
     h += "<th>%s</th>" % header
 h += "</tr>\n"
 
-for paper in nomad_obs_paper_list:
+for row_ix, paper in enumerate(nomad_obs_paper_list):
     h += "<tr>\n"
-    for key, value in paper.items():
+    for col_ix, (key, value) in enumerate(paper.items()):
+        if col_ix == col_ix // 2 * 2:
+            colour = "#f0f4fb"
+        else:
+            colour = "#ffffff"
+        if row_ix == row_ix // 2 * 2:
+            colour = "#a3bbe6"
+        # else:
+        #     colour = "#ffffff"
+
         if key in ["pdoi", "ddoi"]:
             if isinstance(value, list):
 
-                h += "<td>"
+                h += "<td bgcolor=%s>" % colour
                 for each_value in value:
                     h += "<a href='%s'>%s</a> " % (each_value, each_value)
                 h += "</td>"
             else:
-                h += "<td><a href='%s'>%s</a></td>" % (value, value)
+                h += "<td bgcolor=%s><a href='%s'>%s</a></td>" % (colour, value, value)
 
         else:
-            h += "<td>%s</td>" % (value)
+            h += "<td bgcolor=%s>%s</td>" % (colour, value)
     h += "\n</tr>\n"
 h += "</tbody></table>\n"
 
 
 h += "<h2>Observational datasets from other instruments linked to published articles</h2>"
-h += "<i>This table is not complete - team members can edit the page by logging in and clicking on the cog in the upper right hand corner of this page"
+h += "<i>This table is not complete - team members can edit the page by logging in and clicking 'Edit' in the upper right hand corner of this page"
 h += "<table border='2'><tbody>\n"
 h += "<tr>\n"
 for header in headers:
     h += "<th>%s</th>" % header
 h += "</tr>\n"
 
-for paper in other_obs_paper_list:
+for row_ix, paper in enumerate(other_obs_paper_list):
     h += "<tr>\n"
-    for key, value in paper.items():
-        if key in ["pdoi", "ddoi"]:
-            h += "<td><a href='%s'>%s</a></td>" % (value, value)
+    for col_ix, (key, value) in enumerate(paper.items()):
+        if col_ix == col_ix // 2 * 2:
+            colour = "#f0f4fb"
         else:
-            h += "<td>%s</td>" % (value)
+            colour = "#ffffff"
+        if row_ix == row_ix // 2 * 2:
+            colour = "#a3bbe6"
+        # else:
+        #     colour = "#ffffff"
+
+        if key in ["pdoi", "ddoi"]:
+            h += "<td bgcolor=%s><a href='%s'>%s</a></td>" % (colour, value, value)
+        else:
+            h += "<td bgcolor=%s>%s</td>" % (colour, value)
     h += "\n</tr>\n"
 h += "</tbody></table>\n"
 
@@ -361,19 +422,29 @@ h += "<p></p><h2>GCM datasets linked to published articles</h2>"
 h += "<table border='2'><tbody>\n"
 
 
-for paper in sim_paper_list:
+for row_ix, paper in enumerate(sim_paper_list):
     h += "<tr>\n"
-    for key, value in paper.items():
-        if key in ["pdoi", "ddoi"]:
-            h += "<td><a href='%s'>%s</a></td>" % (value, value)
+    for col_ix, (key, value) in enumerate(paper.items()):
+        if col_ix == col_ix // 2 * 2:
+            colour = "#f0f4fb"
         else:
-            h += "<td>%s</td>" % (value)
+            colour = "#ffffff"
+        if row_ix == row_ix // 2 * 2:
+            colour = "#a3bbe6"
+        # else:
+        #     colour = "#ffffff"
+
+        if key in ["pdoi", "ddoi"]:
+            h += "<td bgcolor=%s><a href='%s'>%s</a></td>" % (colour, value, value)
+        else:
+            h += "<td bgcolor=%s>%s</td>" % (colour, value)
     h += "\n</tr>\n"
 
 
 h += "</tbody></table>\n"
 
-h += "Page last updated 3rd September 2025"
+h += "Made with presentations.website_updates.make_pub_dataset_table.py<br>\n"
+h += "Page last updated %s<br>\n" % str(datetime.now())[:10]
 
 with open("publicly_available_datasets.html", "w") as f:
     f.write(h)

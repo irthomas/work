@@ -28,14 +28,15 @@ if os.path.exists(os.path.join(paths["REFERENCE_DIRECTORY"], "passwords.txt")):
 
     with open(os.path.join(paths["REFERENCE_DIRECTORY"], "passwords.txt"), "r") as f:
         lines = "".join(f.readlines())
-        
+
         passwords = eval(lines)
-        
+
     for key, value in passwords.items():
         passwords[key] = base64.b64decode(value).decode()
 
 else:
-    print("Password file not found, certain functions will be disabled")
+    print("A password file (%s) has not been found, certain upload/download functions will be disabled" %
+          (os.path.join(paths["REFERENCE_DIRECTORY"], "passwords.txt")))
     passwords = {}
 
 # base64.b64encode("pword".encode("utf-8"))

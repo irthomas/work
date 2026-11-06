@@ -42,13 +42,13 @@ WGC = False
 
 
 # path to h5 root directory
-# hdf5_path = r"W:\data\SATELLITE\TRACE-GAS-ORBITER\NOMAD\hdf5"
-hdf5_path = r"C:\Users\iant\Documents\DATA\hdf5"
+hdf5_path = r"W:\data\SATELLITE\TRACE-GAS-ORBITER\NOMAD\hdf5"
+# hdf5_path = r"C:\Users\iant\Documents\DATA\hdf5"
 
 
 # select a channel. For SO, plot all the scans in subplots on one figure. LNO/UVIS: plot one at a time
-# channel = "so"
-channel = "uvis"
+channel = "so"
+# channel = "uvis"
 # channel = "lno"
 
 # interpolate the results onto a contour map?
@@ -71,6 +71,8 @@ DETECTOR_CENTRE_LINES = {"so": 128, "lno": 152}
 
 grid_size = 0.005
 
+COLOR_LIMIT = 10.0
+
 # for lno and uvis, just select one at a time!
 linescan_dict = {
     "so": {
@@ -82,6 +84,9 @@ linescan_dict = {
         # "SO-prime (Oct 2019)": ["20191022_013944_0p1a_SO_1", "20191028_003815_0p1a_SO_1"],
         # "SO-prime (Feb 2020)": ["20200226_024225_0p1a_SO_1", "20200227_041530_0p1a_SO_1"],
         # "SO-prime (Dec 2020)": ["20201224_011635_0p1a_SO_1", "20210102_092937_0p1a_SO_1"],
+
+        "SO Gyros on (May 2026) 1": {"h5s": ["20260507_122314_0p1a_SO_1"], "centre_xy": [-0.0001, -0.0001], "npoints": 149, "smoothing": 229, "max_angle": 0.00355}, \
+        # "SO Gyros on (May 2026) 2": {"h5s": ["20260507_161818_0p1a_SO_1"], "centre_xy": [-0.0001, -0.0001], "npoints": 149, "smoothing": 229, "max_angle": 0.00355}, \
     },
     "lno": {
         # "Initial boresight (June 2016)":["20160613_001950_0p1a_LNO_1", "20160613_022203_0p1a_LNO_1"], \
@@ -103,11 +108,14 @@ linescan_dict = {
         # "After gyroless update (Jan 2025) 1": {"h5s": ["20250113_132313_1p0a_UVIS_CL"], "centre_xy": [-0.00023281000000000002, -7.266e-05], "npoints": 149, "smoothing": 229, "max_angle": 0.00325}, \
         # "After gyroless update (Jan 2025) 2": {"h5s": ["20250115_143500_1p0a_UVIS_CL"], "centre_xy": [-2.6171875e-04, 8.5937500e-05], "npoints": 149, "smoothing": 229, "max_angle": 0.00315}, \
         # "After gyroless update (Feb 2025) 1": {"h5s": ["20250219_180516_1p0a_UVIS_CL"], "centre_xy": [0.00007813, -0.00025781], "npoints": 149, "smoothing": 229, "max_angle": 0.00325}, \
-        "After gyroless update (Feb 2025) 2": {"h5s": ["20250221_191311_1p0a_UVIS_CL"], "npoints": 149, "smoothing": 229, "max_angle": 0.00325}, \
+        # "After gyroless update (Feb 2025) 2": {"h5s": ["20250221_191311_1p0a_UVIS_CL"], "npoints": 149, "smoothing": 229, "max_angle": 0.00325}, \
         # "After gyroless update (July 2025) 1": {"h5s": ["20250704_005109_1p0a_UVIS_CL"], "centre_xy": [-0.00023281, -7.266e-05], "npoints": 149, "smoothing": 229, "max_angle": 0.00325}, \
         # "After gyroless update (July 2025) 2": {"h5s": ["20250704_104036_1p0a_UVIS_CL"], "centre_xy": [-0.00023281, -7.266e-05], "npoints": 149, "smoothing": 229, "max_angle": 0.00325}, \
+        "Gyros on (May 2026) 1": {"h5s": ["20260507_122314_1p0a_UVIS_CL"], "centre_xy": [-0.00010, -0.00025], "npoints": 149, "smoothing": 229, "max_angle": 0.00325},
+        "Gyros on (May 2026) 2": {"h5s": ["20260507_161818_1p0a_UVIS_CL"], "centre_xy": [-0.00010, -0.00025], "npoints": 149, "smoothing": 229, "max_angle": 0.00325},
     },
 }
+
 
 if channel == "uvis":
     referenceFrame = "TGO_NOMAD_UVIS_OCC"
@@ -135,9 +143,9 @@ def get_vector(date_time, reference_frame):
 
 
 if "raw_xy" in plot_types or "meshgrid" in plot_types or "fit_zero" in plot_types:
-    if channel == "so":
-        # plot all in subplots
-        fig1, axes = plt.subplots(nrows=2, ncols=4, figsize=(FIG_X+5, FIG_Y+2))
+    # plot all in subplots
+    if len(linescan_dict[channel]) > 4:
+        fig1, axes = plt.subplots(nrows=2, ncols=4, figsize=(FIG_X + 5, FIG_Y + 2))
         axes = axes.flatten()
 
         labelpad = 15
@@ -182,8 +190,8 @@ for linescan_ix, linescan_name in enumerate(linescan_dict[channel].keys()):
             # get SO/LNO data
             detector_centre_line = DETECTOR_CENTRE_LINES[channel]
             window_top_all = hdf5_file["Channel/WindowTop"][...]
-            window_height = hdf5_file["Channel/WindowHeight"][0]+1
-            binning = hdf5_file["Channel/Binning"][0]+1
+            window_height = hdf5_file["Channel/WindowHeight"][0] + 1
+            binning = hdf5_file["Channel/Binning"][0] + 1
             sbsf = hdf5_file["Channel/BackgroundSubtraction"][0]
 
             print(window_top_all[0], window_height, binning, sbsf)
@@ -278,11 +286,15 @@ for linescan_ix, linescan_name in enumerate(linescan_dict[channel].keys()):
 
                 # get subset of data where sep angle should be the same
                 # fit sun angles to minimise difference in counts
-                ix_midvals1 = np.where((linescan_d[h5]["counts"] > 2.5e6) & (linescan_d[h5]["counts"] < 2.55e6))[0]
-                # ix_midvals1 = np.where((linescan_d[h5]["counts"] > 1.0e6) & (linescan_d[h5]["counts"] < 1.25e6))[0]
-                # ix_midvals1 = np.where((linescan_d[h5]["counts"] > 1.0e6) & (linescan_d[h5]["counts"] < 1.25e6))[0]
-                # ix_midvals2 = np.where((linescan_d[h5]["angles"] > 0.001) & (linescan_d[h5]["angles"] < 0.0012))[0]
-                ix_midvals2 = ix_midvals1
+                if channel == "uvis":
+                    ix_midvals1 = np.where((linescan_d[h5]["counts"] > 2.5e6) & (linescan_d[h5]["counts"] < 2.55e6))[0]
+                    # ix_midvals1 = np.where((linescan_d[h5]["counts"] > 1.0e6) & (linescan_d[h5]["counts"] < 1.25e6))[0]
+                    # ix_midvals1 = np.where((linescan_d[h5]["counts"] > 1.0e6) & (linescan_d[h5]["counts"] < 1.25e6))[0]
+                    # ix_midvals2 = np.where((linescan_d[h5]["angles"] > 0.001) & (linescan_d[h5]["angles"] < 0.0012))[0]
+                    ix_midvals2 = ix_midvals1
+                if channel == "so":
+                    ix_midvals1 = np.where((linescan_d[h5]["counts"] > 4.5e4) & (linescan_d[h5]["counts"] < 5.3e4))[0]
+                    ix_midvals2 = ix_midvals1
 
                 print("%i points for fitting" % len(ix_midvals1))
 
@@ -336,9 +348,9 @@ for linescan_ix, linescan_name in enumerate(linescan_dict[channel].keys()):
             vals = np.linspace(0, n_points, num=linescan_dict[channel][linescan_name]["npoints"], dtype=int)
             angles_steps = []
             counts_steps = []
-            for i in range(len(vals)-1):
+            for i in range(len(vals) - 1):
                 start = vals[i]
-                stop = vals[i+1]
+                stop = vals[i + 1]
 
                 counts_step = np.copy(counts_sorted[start:stop])
 
@@ -372,7 +384,7 @@ for linescan_ix, linescan_name in enumerate(linescan_dict[channel].keys()):
             marker_colour = distance * 100
 
             plt.figure()
-            plt.scatter(angles_norm, counts_norm, alpha=1, c=marker_colour, cmap=red_widegrey_blue(), linewidths=0, vmin=-30, vmax=30,
+            plt.scatter(angles_norm, counts_norm, alpha=1, c=marker_colour, cmap=red_widegrey_blue(), linewidths=0, vmin=-COLOR_LIMIT, vmax=COLOR_LIMIT,
                         label="Raw data points")
             plt.title("%s" % (linescan_name))
             plt.scatter(angles_norm, counts_interp, color="k", label="Running mean")
@@ -383,7 +395,7 @@ for linescan_ix, linescan_name in enumerate(linescan_dict[channel].keys()):
 
             ax1.scatter(unitVectors[:, 0], unitVectors[:, 1], color="green", alpha=0.2, linewidths=0)
             scat = ax1.scatter(unitVectors[:, 0][on_disk_ixs], unitVectors[:, 1][on_disk_ixs], c=marker_colour,
-                               alpha=1, cmap=red_widegrey_blue(), linewidths=0, vmin=-30, vmax=30)
+                               alpha=1, cmap=red_widegrey_blue(), linewidths=0, vmin=-COLOR_LIMIT, vmax=COLOR_LIMIT)
             cbar = fig1.colorbar(scat)
             cbar.set_label("Relative difference between measured and expected signal (%)", rotation=270, labelpad=20)
             ax1.set_aspect("equal")

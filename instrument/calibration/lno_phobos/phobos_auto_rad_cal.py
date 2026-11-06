@@ -10,6 +10,9 @@ ANALYSE ALL PHOBOS 0.3A DATA USING THE LATEST CORRECTIONS
 IDEAS:
     CHECK WHY PHASE ANGLE CORRECTION AROUND 35 DEGREES (OFF-POINTING?)
     ADD ABILITY TO SELECT PHASE ANGLE, LONGITUDINAL RANGES, ETC.
+
+    ADD CONVERSION TO RADIANCE VS SOLAR DISK OBSERVATIONS
+    
 """
 
 # import os
@@ -61,19 +64,19 @@ px_range = range(150, 250)  # full peak centred
 # plot_level = 2.5  # signal vs phase angle line plot
 # plot_level = 2.8  # line plots after phase angle correction
 # plot_level = 3  # solar scaling
-plot_level = 4  # crism fit all bins seperately
+# plot_level = 4  # crism fit all bins seperately
 # plot_level = 4.5  # crism mean of best bins fit only
-# plot_level = 5  # nothing
+plot_level = 5  # nothing
 
 # PLOT_TYPES = ["bad_pixel_fits", "offset_fits"]
 # PLOT_TYPES = ["offset_fits"]
 PLOT_TYPES = []
 
-# SAVE_FIGURES = False
-SAVE_FIGURES = True
+SAVE_FIGURES = False
+# SAVE_FIGURES = True
 
-# CLOSE_FIGURES = False
-CLOSE_FIGURES = True
+CLOSE_FIGURES = False
+# CLOSE_FIGURES = True
 
 offset_correction = "solar"  # use solar spectrum, save phobos spectral shapes to a json
 # offset_correction = "mean_shape"  # read mean phobos spectral shape from a json
@@ -105,10 +108,29 @@ ABS_CAL_PHASE = 44.0
 # save detailed json with lat/lon/phase/abs cal for each spectrum
 SAVE_DETAILED_H5 = True
 
+# list geometry and h5 path to find data
+H5_GEOM = {
+    "phase_angle": {"path": "Geometry/Point0/PhaseAngle"},
+    "sun_dist_au": {"path": "Geometry/DistToSun"},
+    "lat": {"path": "Geometry/Point0/Lat"},
+    "lon": {"path": "Geometry/Point0/Lon"},
+}
+
 """observation name:{"h5":hdf5 filename, "orders_crism":orders to fit to CRISM spectra, "bins":(optional:) manually select the bins}"""
 
 
 obs_types = {
+
+    # 160 162 164 166 168 170
+    # "Hydration band 2 order stepping #8 tracking 60s": {"h5": re.compile("20260410_133430_0p3a_LNO_1_.*"), "orders_crism": [166, 168, 170]},
+    "Hydration band 2 order stepping #7 tracking 60s": {"h5": re.compile("20260404_041805_0p3a_LNO_1_.*"), "orders_crism": [166, 168, 170]},
+    "Hydration band 2 order stepping #6 tracking 60s": {"h5": re.compile("20260401_073115_0p3a_LNO_1_.*"), "orders_crism": [166, 168, 170]},
+    "Hydration band 2 order stepping #5 tracking 60s": {"h5": re.compile("20260329_104433_0p3a_LNO_1_.*"), "orders_crism": [166, 168, 170]},
+
+    # 163 165 167 169
+    "Hydration band 4 orders #3 tracking 60s": {"h5": re.compile("20260226_184709_0p3a_LNO_1_.*"), "orders_crism": [169]},
+
+
     # 163 165 167 169
     # bin 2 mean shape spectra are much better
     "Hydration band 4 orders #1 tracking 60s": {"h5": re.compile("20251022_110310_0p3a_LNO_1_.*"), "orders_crism": [169]},
@@ -117,31 +139,31 @@ obs_types = {
     # 160 162 164 166 168 170
     # order 168 very spiky
     # "Hydration band 2 order stepping #1 tracking 60s": {"h5": re.compile("20250628_083013_0p3a_LNO_1_.*"), "orders_crism": [166, 168, 170], "skip": True},
-    # # this one for the cal paper
-    # "Hydration band 2 order stepping #2 tracking 60s": {"h5": re.compile("20250622_070511_0p3a_LNO_1_.*"), "orders_crism": [166, 168, 170]},
-    # "Hydration band 2 order stepping #3 tracking 60s": {"h5": re.compile("20250619_101826_0p3a_LNO_1_.*"), "orders_crism": [166, 168, 170]},
-    # "Hydration band 2 order stepping #4 tracking 60s": {"h5": re.compile("20250619_022647_0p3a_LNO_1_.*"), "orders_crism": [166, 168, 170]},
+    # this one for the cal paper
+    "Hydration band 2 order stepping #2 tracking 60s": {"h5": re.compile("20250622_070511_0p3a_LNO_1_.*"), "orders_crism": [166, 168, 170]},
+    "Hydration band 2 order stepping #3 tracking 60s": {"h5": re.compile("20250619_101826_0p3a_LNO_1_.*"), "orders_crism": [166, 168, 170]},
+    "Hydration band 2 order stepping #4 tracking 60s": {"h5": re.compile("20250619_022647_0p3a_LNO_1_.*"), "orders_crism": [166, 168, 170]},
 
-    # # 157 160 163 166 169 172
-    # "Hydration band 3 order stepping #1 tracking 60s": {"h5": re.compile("20250411_203101_0p3a_LNO_1_.*"), "orders_crism": [166, 169, 172]},
-    # "Hydration band 3 order stepping #2 tracking 60s": {"h5": re.compile("20250408_080101_0p3a_LNO_1_.*"), "orders_crism": [166, 169, 172]},
-    # "Hydration band 3 order stepping #3 tracking 60s": {"h5": re.compile("20250405_190547_0p3a_LNO_1_.*"), "orders_crism": [166, 169, 172]},
-    # "Hydration band 3 order stepping #4 tracking 60s": {"h5": re.compile("20250402_221907_0p3a_LNO_1_.*"), "orders_crism": [166, 169, 172], "skip": True},
-    # "Hydration band 3 order stepping #5 tracking 60s": {"h5": re.compile("20250402_142717_0p3a_LNO_1_.*"), "orders_crism": [166, 169, 172]},
+    # 157 160 163 166 169 172
+    "Hydration band 3 order stepping #1 tracking 60s": {"h5": re.compile("20250411_203101_0p3a_LNO_1_.*"), "orders_crism": [166, 169, 172]},
+    "Hydration band 3 order stepping #2 tracking 60s": {"h5": re.compile("20250408_080101_0p3a_LNO_1_.*"), "orders_crism": [166, 169, 172]},
+    "Hydration band 3 order stepping #3 tracking 60s": {"h5": re.compile("20250405_190547_0p3a_LNO_1_.*"), "orders_crism": [166, 169, 172]},
+    "Hydration band 3 order stepping #4 tracking 60s": {"h5": re.compile("20250402_221907_0p3a_LNO_1_.*"), "orders_crism": [166, 169, 172], "skip": True},
+    "Hydration band 3 order stepping #5 tracking 60s": {"h5": re.compile("20250402_142717_0p3a_LNO_1_.*"), "orders_crism": [166, 169, 172]},
 
-    # # 160 162 164 166 168 170
-    # # all very low signal
+    # 160 162 164 166 168 170
+    # all very low signal
     # "Hydration band 2 order stepping #5 inertial 60s": {"h5": re.compile("20241229_103444_0p3a_LNO_1_.*"), "orders_crism": [166, 168, 170]},
     # "Hydration band 2 order stepping #6 inertial 60s": {"h5": re.compile("20241213_052910_0p3a_LNO_1_.*"), "orders_crism": [166, 168, 170], "skip": True},
     # "Hydration band 2 order stepping #7 inertial 60s": {"h5": re.compile("20241210_084211_0p3a_LNO_1_.*"), "orders_crism": [166, 168, 170], "skip": True},
     # "Hydration band 2 order stepping #8 inertial 60s": {"h5": re.compile("20241207_040411_0p3a_LNO_1_.*"), "orders_crism": [166, 168, 170]},
 
-    # # carbonates and phyllosilicates don't have a full analysis of the phase angle correction for these orders, to be done later
-    # "Carbonates #1 inertial 60s": {"h5": re.compile("20241011_012228_0p3a_LNO_1_P_17."), "orders_crism": [174, 175, 176]},
-    # "Carbonates #2 inertial 60s": {"h5": re.compile("20241004_235732_0p3a_LNO_1_P_17."), "orders_crism": [174, 175, 176]},
-    # "Carbonates #3 inertial 60s": {"h5": re.compile("20241001_191914_0p3a_LNO_1_P_17."), "orders_crism": [174, 175, 176]},
-    # "Carbonates #4 inertial 60s": {"h5": re.compile("20240922_210734_0p3a_LNO_1_P_17."), "orders_crism": [174, 175, 176]},
-    # "Carbonates #5 inertial 60s": {"h5": re.compile("20240911_224710_0p3a_LNO_1_P_17."), "orders_crism": [174, 175, 176]},
+    # carbonates and phyllosilicates don't have a full analysis of the phase angle correction for these orders, to be done later
+    "Carbonates #1 inertial 60s": {"h5": re.compile("20241011_012228_0p3a_LNO_1_P_17."), "orders_crism": [174, 175, 176]},
+    "Carbonates #2 inertial 60s": {"h5": re.compile("20241004_235732_0p3a_LNO_1_P_17."), "orders_crism": [174, 175, 176]},
+    "Carbonates #3 inertial 60s": {"h5": re.compile("20241001_191914_0p3a_LNO_1_P_17."), "orders_crism": [174, 175, 176]},
+    "Carbonates #4 inertial 60s": {"h5": re.compile("20240922_210734_0p3a_LNO_1_P_17."), "orders_crism": [174, 175, 176]},
+    "Carbonates #5 inertial 60s": {"h5": re.compile("20240911_224710_0p3a_LNO_1_P_17."), "orders_crism": [174, 175, 176]},
 
     # "Carbonates #1b inertial 60s": {"h5": re.compile("20241011_012228_0p3a_LNO_1_P_19."), "orders_crism": [190, 191, 192], "suffix": "b"},
     # "Carbonates #2b inertial 60s": {"h5": re.compile("20241004_235732_0p3a_LNO_1_P_19."), "orders_crism": [190, 191, 192], "suffix": "b"},
@@ -149,31 +171,31 @@ obs_types = {
     # "Carbonates #4b inertial 60s": {"h5": re.compile("20240922_210734_0p3a_LNO_1_P_19."), "orders_crism": [190, 191, 192], "suffix": "b"},
     # "Carbonates #5b inertial 60s": {"h5": re.compile("20240911_224710_0p3a_LNO_1_P_19."), "orders_crism": [190, 191, 192], "suffix": "b"},
 
-    # # "Carbonates #1 inertial 60s": {"h5": re.compile("20241011_012228_0p3a_LNO_1_.*"), "orders_crism": [174, 175, 176, 190, 191, 192]},
-    # # "Carbonates #2 inertial 60s": {"h5": re.compile("20241004_235732_0p3a_LNO_1_.*"), "orders_crism": [174, 175, 176, 190, 191, 192]},
-    # # "Carbonates #3 inertial 60s": {"h5": re.compile("20241001_191914_0p3a_LNO_1_.*"), "orders_crism": [174, 175, 176, 190, 191, 192]},
-    # # "Carbonates #4 inertial 60s": {"h5": re.compile("20240922_210734_0p3a_LNO_1_.*"), "orders_crism": [174, 175, 176, 190, 191, 192]},
-    # # "Carbonates #5 inertial 60s": {"h5": re.compile("20240911_224710_0p3a_LNO_1_.*"), "orders_crism": [174, 175, 176, 190, 191, 192]},
+    # "Carbonates #1 inertial 60s": {"h5": re.compile("20241011_012228_0p3a_LNO_1_.*"), "orders_crism": [174, 175, 176, 190, 191, 192]},
+    # "Carbonates #2 inertial 60s": {"h5": re.compile("20241004_235732_0p3a_LNO_1_.*"), "orders_crism": [174, 175, 176, 190, 191, 192]},
+    # "Carbonates #3 inertial 60s": {"h5": re.compile("20241001_191914_0p3a_LNO_1_.*"), "orders_crism": [174, 175, 176, 190, 191, 192]},
+    # "Carbonates #4 inertial 60s": {"h5": re.compile("20240922_210734_0p3a_LNO_1_.*"), "orders_crism": [174, 175, 176, 190, 191, 192]},
+    # "Carbonates #5 inertial 60s": {"h5": re.compile("20240911_224710_0p3a_LNO_1_.*"), "orders_crism": [174, 175, 176, 190, 191, 192]},
 
-    # # 163 165 167 169
-    # # bin 2 mean shape spectra are much better
-    # "Hydration band 4 orders #1 inertial 60s": {"h5": re.compile("20240831_034846_0p3a_LNO_1_.*"), "orders_crism": [169]},
-    # "Hydration band 4 orders #2 inertial 60s": {"h5": re.compile("20240825_022347_0p3a_LNO_1_.*"), "orders_crism": [169]},
-    # "Hydration band 4 orders #3 inertial 60s": {"h5": re.compile("20240819_005847_0p3a_LNO_1_.*"), "orders_crism": [169]},
-    # "Hydration band 4 orders #4 inertial 60s": {"h5": re.compile("20240805_163944_0p3a_LNO_1_.*"), "orders_crism": [169]},
-    # "Hydration band 4 orders #5 inertial 60s": {"h5": re.compile("20240702_042211_0p3a_LNO_1_.*"), "orders_crism": [169]},
-    # "Hydration band 4 orders #6 inertial 60s": {"h5": re.compile("20240627_023139_0p3a_LNO_1_.*"), "orders_crism": [169]},
-    # "Hydration band 4 orders #7 inertial 60s": {"h5": re.compile("20240620_092319_0p3a_LNO_1_.*"), "orders_crism": [169]},
-    # "Hydration band 4 orders #8 inertial 60s": {"h5": re.compile("20240614_075827_0p3a_LNO_1_.*"), "orders_crism": [169]},
+    # 163 165 167 169
+    # bin 2 mean shape spectra are much better
+    "Hydration band 4 orders #1 inertial 60s": {"h5": re.compile("20240831_034846_0p3a_LNO_1_.*"), "orders_crism": [169]},
+    "Hydration band 4 orders #2 inertial 60s": {"h5": re.compile("20240825_022347_0p3a_LNO_1_.*"), "orders_crism": [169]},
+    "Hydration band 4 orders #3 inertial 60s": {"h5": re.compile("20240819_005847_0p3a_LNO_1_.*"), "orders_crism": [169]},
+    "Hydration band 4 orders #4 inertial 60s": {"h5": re.compile("20240805_163944_0p3a_LNO_1_.*"), "orders_crism": [169]},
+    "Hydration band 4 orders #5 inertial 60s": {"h5": re.compile("20240702_042211_0p3a_LNO_1_.*"), "orders_crism": [169]},
+    "Hydration band 4 orders #6 inertial 60s": {"h5": re.compile("20240627_023139_0p3a_LNO_1_.*"), "orders_crism": [169]},
+    "Hydration band 4 orders #7 inertial 60s": {"h5": re.compile("20240620_092319_0p3a_LNO_1_.*"), "orders_crism": [169]},
+    "Hydration band 4 orders #8 inertial 60s": {"h5": re.compile("20240614_075827_0p3a_LNO_1_.*"), "orders_crism": [169]},
 
-    # # 189, 190, 191, 192, 193, 201
-    # "Phyllosilicates #1 inertial 60s": {"h5": re.compile("20240606_012950_0p3a_LNO_1_.*"), "orders_crism": [189, 190, 191, 192, 193, 201]},
-    # "Phyllosilicates #2 inertial 60s": {"h5": re.compile("20240531_075626_0p3a_LNO_1_.*"), "orders_crism": [189, 190, 191, 192, 193, 201]},
-    # "Phyllosilicates #3 inertial 60s": {"h5": re.compile("20240508_064538_0p3a_LNO_1_.*"), "orders_crism": [189, 190, 191, 192, 193, 201]},
-    # "Phyllosilicates #4 inertial 60s": {"h5": re.compile("20240503_124624_0p3a_LNO_1_.*"), "orders_crism": [189, 190, 191, 192, 193, 201]},
-    # "Phyllosilicates #5 inertial 60s": {"h5": re.compile("20240502_131156_0p3a_LNO_1_.*"), "orders_crism": [189, 190, 191, 192, 193, 201]},
-    # "Phyllosilicates #6 inertial 60s": {"h5": re.compile("20240427_112108_0p3a_LNO_1_.*"), "orders_crism": [189, 190, 191, 192, 193, 201], "skip": True},
-    # "Phyllosilicates #7 inertial 60s": {"h5": re.compile("20240412_193543_0p3a_LNO_1_.*"), "orders_crism": [189, 190, 191, 192, 193, 201], "skip": True},
+    # 189, 190, 191, 192, 193, 201
+    "Phyllosilicates #1 inertial 60s": {"h5": re.compile("20240606_012950_0p3a_LNO_1_.*"), "orders_crism": [189, 190, 191, 192, 193, 201]},
+    "Phyllosilicates #2 inertial 60s": {"h5": re.compile("20240531_075626_0p3a_LNO_1_.*"), "orders_crism": [189, 190, 191, 192, 193, 201]},
+    "Phyllosilicates #3 inertial 60s": {"h5": re.compile("20240508_064538_0p3a_LNO_1_.*"), "orders_crism": [189, 190, 191, 192, 193, 201]},
+    "Phyllosilicates #4 inertial 60s": {"h5": re.compile("20240503_124624_0p3a_LNO_1_.*"), "orders_crism": [189, 190, 191, 192, 193, 201]},
+    "Phyllosilicates #5 inertial 60s": {"h5": re.compile("20240502_131156_0p3a_LNO_1_.*"), "orders_crism": [189, 190, 191, 192, 193, 201]},
+    "Phyllosilicates #6 inertial 60s": {"h5": re.compile("20240427_112108_0p3a_LNO_1_.*"), "orders_crism": [189, 190, 191, 192, 193, 201], "skip": True},
+    "Phyllosilicates #7 inertial 60s": {"h5": re.compile("20240412_193543_0p3a_LNO_1_.*"), "orders_crism": [189, 190, 191, 192, 193, 201], "skip": True},
 
     # # "Early test": {"h5": re.compile("20211123_173753_0p3a_LNO_1_P.*")},
 }
@@ -260,12 +282,8 @@ for obs_type in obs_types.keys():
             print("%s%s temperature range: %0.1f %0.1f" % (h5_prefix, suffix, np.min(ts), np.max(ts)))
 
         # get phase angle and other geom
-        geom_d = {
-            "phase_angle": {"path": "Geometry/Point0/PhaseAngle"},
-            "sun_dist_au": {"path": "Geometry/DistToSun"},
-            "lat": {"path": "Geometry/Point0/Lat"},
-            "lon": {"path": "Geometry/Point0/Lon"},
-        }
+        geom_d = H5_GEOM.copy()
+
         for key in geom_d.keys():
             path = geom_d[key]["path"]
             dset = np.mean(h5f[path][:, :], axis=1)
@@ -305,8 +323,8 @@ for obs_type in obs_types.keys():
             good_phase_ixs = np.where(np.mean(phase_angle_2d, axis=1) < max_phase_angle)[0]
 
         # resize everything from all geom datasets to remove spectra and data
-        for key in geom_d.keys():
-            geom_d["phase_angle"]["dset"] = geom_d["phase_angle"]["dset"][good_phase_ixs, :]
+        for geom in geom_d.keys():
+            geom_d[geom]["dset"] = geom_d[geom]["dset"][good_phase_ixs, :]
 
         y_3d = y_3d[good_phase_ixs, :, :]
 
@@ -473,8 +491,8 @@ for obs_type in obs_types.keys():
         # stdev of spectral detector pixels in all frames, scaled to solar spectrum
         counts_d[phobos_unique_order]["y_spectral_frame_solar_scaled_std"] = np.nanstd(y_spectral_solar_scaled, axis=0)
 
-        for key in geom_d.keys():
-            counts_d[phobos_unique_order][key] = geom_d["phase_angle"]["dset"]
+        for geom in geom_d.keys():
+            counts_d[phobos_unique_order][geom] = geom_d[geom]["dset"]
 
         # counts_d[phobos_unique_order]["phase_angle"] = phase_angle_2d
         # correction for phase angle gradient (calculated elsewhere), scaled to solar spectrum
@@ -495,7 +513,7 @@ for obs_type in obs_types.keys():
                 good_row_indices = np.where(best_bin_ratio > 0.75)[0]
                 bins_to_consider = np.arange(len(counts_d[phobos_unique_order]["y_spectral_frame_mean"]))
             else:
-                bins_to_consider = np.arange(1, len(counts_d[phobos_unique_order]["y_spectral_frame_mean"])-1)
+                bins_to_consider = np.arange(1, len(counts_d[phobos_unique_order]["y_spectral_frame_mean"]) - 1)
                 best_bin_ratio = counts_d[phobos_unique_order]["y_spectral_frame_mean"][bins_to_consider] / \
                     np.nanmax(counts_d[phobos_unique_order]["y_spectral_frame_mean"][bins_to_consider])
                 # if signal is >75% of the best binned detector row, also include it in the analysis
@@ -510,6 +528,7 @@ for obs_type in obs_types.keys():
                 order_group = h5_group.create_group(str(phobos_unique_order))
                 for dataset in ["y_spectral_mean", "lat", "lon", "phase_angle"]:
                     order_group.create_dataset(dataset, dtype=float, data=counts_d[phobos_unique_order][dataset], compression="gzip", shuffle=True)
+        continue
 
     # print("Signals on each bin for each order:")
     # for phobos_unique_order in counts_d.keys():
@@ -532,7 +551,7 @@ for obs_type in obs_types.keys():
         plt.title("Solar calibration spectra")
         for order in phobos_unique_orders:
             plt.plot(cal_d[order]["y_spectrum"], color=colour_d[order], label="Diffraction order %i" % order)
-            plt.plot([0, len(cal_d[order]["y_spectrum"])-1], [cal_d[order]["y_centre_mean"], cal_d[order]["y_centre_mean"]],
+            plt.plot([0, len(cal_d[order]["y_spectrum"]) - 1], [cal_d[order]["y_centre_mean"], cal_d[order]["y_centre_mean"]],
                      color=colour_d[order], linestyle=":", label="Order %i mean signal" % order)
         plt.legend()
         plt.xlabel("Detector pixel number")
@@ -543,7 +562,7 @@ for obs_type in obs_types.keys():
     if plot_level < 2.5:
 
         """plot spectrally averaged signal for each bin individually"""
-        fig, axes = plt.subplots(nrows=len(good_row_indices), ncols=1, figsize=(11, len(good_row_indices)*4), squeeze=False)
+        fig, axes = plt.subplots(nrows=len(good_row_indices), ncols=1, figsize=(11, len(good_row_indices) * 4), squeeze=False)
         axes = axes.flatten()
         # fig.suptitle("Spectrally binned signal for each order")
         # plt.subplots_adjust(bottom=0.15)
@@ -594,7 +613,7 @@ for obs_type in obs_types.keys():
 
     if plot_level < 2.8:
         """plot counts vs phase angle"""
-        fig, axes = plt.subplots(nrows=len(good_row_indices), ncols=1, figsize=(11, len(good_row_indices)*4), squeeze=False)
+        fig, axes = plt.subplots(nrows=len(good_row_indices), ncols=1, figsize=(11, len(good_row_indices) * 4), squeeze=False)
         axes = axes.flatten()
         # fig.suptitle("Spectrally binned signal for each order and detector row bin before phase correction")
         # plt.subplots_adjust(bottom=0.15)
@@ -639,7 +658,7 @@ for obs_type in obs_types.keys():
 
     if plot_level < 3.0:
         """plot vs phase angle after counts correction"""
-        fig, axes = plt.subplots(nrows=len(good_row_indices), ncols=1, figsize=(11, len(good_row_indices)*4), squeeze=False)
+        fig, axes = plt.subplots(nrows=len(good_row_indices), ncols=1, figsize=(11, len(good_row_indices) * 4), squeeze=False)
         axes = axes.flatten()
         # fig.suptitle("Spectrally binned signal for each order and detector row bin after phase correction")
 
@@ -815,7 +834,7 @@ for obs_type in obs_types.keys():
     """scale to crism"""
     # first interpolate crism to cover spectral gaps
     orders_to_scale = np.array(obs_types[obs_type]["orders_crism"])
-    order_ums = [10000./cal_d[order]["x_mean"] for order in orders_to_scale]
+    order_ums = [10000. / cal_d[order]["x_mean"] for order in orders_to_scale]
     crism_red_f = interpolate.interp1d(crism_d["x"], crism_d["phobos_red"], kind="quadratic")
     crism_blue_f = interpolate.interp1d(crism_d["x"], crism_d["phobos_blue"], kind="quadratic")
 
@@ -834,12 +853,12 @@ for obs_type in obs_types.keys():
             red_scalar = np.mean(crism_red_interp / np.asarray([y_column_mean_norm[order] for order in orders_to_scale]))
             blue_scalar = np.mean(crism_blue_interp / np.asarray([y_column_mean_norm[order] for order in orders_to_scale]))
 
-            y_column_mean_norm_red = {order: y_column_mean_norm[order]*red_scalar for order in y_column_mean_norm.keys()}
-            y_column_mean_norm_blue = {order: y_column_mean_norm[order]*blue_scalar for order in y_column_mean_norm.keys()}
-            y_column_std_norm_red = {order: y_column_std_norm[order]*red_scalar for order in y_column_std_norm.keys()}
-            y_column_std_norm_blue = {order: y_column_std_norm[order]*blue_scalar for order in y_column_std_norm.keys()}
+            y_column_mean_norm_red = {order: y_column_mean_norm[order] * red_scalar for order in y_column_mean_norm.keys()}
+            y_column_mean_norm_blue = {order: y_column_mean_norm[order] * blue_scalar for order in y_column_mean_norm.keys()}
+            y_column_std_norm_red = {order: y_column_std_norm[order] * red_scalar for order in y_column_std_norm.keys()}
+            y_column_std_norm_blue = {order: y_column_std_norm[order] * blue_scalar for order in y_column_std_norm.keys()}
 
-            x_plt = [10000./cal_d[order]["x_mean"] for order in y_column_mean_norm.keys()]
+            x_plt = [10000. / cal_d[order]["x_mean"] for order in y_column_mean_norm.keys()]
 
             y_plt1 = np.array([y_column_mean_norm_red[order] for order in y_column_mean_norm.keys()])
             # y_err = np.array([y_column_std_norm_red[order] for order in y_column_std_norm.keys()])
@@ -868,12 +887,12 @@ for obs_type in obs_types.keys():
     red_scalar = np.mean(crism_red_interp / np.asarray([y_column_mean_norm[order] for order in orders_to_scale]))
     blue_scalar = np.mean(crism_blue_interp / np.asarray([y_column_mean_norm[order] for order in orders_to_scale]))
 
-    y_column_mean_norm_red = {order: y_column_mean_norm[order]*red_scalar for order in y_column_mean_norm.keys()}
-    y_column_mean_norm_blue = {order: y_column_mean_norm[order]*blue_scalar for order in y_column_mean_norm.keys()}
-    y_column_std_norm_red = {order: y_column_std_norm[order]*red_scalar for order in y_column_std_norm.keys()}
-    y_column_std_norm_blue = {order: y_column_std_norm[order]*blue_scalar for order in y_column_std_norm.keys()}
+    y_column_mean_norm_red = {order: y_column_mean_norm[order] * red_scalar for order in y_column_mean_norm.keys()}
+    y_column_mean_norm_blue = {order: y_column_mean_norm[order] * blue_scalar for order in y_column_mean_norm.keys()}
+    y_column_std_norm_red = {order: y_column_std_norm[order] * red_scalar for order in y_column_std_norm.keys()}
+    y_column_std_norm_blue = {order: y_column_std_norm[order] * blue_scalar for order in y_column_std_norm.keys()}
 
-    x_plt = [10000./cal_d[order]["x_mean"] for order in y_column_mean_norm.keys()]
+    x_plt = [10000. / cal_d[order]["x_mean"] for order in y_column_mean_norm.keys()]
 
     y_plt1 = np.array([y_column_mean_norm_red[order] for order in y_column_mean_norm.keys()])
     # y_err = np.array([y_column_std_norm_red[order] for order in y_column_std_norm.keys()])

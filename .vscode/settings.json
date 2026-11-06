@@ -1,6 +1,9 @@
 {
     "terminal.integrated.env.windows": {
-        "PYTHONPATH": "${workspaceFolder}",
-},
-"jupyter.notebookFileRoot": "C:\\Users\\iant\\Dropbox\\NOMAD\\Python"
+        "PYTHONPATH": "C:\\Users\\iant\\Dropbox\\NOMAD\\Python",
+    },
+    "jupyter.notebookFileRoot": "C:\\Users\\iant\\Dropbox\\NOMAD\\Python",
+    "variableExplorer.captureMainLocals": true,
+    "variableExplorer.pythonPath": "C:\\Users\\iant\\Dropbox\\NOMAD\\Python",
+    "python.defaultInterpreterPath": "C:\\Users\\iant\\Documents\\PROGRAMS\\anaconda3\\envs\\py311\\python.exe"
 }

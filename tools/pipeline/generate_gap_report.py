@@ -8,9 +8,20 @@ Created on Wed Feb  2 12:05:59 2022
 WRITE GAP REPORT FOR .EXM FILES
 
 BEFORE RUNNING ENSURE THAT CACHE.DB AND REAL FILE TREE ARE IDENTICAL (RUN COMPARE_TREE_TO_CACHE.PY WITH CORRECT LEVEL)
+IF LOG_NAME IS NOT AN EMPTY STRING, A CHECK WILL BE RUN IF REASON CAN BE DETERMINED FROM NAMED PIPELINE LOG
+
+TO GENERATE GAP REPORT:
+
+1. RUN THIS SCRIPT WITH LOG_NAME = "" TO CHECK FOR ALL MISSING FILES
+REPROCESSING COMMAND LIST WILL BE GENERATED
+2. RUN LIST OF COMMANDS IN LEVEL 1 PIPELINE
+3. COPY GENERATED PIPELINE LOG TO LOCAL DIRECTORY, PUT NAME IN LOG_NAME
+4. RUN THIS SCRIPT AGAIN TO CHECK FOR NEWLY PROCESSED FILES AND FILL IN KNOWN ERRORS FROM PIPELINE LOG
+
 """
 
 import os
+import re
 import numpy as np
 
 from datetime import datetime, timedelta
@@ -25,6 +36,14 @@ from tools.file.esac_remote_tree import get_esac_tree_filenames
 
 
 SHARED_DIR_PATH = r"C:\Users\iant\Documents\PROGRAMS\web_dev\shared"
+
+# if LOG_NAME given, parse to try to determine reason for
+RUN_PIPELINE_LOG_DIR = r"C:\Users\iant\Dropbox\NOMAD\Python"
+# LOG_NAME = "run_pipeline_20261021_012819.log"
+LOG_NAME = "run_pipeline_20261106_012240.log"
+# LOG_NAME = ""
+
+LOG_PATH = os.path.join(RUN_PIPELINE_LOG_DIR, LOG_NAME)
 
 
 level = "hdf5_level_0p1a"
@@ -215,6 +234,36 @@ def match_pdhu_filename(dt, d_itl):
     return pdhu_strs
 
 
+def get_dts_from_error_log(log_path):
+    with open(log_path, "r") as f:
+        lines = f.readlines()
+
+    error_list = []
+    for i, line in enumerate(lines):
+        line = line.rstrip("\n").replace("  ", "")
+
+        if "RuntimeError: 20" in line:
+            error_list.append(line)
+
+    regex = re.compile(r"RuntimeError: (\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2}).*(\(\d+\).*)")
+
+    error_log_dts = {}
+    for error in error_list:
+        match = re.findall(regex, error)
+        if match:
+            match_dt = datetime(*[int(v) for ix, v in enumerate(match[0]) if ix < len(match[0]) - 1])
+            error_log_dts[match_dt] = "Error in raw to hdf5 pipeline: %s" % match[0][-1].strip()
+            # error_log_dts[match_dt] = error  # full error
+
+    return error_log_dts
+
+
+if LOG_NAME != "":
+    error_log_dts = get_dts_from_error_log(LOG_PATH)
+else:
+    error_log_dts = {}
+
+
 print("Writing missing files to file")
 # h = "<!DOCTYPE html><html><head><title>%s GAP REPORT</title>\n</head><body>\n" %level.upper()
 h = ""
@@ -232,6 +281,14 @@ for missing_dt in missing_dts.keys():
         if off_period[0] < missing_dt < off_period[1]:
             include = off_period[3]
             reason = off_period[2]
+
+    # if not a known off-period, check pipeline log if exists
+    if len(error_log_dts) > 0:
+        matches = [dt for dt in error_log_dts.keys() if abs(missing_dt - dt) < timedelta(minutes=1)]
+        if len(matches) > 1:
+            print("Error: too many matches")
+        elif len(matches) == 1:
+            reason = error_log_dts[matches[0]]
 
     # if not a known off-period
     if reason == "":

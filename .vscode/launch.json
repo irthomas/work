@@ -1,5 +1,13 @@
 {
-    "env": {
-      "PYTHONPATH": "C:/Users/iant/Dropbox/NOMAD/Python"
+  "env": {
+    "PYTHONPATH": "C:\\Users\\iant\\Dropbox\\NOMAD\\Python"
+  },
+  "configurations": [
+    {
+      "name": "Python Debugger: Python File",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${file}"
     }
+  ]
 }

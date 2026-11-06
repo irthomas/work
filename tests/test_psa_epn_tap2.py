@@ -9,7 +9,7 @@ Created on Wed Nov  8 16:52:46 2023
 # from psa_utils import download, tap, packager, geogen, internal
 
 from psa_utils import tap
-psa = tap.PsaTap(tap_url="https://archives.esac.esa.int/psa-tap/tap/")
+psa = tap.PsaTap(tap_url="https://psa.esa.int/psa-tap/tap/")
 
 
 # Now for some examples:

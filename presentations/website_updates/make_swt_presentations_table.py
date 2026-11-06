@@ -55,10 +55,11 @@ header_dict = {
     26: "SWT26: NASA Goddard, USA (5-6 December 2024)",
     27: "SWT27: Almuñécar, near Granada (3-5 June 2025)",
     28: "SWT28: BIRA-IASB, Brussels and online (17-18 November 2025)",
+    29: "SWT29: IAA, Granada (20-22 April 2026) Joint with ACS",
 }
 
 # swt_numbers = [20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6]
-swt_numbers = [28]
+swt_numbers = [29]
 dir_list = os.listdir(meeting_dir)
 
 
@@ -88,15 +89,15 @@ for swt_number in swt_numbers:
     for row_number in range(1000):
         data_row = []
         # check if summary file row contains data
-        value = Sheet1.cell(row_number+1, 1).value
+        value = Sheet1.cell(row_number + 1, 1).value
         if value is not None:
             data_row.append(value)
 
-            value = Sheet1.cell(row_number+1, 2).value
+            value = Sheet1.cell(row_number + 1, 2).value
             if value is not None:
                 data_row.append(value)
 
-                value = Sheet1.cell(row_number+1, 3).value
+                value = Sheet1.cell(row_number + 1, 3).value
                 if value is not None:
                     data_row.append(value)
 

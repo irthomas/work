@@ -21,12 +21,15 @@ from datetime import datetime, timedelta
 import json
 
 
-# MISSION = "NOMAD_OPS"
-MISSION = "SOVENIRO"
+MISSION = "NOMAD_OPS LNO PHOBOS"
+MISSION = "NOMAD_OPS LNO LIMB"
+# MISSION = "NOMAD_OPS SO"
+# MISSION = "SOVENIRO"
 
-if MISSION == "NOMAD_OPS":
+if "NOMAD_OPS" in MISSION:
     KERNEL_ROOT_DIR = r"C:\Users\iant\Documents\DATA\local_spice_kernels_ops\kernels"
     COSMO_SPICE_DIR = "EM16"
+
 if MISSION == "SOVENIRO":
     KERNEL_ROOT_DIR = r"C:\Users\iant\Documents\DATA\soveniro_kernels\kernels"
     COSMO_SPICE_DIR = "SOVENIRO"
@@ -35,67 +38,116 @@ COSMO_ROOT_DIR = r"C:\Users\iant\cosmographia-4.2"
 SCENARIO_DIR = "py_conf"
 COSMO_EXE_NAME = "Cosmographia.exe"
 
-# write new IK and add to MK?
+# write new IK from presets below and add it to MK?
 NEW_IK = True
 # NEW_IK = False
 
-if MISSION == "NOMAD_OPS":
+if MISSION == "NOMAD_OPS LNO PHOBOS":
+    # phobos linescans
+    h5 = "20230109_230206_0p3a_LNO_1_P_169"
+
+    # h5 = "20250411_203101_0p3a_LNO_1_P_166"
+
+    # "20250628_083013_0p3a_LNO_1_P_166",  # tracking
+    # "20250622_070511_0p3a_LNO_1_P_166",
+    # "20250619_101826_0p3a_LNO_1_P_166",
+    # "20250619_022647_0p3a_LNO_1_P_166",
+    # "20250411_203101_0p3a_LNO_1_P_166",
+    # "20250408_080101_0p3a_LNO_1_P_166",
+    # "20250405_190547_0p3a_LNO_1_P_166",
+    # "20250402_221907_0p3a_LNO_1_P_166",
+    # "20250402_142717_0p3a_LNO_1_P_166",
+    # "20241229_103444_0p3a_LNO_1_P_166",  # inertial
+    # "20241213_052910_0p3a_LNO_1_P_166",
+    # "20241210_084211_0p3a_LNO_1_P_166",
+    # "20241207_040411_0p3a_LNO_1_P_166",
+    # "20241011_012228_0p3a_LNO_1_P_174",
+    # "20241004_235732_0p3a_LNO_1_P_174",
+    # "20241001_191914_0p3a_LNO_1_P_174",
+    # "20240922_210734_0p3a_LNO_1_P_174",
+    # "20240911_224710_0p3a_LNO_1_P_174",
+    # "20240831_034846_0p3a_LNO_1_P_165",  # 6 rows
+    # "20240825_022347_0p3a_LNO_1_P_165",
+    # "20240819_005847_0p3a_LNO_1_P_165",
+    # "20240805_163944_0p3a_LNO_1_P_165",
+    # "20240702_042211_0p3a_LNO_1_P_165",
+    # "20240627_023139_0p3a_LNO_1_P_165",
+    # "20240620_092319_0p3a_LNO_1_P_165",
+
+if MISSION == "NOMAD_OPS LNO LIMB":
+    # AMEC limb June 2026
+    h5 = "20260623_060729_1p0a_LNO_1_L_168"
+
+if MISSION == "NOMAD_OPS SO":
     # occultation example
     h5 = "20240607_212109_1p0a_SO_A_E_132"
+
 if MISSION == "SOVENIRO":
     h5 = "20300101_010000_test"
 
-# phobos
-# h5 = "20250411_203101_0p3a_LNO_1_P_166"
 
-# "20250628_083013_0p3a_LNO_1_P_166",  # tracking
-# "20250622_070511_0p3a_LNO_1_P_166",
-# "20250619_101826_0p3a_LNO_1_P_166",
-# "20250619_022647_0p3a_LNO_1_P_166",
-# "20250411_203101_0p3a_LNO_1_P_166",
-# "20250408_080101_0p3a_LNO_1_P_166",
-# "20250405_190547_0p3a_LNO_1_P_166",
-# "20250402_221907_0p3a_LNO_1_P_166",
-# "20250402_142717_0p3a_LNO_1_P_166",
-# "20241229_103444_0p3a_LNO_1_P_166",  # inertial
-# "20241213_052910_0p3a_LNO_1_P_166",
-# "20241210_084211_0p3a_LNO_1_P_166",
-# "20241207_040411_0p3a_LNO_1_P_166",
-# "20241011_012228_0p3a_LNO_1_P_174",
-# "20241004_235732_0p3a_LNO_1_P_174",
-# "20241001_191914_0p3a_LNO_1_P_174",
-# "20240922_210734_0p3a_LNO_1_P_174",
-# "20240911_224710_0p3a_LNO_1_P_174",
-# "20240831_034846_0p3a_LNO_1_P_165",  # 6 rows
-# "20240825_022347_0p3a_LNO_1_P_165",
-# "20240819_005847_0p3a_LNO_1_P_165",
-# "20240805_163944_0p3a_LNO_1_P_165",
-# "20240702_042211_0p3a_LNO_1_P_165",
-# "20240627_023139_0p3a_LNO_1_P_165",
-# "20240620_092319_0p3a_LNO_1_P_165",
-
-
-dt = datetime.strptime(h5[0:15], "%Y%m%d_%H%M%S") + timedelta(seconds=(60*15))
+dt = datetime.strptime(h5[0:15], "%Y%m%d_%H%M%S") + timedelta(seconds=(60 * 15))
 
 dt_str = datetime.strftime(dt, "%Y-%m-%dT%H:%M:%S")
 
-if MISSION == "NOMAD_OPS":
-    # phobos example
+if MISSION == "NOMAD_OPS LNO PHOBOS":
+    # phobos example 12 rows
+    # preset = {
+    #     "description": "Phobos LNO 12 arcmin FOV",
+    #     # "channel": "LNO",
+    #     "parent": "TGO",
+    #     "planet": "Mars",
+    #     "pointing": "nadir",
+    #     "target": "Phobos",
+    #     # "FOV": 144/2,
+    #     "FOV": 12 / 2,
+    #     "distance": 150,
+    #     "time": dt_str,
+    #     "goto": "Phobos",
+    #     "opacity": 0.0,
+    # }
+
+    # phobos 16 rows e.g. linescans
     preset = {
-        "description": "Phobos LNO reduced FOV",
+        "description": "Phobos LNO",
         # "channel": "LNO",
         "parent": "TGO",
         "planet": "Mars",
         "pointing": "nadir",
         "target": "Phobos",
         # "FOV": 144/2,
-        "FOV": 12/2,
+        "FOV": 16 / 2,
         "distance": 150,
         "time": dt_str,
         "goto": "Phobos",
         "opacity": 0.0,
     }
 
+    if preset["pointing"] == "nadir":
+        channel_names = ["TGO_NOMAD_LNO_OPS_NAD", "TGO_NOMAD_UVIS_NAD"]
+    mk_in_path = os.path.join(KERNEL_ROOT_DIR, "mk", "em16_ops.tm")
+
+if MISSION == "NOMAD_OPS LNO LIMB":
+    # limb 144 rows
+    preset = {
+        "description": "LNO Limb",
+        # "channel": "LNO",
+        "parent": "TGO",
+        "planet": "Mars",
+        "pointing": "nadir",
+        "target": "Mars",
+        "FOV": 144 / 2,
+        "distance": 150,
+        "time": dt_str,
+        "goto": "TGO",
+        "opacity": 0.5,
+    }
+
+    if preset["pointing"] == "nadir":
+        channel_names = ["TGO_NOMAD_LNO_OPS_NAD", "TGO_NOMAD_UVIS_NAD"]
+    mk_in_path = os.path.join(KERNEL_ROOT_DIR, "mk", "em16_ops.tm")
+
+if MISSION == "NOMAD_OPS SO":
     # occultation example
     preset = {
         "description": "Solar occultation",
@@ -104,15 +156,13 @@ if MISSION == "NOMAD_OPS":
         "planet": "Mars",
         "pointing": "occultation",
         "target": "Sun",
-        "FOV": 24/2,
+        "FOV": 24 / 2,
         "distance": 150,
         "time": dt_str,
         "goto": "TGO",
         "opacity": 0.8,
     }
 
-    if preset["pointing"] == "nadir":
-        channel_names = ["TGO_NOMAD_LNO_OPS_NAD", "TGO_NOMAD_UVIS_NAD"]
     if preset["pointing"] == "occultation":
         channel_names = ["TGO_NOMAD_SO", "TGO_NOMAD_UVIS_OCC"]
     mk_in_path = os.path.join(KERNEL_ROOT_DIR, "mk", "em16_ops.tm")
@@ -125,7 +175,7 @@ if MISSION == "SOVENIRO":
         "planet": "Venus",
         "pointing": "nadir",
         "target": "Venus",
-        "FOV": 24/2,
+        "FOV": 24 / 2,
         "distance": 150,
         "time": dt_str,
         "goto": "VENUS",
@@ -286,7 +336,7 @@ config = {
     ]
 }
 
-if MISSION == "NOMAD_OPS":
+if "NOMAD_OPS" in MISSION:
     ik = f"""
     INS-143310_FOV_FRAME                 = 'TGO_NOMAD_LNO'
     INS-143310_FOV_SHAPE                 = 'RECTANGLE'
@@ -374,7 +424,7 @@ rate = 1
 cosmo.setTimeRate(rate)
 
 
-cosmo.gotoObject({preset["parent"]}, 1)
+cosmo.gotoObject("{preset["parent"]}", 1)
 
 cosmo.wait(1)
 

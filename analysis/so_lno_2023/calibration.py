@@ -26,9 +26,9 @@ from analysis.so_lno_2023.functions.spectral_cal import get_orders_nu, aotf_peak
 
 def get_aotf(channel, aotf_freq, aotf_t, aotf={"type": "sinc_gauss"}):
 
-    if channel == "so":
+    if channel.lower() == "so":
         aotf_nu_centre = aotf_peak_nu(aotf_freq, aotf_t)
-    elif channel == "lno":
+    elif channel.lower() == "lno":
         aotf_nu_centre = nu0_aotf(aotf_freq)
 
     if "nu_offset" in aotf.keys():

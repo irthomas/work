@@ -53,7 +53,7 @@ def sinc_gd(dx, width, lobe, asym, offset):
     """new spectral calibration functions Aug/Sep 2021"""
 
     # goddard version
-    sinc = (width * np.sin(np.pi * dx / width)/(np.pi * dx))**2.0
+    sinc = (width * np.sin(np.pi * dx / width) / (np.pi * dx))**2.0
     ind = (abs(dx) > width).nonzero()[0]
     if len(ind) > 0:
         sinc[ind] = sinc[ind] * lobe
@@ -67,7 +67,7 @@ def sinc_gd(dx, width, lobe, asym, offset):
 def F_aotf_sinc_gaussian_lno(nu, nu0, iG=0.3709984, i0=0.6290016, w0=18.188122, sigmaG=12.181137):
     """calculate aotf function from order and high resolution wavenumber grid covering all required orders"""
     """AOTF is old formulation from Liuzzi draft"""
-    F = i0 * np.sinc((nu-nu0)/w0)**2 + iG * np.exp((-1.0 * (nu - nu0)**2)/(sigmaG**2))
+    F = i0 * np.sinc((nu - nu0) / w0)**2 + iG * np.exp((-1.0 * (nu - nu0)**2) / (sigmaG**2))
 
     return F
 
@@ -87,12 +87,12 @@ def get_aotf_sinc_gaussian(channel, aotf_nu_centre=None, aotf_d={}):
 
     aotf_d = {"aotf_nus": aotf_nus, "aotf_nu_range": aotf_nu_range, "aotf_nu_centre": aotf_nu_centre}
 
-    if channel == "so":
-        aotfwc = [-1.66406991e-07,  7.47648684e-04,  2.01730360e+01]  # Sinc width [cm-1 from AOTF frequency cm-1]
-        aotfsc = [8.10749274e-07, -3.30238496e-03,  4.08845247e+00]  # sidelobes factor [scaler from AOTF frequency cm-1]
-        aotfac = [-1.54536176e-07,  1.29003715e-03, -1.24925395e+00]  # Asymmetry factor [scaler from AOTF frequency cm-1]
-        aotfoc = [0.0,             0.0,             0.0]  # Offset [coefficients for AOTF frequency cm-1]
-        aotfgc = [1.49266526e-07, -9.63798656e-04,  1.60097815e+00]  # Gaussian peak intensity [coefficients for AOTF frequency cm-1]
+    if channel.lower() == "so":
+        aotfwc = [-1.66406991e-07, 7.47648684e-04, 2.01730360e+01]  # Sinc width [cm-1 from AOTF frequency cm-1]
+        aotfsc = [8.10749274e-07, -3.30238496e-03, 4.08845247e+00]  # sidelobes factor [scaler from AOTF frequency cm-1]
+        aotfac = [-1.54536176e-07, 1.29003715e-03, -1.24925395e+00]  # Asymmetry factor [scaler from AOTF frequency cm-1]
+        aotfoc = [0.0, 0.0, 0.0]  # Offset [coefficients for AOTF frequency cm-1]
+        aotfgc = [1.49266526e-07, -9.63798656e-04, 1.60097815e+00]  # Gaussian peak intensity [coefficients for AOTF frequency cm-1]
 
         if "aotfw" not in aotf_d.keys():
             aotf_d["aotfw"] = np.polyval(aotfwc, aotf_nu_centre)
@@ -114,7 +114,7 @@ def get_aotf_sinc_gaussian(channel, aotf_nu_centre=None, aotf_d={}):
 
         F_aotf = F_aotf_sinc_gaussian(dx, aotf_d)
 
-    elif channel == "lno":
+    elif channel.lower() == "lno":
         F_aotf = F_aotf_sinc_gaussian_lno(aotf_nus, aotf_nu_centre)
 
     # normalise to 1
@@ -138,12 +138,12 @@ def F_aotf_custom(centres, heights, widths, super_gaussian=[], ax=None):
 
         if centre == 0.0 and len(super_gaussian) == 3:
             # overwrite central sinc2 with the super gaussian
-            dx_sinc = np.arange(-width*1.75, width*1.75, 0.01) + 0.00001
+            dx_sinc = np.arange(-width * 1.75, width * 1.75, 0.01) + 0.00001
             sup = super_gaussian[0] * np.exp(- 2.0 * (np.abs(dx_sinc - 0.0) / super_gaussian[1])**super_gaussian[2])
             if ax:
-                ax.plot(dx_sinc+centre, sup, alpha=0.5, color="grey", ls="--")
+                ax.plot(dx_sinc + centre, sup, alpha=0.5, color="grey", ls="--")
         else:
-            sinc2 = (width*np.sin(np.pi * dx_sinc / width)/(np.pi * dx_sinc))**2.0 * height
+            sinc2 = (width * np.sin(np.pi * dx_sinc / width) / (np.pi * dx_sinc))**2.0 * height
             if ax:
                 ax.plot(dx_sinc + centre, sinc2, alpha=0.5, color="grey", ls="--")
 
@@ -245,15 +245,15 @@ def get_blaze_sinc(channel, px_nus, aotf_nu_centre, order, nomad_t, blazec=-1, b
     """get blaze sinc2 function. -1 = calculate the parameters"""
 
     if blazew == -1:
-        if channel == "so":
+        if channel.lower() == "so":
             blazew = fsr_peak_nu(aotf_nu_centre, nomad_t)
-        elif channel == "lno":
+        elif channel.lower() == "lno":
             blazew = fsr_peak_nu_lno(aotf_nu_centre, nomad_t)
 
     if blazec == -1:
-        if channel == "so":
+        if channel.lower() == "so":
             blazec = order * blazew  # centre of the blaze
-        elif channel == "lno":
+        elif channel.lower() == "lno":
             px_ix = 160.25 + 0.23 * order
             blazec = np.interp(px_ix, np.arange(len(px_nus)), px_nus)  # centre of the blaze from old 2017 pixel number form 160.25 + 0.23 * order
 
@@ -273,10 +273,10 @@ def get_ils(aotf_nu_centre):
     # from ils.py on 6/7/21
     amp = 0.2724371566666666  # intensity of 2nd gaussian
     rp = 16939.80090831571  # resolving power cm-1/dcm-1
-    disp_3700 = [-3.06665339e-06,  1.71638815e-03,  1.31671485e-03]  # displacement of 2nd gaussian cm-1 w.r.t. 3700cm-1 vs pixel number
+    disp_3700 = [-3.06665339e-06, 1.71638815e-03, 1.31671485e-03]  # displacement of 2nd gaussian cm-1 w.r.t. 3700cm-1 vs pixel number
 
     A_w_nu0 = aotf_nu_centre / rp
-    sconv = A_w_nu0/2.355
+    sconv = A_w_nu0 / 2.355
 
     disp_3700_nu = np.polyval(disp_3700, pixels)  # displacement at 3700cm-1
     disp_order = disp_3700_nu / -3700.0 * aotf_nu_centre  # displacement adjusted for wavenumber
@@ -291,16 +291,16 @@ def get_ils_lno(aotf_nu_centre):
     rp = 14000.  # resolving power cm-1/dcm-1
 
     A_w_nu0 = aotf_nu_centre / rp
-    sconv = A_w_nu0/2.355
+    sconv = A_w_nu0 / 2.355
 
     return {"ils_width": np.tile(sconv, len(pixels)), "ils_displacement": np.zeros_like(pixels), "ils_amplitude": np.ones_like(pixels)}
 
 
 def get_ils_coeffs(channel, aotf_nu_centre):
 
-    if channel == "so":
+    if channel.lower() == "so":
         return get_ils(aotf_nu_centre)
-    elif channel == "lno":
+    elif channel.lower() == "lno":
         return get_ils_lno(aotf_nu_centre)
 
 
@@ -317,5 +317,8 @@ def make_ils(hr_grid, width, displacement, amplitude):
     ils0 = a3 * np.exp(-0.5 * ((hr_grid + a1) / a2) ** 2)
     ils1 = a6 * np.exp(-0.5 * ((hr_grid + a4) / a5) ** 2)
     ils = ils0 + ils1
+
+    # normalise to 1 at peak
+    ils = ils / np.max(ils)
 
     return ils

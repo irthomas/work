@@ -5,6 +5,8 @@ Created on Tue Feb 13 13:16:31 2024
 @author: iant
 
 FORWARD MODEL EXPECTED ORDER CONTRIBUTIONS FOR DIFFERENT ALTITUDES
+PLOT CONVOLVED SPECTRUM AND EACH ORDER BAR CHART CONTRIBUTION IN DIFFERENT COLOURS NEXT TO HIGH RES SPECTRA
+USES GEM ONLINE JSON APRIORI
 """
 
 import numpy as np
@@ -19,13 +21,28 @@ from analysis.so_lno_2023.molecules import get_molecules
 from analysis.so_lno_2023.forward_model import forward
 from analysis.so_lno_2023.functions.geometry import make_path_lengths
 
+# from lmfit import minimize
+from lmfit import Parameters
 
-centre_order = 186
-aotf_freq = 25430.0
+# CO
+# filename = "co_order_186.pdf"
+# centre_order = 186
+# aotf_freq = 25430.0
+# grat_t = -11.2611
+# aotf_t = -11.2611
+# mol_scaler = 1.0
+# alts_all = [np.arange(i, 101, 5) for i in range(10, 81, 3)]  # 24 altitudes
+
+
+# h2o hcl orders
+filename = "h2o_order_129.pdf"
+centre_order = 129
+aotf_freq = 17126.0
 grat_t = -11.2611
 aotf_t = -11.2611
-
 mol_scaler = 1.0
+alts_all = [np.arange(i, 80, 5) for i in range(0, 21, 2)]  # 24 altitudes
+
 
 lat = 64.90912439185713
 lon = 50.08229628349869
@@ -33,7 +50,6 @@ ls = 110.13582716894238
 lst = 1.2522222222222221
 myear = 36
 
-alts_all = [np.arange(i, 101, 5) for i in range(10, 81, 3)]
 
 good_px_ixs = np.arange(50, 320)
 
@@ -43,8 +59,9 @@ channel = "so"
 # chosen_alt = 140.0 #km
 
 molecules = {
-    "CO": {"isos": [1, 2, 3, 4]},
+    # "CO": {"isos": [1, 2, 3, 4]},
     # "CO":{"isos":[1]},
+    "H2O": {"isos": [1, 2, 3, 4]},
 }
 
 
@@ -52,6 +69,8 @@ if centre_order == 186:
     orders = np.arange(183, 193)
 if centre_order == 195:
     orders = np.arange(190, 199)
+if centre_order == 129:
+    orders = np.arange(127, 132)
 
 
 # get calibration info
@@ -72,8 +91,10 @@ geom_d = {}
 transs = []
 
 
-with PdfPages("co_order_186.pdf") as pdf:
+with PdfPages(filename) as pdf:
     for alts in alts_all:
+
+        print("Altitude range %0.3f-%0.3f" % (alts[0], alts[-1]))
 
         geom_d["alt"] = alts
         geom_d["myear"] = myear
@@ -87,9 +108,6 @@ with PdfPages("co_order_186.pdf") as pdf:
         geom_d["path_lengths_km"] = path_lengths
 
         molecule_d = get_molecules(molecules, geom_d)
-
-        # from lmfit import minimize
-        from lmfit import Parameters
 
         fw = forward(raw=False)
         fw.calibrate(cal_d)
@@ -118,7 +136,7 @@ transs = np.asarray(transs)
 plt.figure()
 plt.plot(transs.T)
 
-z = [l[0] for l in alts_all]
+z = [alt[0] for alt in alts_all]
 plt.figure()
 for i in range(0, 270, 20):
     plt.scatter(z, transs[:, i])

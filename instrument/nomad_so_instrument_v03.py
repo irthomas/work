@@ -12,12 +12,14 @@ import numpy as np
 
 """
 relationship between the grating peak FSR and AOTF frequency as a 3rd degree polynomial
-FSRpeak = P0 + P1dv + P2dv2 + P3dv3, where dv is vAOTF-3700 cm-1, and P0, P1, P2, P3 are 2.25863468E+01, 9.79270239E-06, -7.20616355E-09, and -1.00162255E-11 respectively 
+FSRpeak = P0 + P1dv + P2dv2 + P3dv3, where dv is vAOTF-3700 cm-1, and P0, P1, P2, P3 are 2.25863468E+01, 9.79270239E-06, -7.20616355E-09, and -1.00162255E-11
+respectively
 
-We investigated the effects of temperature on the grating by analyzing the variability of FSRpeak 
+We investigated the effects of temperature on the grating by analyzing the variability of FSRpeak
 FSR’ = FSR·[1+K(T)], where K(T) is a scaling correction factor for temperature T [ºC]
-In our analysis of all calibration data from 2018 to 2021 of FSRpeak from the full-scans and the line-positions from the mini-scans, 
-we observe the same K(T) function, which we determine to be: K(T) = K0 + K1T + K2T2, where K0, K1 and K2 are -1.90001923E-04, -2.30708836E-05, and -2.44383699E-07 
+In our analysis of all calibration data from 2018 to 2021 of FSRpeak from the full-scans and the line-positions from the mini-scans,
+we observe the same K(T) function, which we determine to be: K(T) = K0 + K1T + K2T2, where K0, K1 and K2 are -1.90001923E-04, -2.30708836E-05, and
+-2.44383699E-07
 
 Pixel spectral cal from Loic 2022
 
@@ -82,13 +84,13 @@ def aotf_func(aotf_nu, aotf_range=200.0, step_nu=0.1):
 
     def sinc_gd(dx, width, lobe, asym, offset):
         # goddard version
-        sinc = (width*np.sin(np.pi*dx/width)/(np.pi*dx))**2.0
+        sinc = (width * np.sin(np.pi * dx / width) / (np.pi * dx))**2.0
         ind = (abs(dx) > width).nonzero()[0]
         if len(ind) > 0:
-            sinc[ind] = sinc[ind]*lobe
+            sinc[ind] = sinc[ind] * lobe
         ind = (dx <= -width).nonzero()[0]
         if len(ind) > 0:
-            sinc[ind] = sinc[ind]*asym
+            sinc[ind] = sinc[ind] * asym
         sinc += offset
         return sinc
 
@@ -99,11 +101,11 @@ def aotf_func(aotf_nu, aotf_range=200.0, step_nu=0.1):
         return sinc
 
     # from github
-    aotfwc = [-1.66406991e-07,  7.47648684e-04,  2.01730360e+01]  # Sinc width [cm-1 from AOTF frequency cm-1]
-    aotfsc = [8.10749274e-07, -3.30238496e-03,  4.08845247e+00]  # sidelobes factor [scaler from AOTF frequency cm-1]
-    aotfac = [-1.54536176e-07,  1.29003715e-03, -1.24925395e+00]  # Asymmetry factor [scaler from AOTF frequency cm-1]
+    aotfwc = [-1.66406991e-07, 7.47648684e-04, 2.01730360e+01]  # Sinc width [cm-1 from AOTF frequency cm-1]
+    aotfsc = [8.10749274e-07, -3.30238496e-03, 4.08845247e+00]  # sidelobes factor [scaler from AOTF frequency cm-1]
+    aotfac = [-1.54536176e-07, 1.29003715e-03, -1.24925395e+00]  # Asymmetry factor [scaler from AOTF frequency cm-1]
     # aotfoc  = [            0.0,             0.0,             0.0] # Offset [coefficients for AOTF frequency cm-1]
-    aotfgc = [1.49266526e-07, -9.63798656e-04,  1.60097815e+00]  # Gaussian peak intensity [coefficients for AOTF frequency cm-1]
+    aotfgc = [1.49266526e-07, -9.63798656e-04, 1.60097815e+00]  # Gaussian peak intensity [coefficients for AOTF frequency cm-1]
 
     width = np.polyval(aotfwc, aotf_nu)
     lobe = np.polyval(aotfsc, aotf_nu)

@@ -14,9 +14,9 @@ def get_molecules(molecules, geom_d, plot=False):
     for molecule in molecules.keys():
         isos = molecules[molecule]["isos"]
 
-        #get gem data, interpolate onto altitude grid        
+        # get gem data, interpolate onto altitude grid
         ts, pressures, mol_ppmvs, co2_ppmvs = get_gem_lut_tpvmr(
-            molecule, geom_d["alt_grid"], geom_d["myear"], geom_d["ls"], \
+            molecule, geom_d["alt_grid"], geom_d["myear"], geom_d["ls"],
             geom_d["lat"], geom_d["lon"], geom_d["lst"], plot=plot)
 
         molecule_d[molecule] = {}
@@ -26,4 +26,4 @@ def get_molecules(molecules, geom_d, plot=False):
         molecule_d[molecule]["co2_ppmvs"] = co2_ppmvs
         molecule_d[molecule]["isos"] = isos
 
-        return molecule_d
+    return molecule_d

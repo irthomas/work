@@ -4,7 +4,7 @@ Created on Mon Mar 23 18:24:51 2020
 
 @author: iant
 
-CHECK OCCULTATION MISPOINTING, SAVE TO PDF
+CHECK OCCULTATION MISPOINTING, SAVE TO PDF. OLD VERSION!
 
 """
 import re
@@ -15,7 +15,7 @@ import os
 
 from tools.file.hdf5_functions import make_filelist2
 from tools.file.paths import paths, FIG_X_PDF, FIG_Y_PDF
-
+# from tools.file.one_filename_per_occ_dict import one_filename_per_occ_dict
 
 # for writing code for website
 IMG_WIDTH = 400
@@ -47,7 +47,7 @@ def plotSignalPointing(hdf5_file, hdf5_filename):
             toaIndices = np.where(tangentAlts[binIndexList] > 200.0)[0]
             yPixel = y[binIndexList, pixelIndex]
             yToa = np.mean(yPixel[toaIndices])
-            yTrans = yPixel/yToa
+            yTrans = yPixel / yToa
 
             ax1.plot(tangentAlts[binIndexList], yTrans)
     ax2.plot(tangentAlts[binIndexList], sunWobble[binIndexList], "k--")
@@ -61,12 +61,12 @@ file_level = "hdf5_level_0p3k"
 
 badFilelist = []
 nFiles = 0
-regex = re.compile("201807.._......_.*_SO_A_[IE]_134")
+regex = re.compile("20......_......_.*_SO_A_[IE]_134")
 
 hdf5Files, hdf5Filenames, titles = make_filelist2(regex, file_level, path=r"W:\data\SATELLITE\TRACE-GAS-ORBITER\NOMAD\hdf5")
 
 cmap = plt.get_cmap('jet')
-colours = [cmap(i) for i in np.arange(len(hdf5Filenames))/len(hdf5Filenames)]
+colours = [cmap(i) for i in np.arange(len(hdf5Filenames)) / len(hdf5Filenames)]
 
 if PLOT:
     plt.figure(figsize=(FIG_X_PDF, FIG_Y_PDF))
@@ -108,3 +108,6 @@ print("%i of %i files analysed are bad" % (len(badFilelist), nFiles))
 for badOcc in badFilelist:
     print("<a href=\"ProjectDir/images/bad_observations/Solar_Pointing_Deviation_%s.png\" target=\"_blank\"> <img src=\"ProjectDir/images/bad_observations/Solar_Pointing_Deviation_%s.png\" alt=\"\" width=\"%s\" height=\"%s\" /></a>"
           % (badOcc, badOcc, IMG_WIDTH, IMG_HEIGHT))
+
+print("Made with presentations.website_updates.check_occultation_pointings.py")
+print("Page last updated 18th August 2026")

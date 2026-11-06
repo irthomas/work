@@ -8,25 +8,24 @@ ONLY FOR PFM OCCULTATIONS
 
 """
 
+__project__ = "NOMAD"
+__author__ = "Ian Thomas and Yannick Willame"
+__contact__ = "ian.thomas@aeronomie.be"
 
-import glob
+# import glob
 import matplotlib.pyplot as plt
 import logging
 import h5py
 import numpy as np
 import os
 from scipy.interpolate import interp1d
-from datetime import datetime
+# from datetime import datetime
 from numpy.polynomial import Polynomial
 # import shutil
+
 # import nomad_ops.core.hdf5.generic_functions as generics
 # from nomad_ops.core.tools.progress_bar import progress
-
-
-__project__ = "NOMAD"
-__author__ = "Ian Thomas and Yannick Willame"
-__contact__ = "ian.thomas@aeronomie.be"
-
+from tools.general.progress_bar import progress
 
 # TODO: change back
 # logger = logging.getLogger(__name__)
@@ -40,13 +39,25 @@ logger.setLevel(logging.INFO)
 VERSION = 90
 OUTPUT_VERSION = "0.3E"
 
+"""only for debugging"""
 # PLOT_TYPES = ["linear_fit", "rises_falls", "illumination"]
 # PLOT_TYPES = ["rises_falls"]
 # PLOT_TYPES = ["illumination"]
 # PLOT_TYPES = ["illumination", "non_illumination"]
 PLOT_TYPES = []
 
+# 20240516_130419_0p3b_UVIS_I.h5
+# FRAMES_TO_CALIBRATE = [121, 122, 129, 130, 131, 132, 133, 134]
+# FRAMES_TOA = [0, 1]
+# FRAMES_PLOT = [2, 3, 4, 5]
+# PXS_TO_CALIBRATE = list(np.arange(500))
 
+# all
+# FRAMES_TO_CALIBRATE = []
+# PXS_TO_CALIBRATE = []
+
+
+"""program start"""
 ATTRIBUTES_TO_BE_REMOVED = ["NSpec"]
 DATASETS_TO_BE_REMOVED = [
     "Science/Y",
@@ -120,14 +131,22 @@ CRIT_MASK = {
 }
 
 
-def ozone_band():
-    """basic fit to a hartley band to give general shape"""
+"""from generics"""
 
-    x = np.arange(200, 300, 1)
-    y = (1 - np.exp(-((x - 255.5)**2) / (2 * 18.5**2)) + ((((((1.566054e-11 * x - 2.362383e-08) * x + 1.476562e-05) * x - 4.894615e-03
-                                                             ) * x + 0.907583634129) * x - 89.2597818528) * x + 3637.9058292))
 
-    return x, y
+def createIntermediateGroups(root, groups):
+    for g in groups:
+        root = root.require_group(g)
+    return root
+
+
+def iter_datasets(group, root=()):
+    for name, obj in group.items():
+        path = root + (name,)
+        if isinstance(obj, h5py.Dataset):
+            yield "/".join(path), obj
+        elif isinstance(obj, h5py.Group):
+            yield from iter_datasets(obj, path)
 
 
 """from 0p2b to 0p3b: modified"""
@@ -390,33 +409,23 @@ def straylight_fitpoly2(i_start_line_ccd, nbr_ccd_lines, i_start_line_bin_roi, n
 # src= "/bira-iasb/data/SATELLITE/TRACE-GAS-ORBITER/NOMAD/hdf5/hdf5_level_0p3b/2024/01/01/20240101_090648_0p3b_UVIS_I.h5"
 # dst= "/bira-iasb/data/SATELLITE/TRACE-GAS-ORBITER/NOMAD/hdf5/hdf5_level_0p3e/2024/01/01/20240101_090648_0p3e_UVIS_I.h5"
 
+
 # src = "20230126_081530_0p3b_UVIS_I.h5"  # binned
 # src = "20180522_051504_0p3b_UVIS_I.h5"  # missing last rows
 # src = "20180522_051504_0p3b_UVIS_I.h5"  # unbinned, missing last rows, too many noisy flagged
 # src = "20240819_202356_0p3b_UVIS_I.h5"  # binned high ozone?
 
-# src = "20240818_165255_0p3b_UVIS_I.h5" # binned high ozone steep T loss
-
-
-src = "20240516_130419_0p3b_UVIS_I.h5"  # unbinned, solar line peak seen
+src = "20240818_165255_0p3b_UVIS_I.h5"  # binned high ozone steep T loss
+# src = "20240516_130419_0p3b_UVIS_I.h5"  # unbinned, solar line peak seen
 
 # filepaths = glob.glob(r"W:\data\SATELLITE\TRACE-GAS-ORBITER\NOMAD\hdf5\hdf5_level_0p3b\2024\10\20\*UVIS_I.h5")
 
+src = r"C:\Users\iant\Documents\DATA\hdf5\hdf5_level_0p3b\2024\05\16\20240516_130419_0p3b_UVIS_I.h5"
+
 # for src in filepaths:
-dst = os.path.basename(src).replace("0p3b", "0p3e")
+dst = os.path.basename(src).replace("0p3b", "0p3d")
 #     if os.path.exists(dst):
 #         os.remove(dst)
-
-"""code to plot transmittance of existing file"""
-# with h5py.File(r"W:\data\SATELLITE\TRACE-GAS-ORBITER\NOMAD\hdf5\hdf5_level_1p0a\%s\%s\%s\%s" %(src[0:4], src[4:6], src[6:8], src.replace("0p3b","1p0a")), "r") as h5:
-#     x = h5["Science/X"][0, :]
-#     y = h5["Science/Y"][...]
-# plt.figure()
-# plt.plot(x, y[40:70, :].T, "k", alpha=0.5)
-# plt.title(src.replace("0p3b","1p0a"))
-# plt.xlabel("Wavelength (nm)")
-# plt.ylabel("Transmittance")
-# plt.grid()
 
 
 # def remove_straylight(src, dst):
@@ -447,49 +456,37 @@ if True:
         x = np.swapaxes(f['Science/X'][...], 0, 1)[:, frame_ixs_type4]
         xpix_1b = f['Science/Xpix_1b'][...]  # array of pixel centre indices for real columns in matlab indices e.g. [12.5, 20.5, 28.5,...]
         xnb_bin = f['Science/XNbBin'][...]  # array of binning factors for real columns e.g. [8,8,8,...]
-        nbr_lambda_pixels = xnb_bin.shape[0]  # n real columns e.g. 128
         x_calib_ref = f.attrs.get('XCalibRef', 'N/A')
 
         CircuitNoise = np.swapaxes(f['Science/CircuitNoise'], 0, 1)
         YNb = f['Science/YNb'][frame_ixs_type4]
         # stop()
 
-    logger.info("%s: acq_mode=%i, nbr_lambda_pixels=%i, vstart=%i, vend=%i, nbr_ccd_lines=%i, Yshape=%s",
-                hdf5_basename, acq_mode, nbr_lambda_pixels, vstart, vend, nbr_ccd_lines, Y.shape)
-
     if x_calib_ref == 'N/A':
         print('lambda_IASB_v1: manual')
         x_calib_ref = 'lambda_IASB_v1'
 
-    # manual rightward shift of atmos spectra
-    # y_shifted = np.zeros_like(Y)
-    # y_shifted[:1023, :, 125:140] = np.copy(Y[1:, :, 125:140]) / 100
+    # if len(FRAMES_TO_CALIBRATE) > 0:
+    #     Y = Y[:, :, FRAMES_TO_CALIBRATE]
+    #     YError = YError[:, :, FRAMES_TO_CALIBRATE]
+    #     YMask = YMask[:, :, FRAMES_TO_CALIBRATE]
+    #     YErrorSysNL = YErrorSysNL[:, :, FRAMES_TO_CALIBRATE]
+    #     nbr_obs = len(FRAMES_TO_CALIBRATE)
 
-    # Y_orig = np.copy(Y[:, :, :])
-    # Y[:, :, :] -= y_shifted
+    # if len(PXS_TO_CALIBRATE) > 0:
+    #     x = x[PXS_TO_CALIBRATE, :]
+    #     xpix_1b = xpix_1b[PXS_TO_CALIBRATE]
+    #     xnb_bin = xnb_bin[PXS_TO_CALIBRATE]
 
-    # a = Y_orig[:, :, 132]
-    # c = Y[:, :, 132]
-    # Y[173, 34:46, 132] -= 100
-    # Y[173, :, 132] -= (Y[174, :, 132] - Y[173, :, 132]) / 3
+    #     Y = Y[PXS_TO_CALIBRATE, :, :]
+    #     YError = YError[PXS_TO_CALIBRATE, :, :]
+    #     YMask = YMask[PXS_TO_CALIBRATE, :, :]
+    #     YErrorSysNL = YErrorSysNL[PXS_TO_CALIBRATE, :, :]
 
-    # not working
-    # for i in range(168, 160, -1):
-    #     Y[i, :, 132] -= (Y[i + 1, :, 132] - Y[i, :, 132]) / 3
+    nbr_lambda_pixels = xnb_bin.shape[0]  # n real columns e.g. 128
 
-    # modified lines. More reduction helps far UV but introduces more wiggles
-    # Y[:, 38:42, 130] -= 140
-    # Y[:, 38:42, 131] -= 150
-    # Y[:, 38:42, 132] -= 160
-    # Y[:, 38:42, 133] -= 180
-
-    # set all lines equal
-    # Y[:, :, 132] = Y[:, :, 131]
-    # Y[:, :, 133] = Y[:, :, 131]
-
-    # # change illuminated region only
-    # Y[:, 36:44, 132] = Y[:, 36:44, 131] - 60
-    # Y[:, 36:44, 133] = Y[:, 36:44, 131] - 70
+    logger.info("%s: acq_mode=%i, nbr_lambda_pixels=%i, vstart=%i, vend=%i, nbr_ccd_lines=%i, Yshape=%s",
+                hdf5_basename, acq_mode, nbr_lambda_pixels, vstart, vend, nbr_ccd_lines, Y.shape)
 
     # mat_bin_roi is the boolean matrix defining the illuminated pixel indices
     start_line_bin_roi, end_line_bin_roi, nbr_bin_roi_lines, mat_bin_roi = define_roi(vstart, xpix_1b)
@@ -513,11 +510,25 @@ if True:
 
     """calculate illumination shift"""
     # on which row ranges (approx) do the illumination patterns rise and fall for the given wavelengths?
-    nms = [350, 375, 400, 425, 450, 500, 550, 600]
+    nms_all = [300, 325, 350, 375, 400, 425, 450, 500, 550, 600]
+    # if limited spectral range
+    if x[-1, 0] < 400:
+        nms_all = [290, 310, 340, 370, 390, 450]
+    # remove nms outside spectral range
+    nms = []
+    for nm in nms_all:
+        nm_ix = np.argmin(np.abs(x[:, 0] - nm))
+        if nm_ix > 0 and nm_ix < len(x[:, 0]) - 1:
+            nms.append(nm)
+
+    print("nms considered:", nms)
+    if len(nms) < 5:
+        print("Warning: may need more nms to fit quadratic")
+
     illum_d = {s: {nm: {"px": [], "fit": []} for nm in nms} for s in ["rises", "falls"]}
 
     # which indices to check (need enough signal)
-    frame_ixs = np.where((np.mean(Y, axis=(0, 1)) > np.max(np.mean(Y, axis=(0, 1))) * 0.2))[0]
+    frame_ixs = np.where((np.mean(Y, axis=(0, 1)) > np.max(np.mean(Y, axis=(0, 1))) * 0.3))[0]
     frame_ixs_all = np.arange(nbr_obs)
 
     if "linear_fit" in PLOT_TYPES:
@@ -611,9 +622,12 @@ if True:
     illum_matrix = np.zeros_like(Y)  # between 0 and 1
     non_illum_matrix = np.zeros_like(Y)  # only 0 or 1, no values in between
     for obs_ix in np.arange(nbr_obs):
-        poly = Polynomial.fit(col_ixs, start_rows_roi[:, obs_ix], 2)
+
+        FIT_DEGREE = 2
+
+        poly = Polynomial.fit(col_ixs, start_rows_roi[:, obs_ix], FIT_DEGREE)
         fit_line_top_start = poly(px_ixs)
-        poly = Polynomial.fit(col_ixs, end_rows_roi[:, obs_ix], 2)
+        poly = Polynomial.fit(col_ixs, end_rows_roi[:, obs_ix], FIT_DEGREE)
         fit_line_bottom_start = poly(px_ixs)
 
         for col_ix in range(nbr_lambda_pixels):
@@ -663,39 +677,12 @@ if True:
 
     """vertically bin data"""
     # new: do the binning here
-    # Y_bins = np.nansum(Y * ymaskROI, axis=1) / np.nansum(ymaskROI, axis=1)
-    U2_bins = np.nansum(YError * ymaskROI, axis=1) / np.nansum(ymaskROI, axis=1)
-    U2SysNL_bins = np.nansum(YErrorSysNL * ymaskROI, axis=1) / np.nansum(ymaskROI, axis=1)
     nbr_bin_mat = np.nansum(ymaskROI, axis=1)  # number of good illuminated rows per pixel per frame
-    # nbr_satur_mat = np.sum(np.isnan(ymaskROI), axis=1)  # number of saturated and hot pixels now per pixel per frame
 
     # Create the hot pixel/saturation masks
     ymask = (nbr_bin_mat <= (nbr_bin_roi_lines[:, None] * 0.5)).astype(np.uint8)
-    # vect_saturated = (nbr_satur_mat >= (nbr_bin_roi_lines[:, None] * 0.5))
 
-    # Mask the data
-    # Y_bins = np.where(~ymask, Y_bins, np.nan)
-    U2_bins = np.where(~ymask, U2_bins, np.nan)
-
-    # Replace infinities with NaN
-    # Y_bins[np.isinf(Y_bins)] = np.nan
-    U2_bins[np.isinf(U2_bins)] = np.nan
-
-    # data_SmeaRem = Y_bins
-    u2_data_SmeaRem = U2_bins
-    u2_data_SysNL = U2SysNL_bins
-    # nbrBinMat = nbr_bin_mat
-    # VectSaturated = vect_saturated
-
-    u2_data_Rdm = (u2_data_SmeaRem / (nbr_bin_mat**2))  # error obtained up to here were random error -> to be saved in h5 file
-    u2_data_SysNL = (u2_data_SysNL / (nbr_bin_mat**2))
-
-    # data_OM is the same as matlab
-    # data_OM = (data_SmeaRem / nbr_bin_mat)
-    # data_OM2 = (data_SmeaRem / nbr_bin_mat)
-    u2_data_OM = u2_data_Rdm + u2_data_SysNL  # add the systematic error due to Non-Linearity correction (if applied)
-    # Straylight_OM = np.full_like(data_SmeaRem, np.nan)
-    Straylight_OM2 = np.zeros((Y.shape[0], Y.shape[2]))
+    # Straylight_OM2 = np.zeros((Y.shape[0], Y.shape[2]))
 
     yvalidflag = np.zeros(nbr_obs, dtype=np.uint8)
 
@@ -715,11 +702,8 @@ if True:
     middle_col_sums = np.nansum(Ynon[middle_col_ix, :, :], axis=0)
     middle_col_trans = middle_col_sums / np.nanmax(middle_col_sums)
 
-    print("Remove straylight")
-    for frame_ix in range(nbr_obs):
-
-        if frame_ix not in [121, 122, 130, 131, 132, 133]:
-            continue
+    print("Remove linear straylight")
+    for frame_ix in progress(range(nbr_obs)):
 
         # for frame_ix in range(1):
         frame = np.copy(Ynon[:, :, frame_ix])
@@ -757,7 +741,7 @@ if True:
 
             if chisq > chisq_cutoff:
                 # remove extra noisy pixels if chisq still too high
-                print(frame_ix, col_ix, middle_col_trans[frame_ix], chisq)
+                # print(frame_ix, col_ix, middle_col_trans[frame_ix], chisq)
                 for loop in range(BP_N_ITERS):
                     non_illum_ixs = frame_non_illum_ixs[1][frame_non_illum_ixs[0] == col_ix]
 
@@ -772,136 +756,32 @@ if True:
                 chisq = np.sum(np.abs(chisq_px)) / len(non_illum_ixs)
 
                 print(frame_ix, col_ix, middle_col_trans[frame_ix], chisq)
-                if chisq > chisq_cutoff:
-                    plt.figure()
-                    plt.title("Non-illuminated zone and removed pixels")
-                    plt.xlabel("Spectral dimension")
-                    plt.ylabel("Detector row")
-                    plot_frame = Ynon[:, :, frame_ix]
-                    frame_col_max = np.nanmax(plot_frame, axis=1)
-                    im = plt.imshow((plot_frame / frame_col_max[:, None]).T, extent=[xpix_1b[0], xpix_1b[-1], vstart + nbr_ccd_lines, vstart], aspect="auto")
-                    # im = plt.imshow(Ynon[:, :, frame_ix].T, vmax=20000, extent=[xpix_1b[0], xpix_1b[-1], vstart + nbr_ccd_lines, vstart], aspect="auto")
-                    plt.colorbar(im)
-
-                    plt.figure()
-                    plt.title("Column-normalised detector frame")
-                    plt.xlabel("Spectral dimension")
-                    plt.ylabel("Detector row")
-                    plot_frame = Y[:, :, frame_ix]
-                    frame_col_max = np.nanmax(plot_frame, axis=1)
-                    im = plt.imshow((plot_frame / frame_col_max[:, None]).T, extent=[xpix_1b[0], xpix_1b[-1], vstart + nbr_ccd_lines, vstart], aspect="auto")
-                    # im = plt.imshow(Ynon[:, :, frame_ix].T, vmax=20000, extent=[xpix_1b[0], xpix_1b[-1], vstart + nbr_ccd_lines, vstart], aspect="auto")
-                    plt.colorbar(im)
-
-                    plt.figure()
-                    plt.title("Column-normalised illuminated zone")
-                    plt.xlabel("Spectral dimension")
-                    plt.ylabel("Detector row")
-                    plot_frame = Y[:, :, frame_ix] * ymaskROI[:, :, frame_ix]
-                    frame_col_max = np.nanmax(plot_frame, axis=1)
-                    im = plt.imshow((plot_frame / frame_col_max[:, None]).T, extent=[xpix_1b[0], xpix_1b[-1], vstart + nbr_ccd_lines, vstart], aspect="auto")
-                    # im = plt.imshow(Ynon[:, :, frame_ix].T, vmax=20000, extent=[xpix_1b[0], xpix_1b[-1], vstart + nbr_ccd_lines, vstart], aspect="auto")
-                    plt.colorbar(im)
-
-                    plt.figure()
-                    plt.title("Straylight fit to non-illuminated rows in detector column %i" % col_ix)
-                    plt.xlabel("Detector row")
-                    plt.ylabel("Signal in non-illuminated zone")
-                    plt.plot(frame[col_ix, :])
-                    plt.scatter(non_illum_ixs, frame[col_ix, non_illum_ixs])
-                    plt.plot(straylight)
-                    stop()
 
             # total illuminated lines minus total nans
-            n_not_nans = np.nansum((illum_matrix[col_ix, :, frame_ix]) < CRIT_MASK["HotPixelsKept"])
-            straylight_spectrum[col_ix] = np.nansum(straylight * illum_matrix[col_ix, :, frame_ix]) / n_not_nans
+            # n_not_nans = np.nansum((illum_matrix[col_ix, :, frame_ix]) < CRIT_MASK["HotPixelsKept"])
+            # straylight_spectrum[col_ix] = np.nansum(straylight * illum_matrix[col_ix, :, frame_ix]) / n_not_nans
 
             straylight_frames[col_ix, :, frame_ix] = straylight
 
-            # if col_ix == 173 and middle_col_trans[frame_ix] < 0.97:
-            #     plt.plot(frame[col_ix, :])
-            #     plt.scatter(non_illum_ixs, frame[col_ix, non_illum_ixs])
-            #     plt.plot(straylight)
-
-        Straylight_OM2[:, frame_ix] = straylight_spectrum
+        # Straylight_OM2[:, frame_ix] = straylight_spectrum
         # data_OM[:, frame_ix] -= straylight_spectrum
         yvalidflag[frame_ix] = 1
 
-        print(frame_ix, middle_col_trans[frame_ix], chisq)
-
-    # check non-illuminated lines
-    # for i in range(0, 121, 10):
-    #     plt.figure()
-    #     plt.title(i)
-    #     # plt.ylim(-100, 6000)
-    #     # plt.plot(Y[i, :, 400:410])
-    #     # plt.plot(Ynon[i, :, 400:410])
-    #     plt.ylim(-100, 12000)
-    #     plt.plot(Y[i, :, 132])
-    #     plt.plot(Ynon[i, :, 162:172])
+        # print(frame_ix, middle_col_trans[frame_ix], chisq)
 
     Y_no_straylight = Y - straylight_frames  # 3d raw data - straylight frames
-
-    Y_no_sl_illum = Y_no_straylight * ymaskROI
-
-    # FIXME decide which one best
-    # data_OM = np.nansum(Y_no_straylight, axis=1)  # raw sum including top and bottom zones
-    data_OM = np.nansum(Y_no_sl_illum, axis=1)  # sum not including top and bottom zones
-
-    if src == "20230126_081530_0p3b_UVIS_I.h5":
-        plot_ixs = [400, 410]
-        plot_col_ixs = [0, 1, 2, 3, 4, 13, 21, 23]
-    elif src == "20240516_130419_0p3b_UVIS_I.h5":
-        plot_ixs = [100, 110]
-        plot_col_ixs = [168, 173, 178]
-    else:
-        plot_ixs = [100, 110]
-        plot_col_ixs = [0, 1, 2, 3, 4, 13, 21, 23]
-
-    # plt.figure()
-    # plt.title("Normalised binned spectra")
-    # plt.plot(data_OM[:, plot_ixs[0]:plot_ixs[1]] / np.nanmax(data_OM[:, plot_ixs[0]:plot_ixs[1]], axis=0)[None, :])
-    # plt.grid()
-    # plt.xlabel("Pixel Number")
-    # plt.ylabel("Counts (normalised)")
-
-    # check illuminated lines
-    # Yillum = Y_no_straylight * ymaskROI
-    # data_OM = np.nansum(Yillum, axis=1)  # selected illuminated rows after straylight correction
-
-    # for i in plot_col_ixs:  # range(0, 121, 10):
-    #     plt.figure()
-    #     plt.title(i)
-    #     plt.ylim(-100, 6000)
-    #     plt.ylim(-100, 12000)
-    #     plt.plot(Y_no_straylight[i, :, plot_ixs[0]:plot_ixs[1]]) # raw Y minus straylight curve
-    #     plt.plot(Yillum[i, :, plot_ixs[0]:plot_ixs[1]] / np.nanmax(Yillum[i, :, plot_ixs[0]:plot_ixs[1]], axis=0)[None, :])
-    #     plt.plot(Y[i, :, plot_ixs[0]:plot_ixs[1]])  # raw Y
-    #     plt.plot(Ynon[i, :, plot_ixs[0]:plot_ixs[1]])  # straylight curves only
-
-    # Handling NaNs and transposing
-    u2_data_Rdm[np.isinf(u2_data_Rdm)] = np.nan
-    # u2_data_SysNL[np.isinf(u2_data_SysNL)] = np.nan
-    data_OM[np.isinf(data_OM)] = np.nan
-    u2_data_OM[np.isinf(u2_data_OM)] = np.nan
-    # Straylight_OM[np.isinf(Straylight_OM)] = np.nan
-    Straylight_OM2[np.isinf(Straylight_OM2)] = np.nan
-    u2_data_Sys_OM = u2_data_OM - u2_data_Rdm
-    # data_NoCorr[np.isinf(data_NoCorr)] = np.nan
-    # u2_data_NoCorr[np.isinf(u2_data_NoCorr)] = np.nan
+    # Y_no_sl_illum = Y_no_straylight * ymaskROI
 
     # Convert XNbBin to uint8
     xnb_bin = xnb_bin.astype(np.uint8)
 
-    d_out["Science/Y"] = data_OM.astype(np.float32)
+    d_out["Science/Y"] = Y_no_straylight
     d_out["Science/YMask"] = ymask
+    d_out["Science/YIllumMask"] = ymaskROI
+    d_out["Science/YNonIllumMask"] = non_illum_matrix
     d_out["Science/YValidFlag"] = yvalidflag
 
-    d_out["Science/YError"] = u2_data_OM
-    d_out["Science/YErrorRandom"] = u2_data_Rdm
-    d_out["Science/YErrorSystematic"] = u2_data_Sys_OM
-    # d_out["Science/StraylightInflight"] = Straylight_OM
-    d_out["Science/StraylightInflight"] = Straylight_OM2
+    # d_out["Science/StraylightInflight"] = Straylight_OM2
 
     d_out["Science/X"] = x
     d_out["Science/CircuitNoise"] = CircuitNoise
@@ -911,184 +791,83 @@ if True:
     d_out["Science/YMaskROI"] = ymaskROI
     d_out["Channel/VStart_YMaskROI_0b"] = np.uint8(VStart_YMaskROI_0b)
 
-    y_plot = d_out["Science/Y"].T
-
-    if src == '20230126_081530_0p3b_UVIS_I.h5':
-        toa_frames = [298, 348]
-        plot_frames = [378, 418]
-    elif src == '20180522_051504_0p3b_UVIS_I.h5':
-        toa_frames = [50, 75]
-        plot_frames = [150, 165]
-    elif src == "20240516_130419_0p3b_UVIS_I.h5":
-        toa_frames = [121, 123]
-        plot_frames = [130, 134]
-        # plot_frames = [125, 140]
-        # investigate frames 130-132
-        # frame_ix = 130
-        # col 167 is good, 173 is bad
-        # a = Y_no_straylight[:, :, frame_ix] / Y_no_straylight[:, :, 75]
-        # plt.figure(); plt.imshow(a.T, aspect="auto", vmax=1, vmin=0)
-        # plt.figure(); plt.plot(np.sum(a[:, 37:45], axis=1))
-        # b = straylight_frames[:, :, frame_ix] / straylight_frames[:, :, 75]
-        # plt.figure(); plt.imshow(b.T, aspect="auto", vmax=1, vmin=0)
-        # plt.figure(); plt.imshow(Y_no_straylight[:, :, frame_ix].T, aspect="auto", vmax=5000)
-        # plt.figure(); plt.imshow(straylight_frames[:, :, frame_ix], aspect="auto")
-        # plt.figure(); plt.imshow(straylight_frames[:, :, frame_ix], aspect="auto")
-
-        # c = np.sum(straylight_frames[167, :, :], axis=0)
-        # d = np.sum(straylight_frames[173, :, :], axis=0)
-        # plt.figure()
-        # plt.plot(c / max(c))
-        # plt.plot(d / max(d))
-        # plt.figure()
-        # plt.plot((c / max(c)) / (d / max(d)))  # ratio of normalised TOA straylight to normalised atmos straylight
-        # plt.figure()
-        # plt.plot(straylight_frames[167, :, 123])
-        # plt.plot(straylight_frames[173, :, 123])
-        # plt.plot(straylight_frames[167, :, 122])
-        # plt.plot(straylight_frames[173, :, 122])
-        # plt.plot(straylight_frames[167, :, 132])
-        # plt.plot(straylight_frames[173, :, 132])
-        # straylight is very very similar in value between col 167 and 173
-        # peak in transmittance spectra due to Y?
-
-        # plt.figure()
-        # a = np.nansum(Y_no_sl_illum[173, :, :], axis=0)
-        # b = np.nansum(Y_no_sl_illum[167, :, :], axis=0)
-        # plt.plot((a / b)[119:140])
-        # plt.ylim((0.3, 0.6))
-        # # compare
-        # a = np.nansum(Y_no_sl_illum[167, :, :], axis=0)
-        # b = np.nansum(Y_no_sl_illum[189, :, :], axis=0)
-        # plt.plot((a / b)[119:140]-0.2)
-
-        # plt.figure()
-        # aa = []
-        # for i in [164, 166, 167, 176, 179, 180, 187, 189, 190, 195]:
-        #     a = np.nansum(Y_no_sl_illum[i, :, :], axis=0)[119:140]
-        #     aa.append(a / max(a))
-        #     plt.plot(np.arange(1024)[119:140], a/max(a), label=i)
-        # aa = np.mean(np.asarray(aa), axis=0)
-
-        # for i in [171, 172, 173, 174, 182, 184]:
-        #     a = np.nansum(Y_no_sl_illum[i, :, :], axis=0)[119:140]
-        #     plt.plot(np.arange(1024)[119:140], (a / max(a)), label=i, linestyle="--")
-        # plt.legend()
-
-        # xo3, yo3 = ozone_band()
-        # plt.figure()
-        # plt.plot(x[:, 0], np.sum(Y_no_straylight[:, :, 132], axis=1) / np.sum(Y_no_straylight[:, :, 123], axis=1))
-        # plt.plot(xo3, (yo3 / 3) + 0.4)
-
-    else:
-        toa_frames = [50, 75]
-        plot_frames = [100, 200]
-
-    toa = np.mean(y_plot[toa_frames[0]:toa_frames[1], :], axis=0)
-    y_cal = y_plot / toa[None, :]
-    plt.figure(figsize=(10, 10))
-    # plt.plot(y_cal[380:420, :].T, "k")
-    plt.plot(y_cal[plot_frames[0]:plot_frames[1], :].T, "k", alpha=0.5)
-    for i in np.arange(y_cal.shape[0])[plot_frames[0]:plot_frames[1]]:
-        plt.text(100, y_cal[i, 100] + 0.05, i)
-    plt.title(src)
-    plt.xlabel("Pixel number")
-    plt.ylabel("Transmittance")
-    plt.grid()
-    # check for changes
-    # plt.savefig("uvis_trans_%s.png" % (str(datetime.now())[:19].replace("-", "_").replace(" ", "_").replace(":", "_")), dpi=200)
-
-    # compare to diff in raw spectra
-    # plt.figure()
-    # plt.plot(y_cal[132, :].T, "k", alpha=0.5)
-    # diff = np.diff(y_plot[132, :]) / y_plot[132, :-1]
-    # plt.plot(np.arange(1023) - 1, diff / max(diff) / 10 + 0.5)
-
-    # trans interpolation of good pixels to find deviation of bad pixels
-    # not yet working
-    # good_px_ixs = np.asarray([164, 166, 167, 176, 179, 180, 187, 189, 190, 195])
-    # x = np.arange(1024)
-    # x_new = np.arange(164, 194)
-    # for i in [132]:
-    #     y = y_cal[i, :]
-    #     y_interp = np.interp(x, good_px_ixs, y[good_px_ixs])
-    # plt.figure()
-    # plt.plot(x, y)
-    # plt.plot(x, y_interp)
-
-    # indrec = np.argwhere(itypedata == 4)[:, 0]
-    # indrec = np.arange(nbr_obs)
-    # logger.info("NSpec old=%i, NSpec new=%i", len(itypedata), len(indrec))
+    indrec = np.argwhere(itypedata == 4)[:, 0]
+    indrec = np.arange(nbr_obs)
+    logger.info("NSpec old=%i, NSpec new=%i", len(itypedata), len(indrec))
 
     """save to file"""
-    # with h5py.File(src, 'r') as hdf5FileIn:
-    #     with h5py.File(dst, 'w') as hdf5FileOut:
+    with h5py.File(src, 'r') as hdf5FileIn:
+        with h5py.File(dst, 'w') as hdf5FileOut:
 
-    #         # generics.copyAttributesExcept(hdf5FileIn, hdf5FileOut, OUTPUT_VERSION, ATTRIBUTES_TO_BE_REMOVED)
+            # generics.copyAttributesExcept(hdf5FileIn, hdf5FileOut, OUTPUT_VERSION, ATTRIBUTES_TO_BE_REMOVED)
 
-    #         hdf5FileOut.attrs["NSpec"] = len(indrec)
+            hdf5FileOut.attrs["NSpec"] = len(indrec)
 
-    #         # don't copy all datasets to new file
-    #         for dset_path, dset in generics.iter_datasets(hdf5FileIn):
-    #             # print(dset_path)
-    #             if dset_path in DATASETS_TO_BE_REMOVED:  # don't copy
-    #                 # print("Not copying %s" %dset_path)
-    #                 continue
+            # don't copy all datasets to new file
+            # FIXME: put this back
+            # for dset_path, dset in generics.iter_datasets(hdf5FileIn):
+            for dset_path, dset in iter_datasets(hdf5FileIn):
+                # print(dset_path)
+                if dset_path in DATASETS_TO_BE_REMOVED:  # don't copy
+                    # print("Not copying %s" %dset_path)
+                    continue
 
-    #             dest = generics.createIntermediateGroups(hdf5FileOut, dset_path.split("/")[:-1])
+                # FIXME: put this back
+                # dest = generics.createIntermediateGroups(hdf5FileOut, dset_path.split("/")[:-1])
+                dest = createIntermediateGroups(hdf5FileOut, dset_path.split("/")[:-1])
 
-    #             if any([i in dset_path for i in DATASETS_NOT_TO_BE_RESHAPED]):
-    #                 hdf5FileIn.copy(dset_path, dest)
-    #                 # print("Copying but not reshaping %s" %dset_path)
-    #                 continue
+                if any([i in dset_path for i in DATASETS_NOT_TO_BE_RESHAPED]):
+                    hdf5FileIn.copy(dset_path, dest)
+                    # print("Copying but not reshaping %s" %dset_path)
+                    continue
 
-    #             dsetcopy = np.array(dset)
-    #             # print("%s dataset is being reshaped (shape=%s)" %(dset_path, dsetcopy.shape))
-    #             if dsetcopy.ndim == 0:
-    #                 hdf5FileOut.create_dataset(dset_path, dtype=dset.dtype, data=dsetcopy)
-    #             elif dsetcopy.ndim == 1:  # if 1D, use compression
-    #                 # print("Length = %i" %dsetcopy.shape[0])
-    #                 hdf5FileOut.create_dataset(dset_path, dtype=dset.dtype, data=dsetcopy[indrec], compression="gzip", shuffle=True)
-    #             elif len(dsetcopy.shape) == 2:  # if 2D, use compression
-    #                 # print("Length = (%i, %i)" %(dsetcopy.shape[0], dsetcopy.shape[1]))
-    #                 hdf5FileOut.create_dataset(dset_path, dtype=dset.dtype, data=dsetcopy[indrec, :], compression="gzip", shuffle=True)
-    #             elif len(dsetcopy.shape) == 3:  # if 3D, use compression
-    #                 # print("Length = (%i, %i)" %(dsetcopy.shape[0], dsetcopy.shape[1]))
-    #                 hdf5FileOut.create_dataset(dset_path, dtype=dset.dtype, data=dsetcopy[indrec, :, :], compression="gzip", shuffle=True)
+                dsetcopy = np.array(dset)
+                # print("%s dataset is being reshaped (shape=%s)" %(dset_path, dsetcopy.shape))
+                if dsetcopy.ndim == 0:
+                    hdf5FileOut.create_dataset(dset_path, dtype=dset.dtype, data=dsetcopy)
+                elif dsetcopy.ndim == 1:  # if 1D, use compression
+                    # print("Length = %i" %dsetcopy.shape[0])
+                    hdf5FileOut.create_dataset(dset_path, dtype=dset.dtype, data=dsetcopy[indrec], compression="gzip", shuffle=True)
+                elif len(dsetcopy.shape) == 2:  # if 2D, use compression
+                    # print("Length = (%i, %i)" %(dsetcopy.shape[0], dsetcopy.shape[1]))
+                    hdf5FileOut.create_dataset(dset_path, dtype=dset.dtype, data=dsetcopy[indrec, :], compression="gzip", shuffle=True)
+                elif len(dsetcopy.shape) == 3:  # if 3D, use compression
+                    # print("Length = (%i, %i)" %(dsetcopy.shape[0], dsetcopy.shape[1]))
+                    hdf5FileOut.create_dataset(dset_path, dtype=dset.dtype, data=dsetcopy[indrec, :, :], compression="gzip", shuffle=True)
 
-    #         for key, value in d_out.items():
-    #             # print("%s dataset (shape=%i)" %(key, len(value.shape)))
-    #             if key == "Science/YMask":
-    #                 dtype = "uint8"
-    #             else:
-    #                 dtype = "float32"
+            for key, value in d_out.items():
+                # print("%s dataset (shape=%i)" %(key, len(value.shape)))
+                if key == "Science/YMask":
+                    dtype = "uint8"
+                else:
+                    dtype = "float32"
 
-    #             if value.ndim == 1:
-    #                 if any([i in key for i in DATASETS_NOT_TO_BE_RESHAPED]):
-    #                     hdf5FileOut.create_dataset(key, data=value, dtype=dtype, compression="gzip", shuffle=True)
-    #                 else:
-    #                     dset = value[indrec]
-    #                     hdf5FileOut.create_dataset(key, data=dset, dtype=dtype, compression="gzip", shuffle=True)
-    #                     # logger.info("Output dataset %s has shape %s", key, dset.shape)
-    #             elif value.ndim == 2:
-    #                 if any([i in key for i in DATASETS_NOT_TO_BE_RESHAPED]):
-    #                     hdf5FileOut.create_dataset(key, data=value.T, dtype=dtype, chunks=(
-    #                         value.shape[1], min(24, value.shape[0])), compression="gzip", compression_opts=4)
-    #                 else:
-    #                     dset = value.T[indrec, :]
-    #                     hdf5FileOut.create_dataset(key, data=dset, dtype=dtype, chunks=(
-    #                         len(indrec), min(24, value.shape[0])), compression="gzip", compression_opts=4)
-    #                     # logger.info("Output dataset %s has shape %s", key, dset.shape)
-    #             elif value.ndim == 3:
-    #                 if any([i in key for i in DATASETS_NOT_TO_BE_RESHAPED]):
-    #                     hdf5FileOut.create_dataset(key, data=np.swapaxes(value, 0, 2), dtype=dtype, chunks=(
-    #                         1, 1, value.shape[0]), compression="gzip", compression_opts=4)
-    #                 else:
-    #                     dset = np.swapaxes(value, 0, 2)[indrec, :, :]
-    #                     hdf5FileOut.create_dataset(key, data=dset, dtype=dtype, chunks=(1, 1, value.shape[0]), compression="gzip", compression_opts=4)
-    #                     # logger.info("Output dataset %s has shape %s", key, dset.shape)
-    #             else:
-    #                 hdf5FileOut.create_dataset(key, data=value, dtype=dtype)
+                if value.ndim == 1:
+                    if any([i in key for i in DATASETS_NOT_TO_BE_RESHAPED]):
+                        hdf5FileOut.create_dataset(key, data=value, dtype=dtype, compression="gzip", shuffle=True)
+                    else:
+                        dset = value[indrec]
+                        hdf5FileOut.create_dataset(key, data=dset, dtype=dtype, compression="gzip", shuffle=True)
+                        # logger.info("Output dataset %s has shape %s", key, dset.shape)
+                elif value.ndim == 2:
+                    if any([i in key for i in DATASETS_NOT_TO_BE_RESHAPED]):
+                        hdf5FileOut.create_dataset(key, data=value.T, dtype=dtype, chunks=(
+                            value.shape[1], min(24, value.shape[0])), compression="gzip", compression_opts=4)
+                    else:
+                        dset = value.T[indrec, :]
+                        hdf5FileOut.create_dataset(key, data=dset, dtype=dtype, chunks=(
+                            len(indrec), min(24, value.shape[0])), compression="gzip", compression_opts=4)
+                        # logger.info("Output dataset %s has shape %s", key, dset.shape)
+                elif value.ndim == 3:
+                    if any([i in key for i in DATASETS_NOT_TO_BE_RESHAPED]):
+                        hdf5FileOut.create_dataset(key, data=np.swapaxes(value, 0, 2), dtype=dtype, chunks=(
+                            1, 1, value.shape[0]), compression="gzip", compression_opts=4)
+                    else:
+                        dset = np.swapaxes(value, 0, 2)[indrec, :, :]
+                        hdf5FileOut.create_dataset(key, data=dset, dtype=dtype, chunks=(1, 1, value.shape[0]), compression="gzip", compression_opts=4)
+                        # logger.info("Output dataset %s has shape %s", key, dset.shape)
+                else:
+                    hdf5FileOut.create_dataset(key, data=value, dtype=dtype)
 
 
 # def convert(hdf5file_path):

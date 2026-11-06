@@ -267,7 +267,7 @@ if __name__ == "__main__":
 
             d = make_obs_dict(obs_dt_strs)
             colours = get_colours(len(d["et_s"]))
-            et = d["et_s"][int(len(d["et_s"])/2)]  # choose a time within the observation
+            et = d["et_s"][int(len(d["et_s"]) / 2)]  # choose a time within the observation
 
             channelId = sp.bods2c(DREF)  # find channel id number
             [channelShape, name, boresightVector, nvectors, boresightVectorbounds] = sp.getfov(channelId, 4)
@@ -283,6 +283,8 @@ if __name__ == "__main__":
 
             dp = make_obs_point_dict(d["et_s"], new_vectors)
 
+            stop()
+
             if "groundtrack_surface" in PLOT_TYPES:
                 # plot ground tracks on surface model
                 fig1, ax1 = plt.subplots(figsize=(12, 7), constrained_layout=True)
@@ -294,9 +296,9 @@ if __name__ == "__main__":
                 ax1.set_ylim((-90, 90))
 
                 if N_STEPS == -1:
-                    plot_ixs = np.linspace(len(d["et_s"])*0.05, len(d["et_s"])*0.95-1, dtype=int)  # avoid first and last observations
+                    plot_ixs = np.linspace(len(d["et_s"]) * 0.05, len(d["et_s"]) * 0.95 - 1, dtype=int)  # avoid first and last observations
                 else:
-                    plot_ixs = np.linspace(len(d["et_s"])*0.05, len(d["et_s"])*0.95-1, N_STEPS, dtype=int)  # avoid first and last observations
+                    plot_ixs = np.linspace(len(d["et_s"]) * 0.05, len(d["et_s"]) * 0.95 - 1, N_STEPS, dtype=int)  # avoid first and last observations
 
                 for i in plot_ixs:
 
@@ -350,12 +352,12 @@ if __name__ == "__main__":
                         index = lon_ix * len(lats) + lat_ix
                         ilumin = sp.ilumin(SPICE_SHAPE_MODEL_METHOD, SPICE_TARGET, et, SPICE_PLANET_REFERENCE_FRAME,
                                            SPICE_ABERRATION_CORRECTION, SPICE_OBSERVER, surf_xyzs[index])
-                        phobos_illumination[len(lats)-1-lat_ix, lon_ix] = ilumin[3] * SP_DPR
+                        phobos_illumination[len(lats) - 1 - lat_ix, lon_ix] = ilumin[3] * SP_DPR
 
                 if N_STEPS == -1:
-                    plot_ixs = np.linspace(len(d["et_s"])*0.05, len(d["et_s"])*0.95-1, dtype=int)  # avoid first and last observations
+                    plot_ixs = np.linspace(len(d["et_s"]) * 0.05, len(d["et_s"]) * 0.95 - 1, dtype=int)  # avoid first and last observations
                 else:
-                    plot_ixs = np.linspace(len(d["et_s"])*0.05, len(d["et_s"])*0.95-1, N_STEPS, dtype=int)  # avoid first and last observations
+                    plot_ixs = np.linspace(len(d["et_s"]) * 0.05, len(d["et_s"]) * 0.95 - 1, N_STEPS, dtype=int)  # avoid first and last observations
 
                 for i in plot_ixs:
 
@@ -411,7 +413,7 @@ if __name__ == "__main__":
                             ilumin = sp.ilumin(SPICE_SHAPE_MODEL_METHOD, SPICE_TARGET, et, SPICE_PLANET_REFERENCE_FRAME,
                                                SPICE_ABERRATION_CORRECTION, SPICE_OBSERVER, surf_xyzs[index])
                             # add instead of assign
-                            phobos_illumination[len(lats)-1-lat_ix, lon_ix] += ilumin[3] * SP_DPR
+                            phobos_illumination[len(lats) - 1 - lat_ix, lon_ix] += ilumin[3] * SP_DPR
 
                 # divide by 2 to give average
                 phobos_illumination /= 2.0
@@ -423,9 +425,9 @@ if __name__ == "__main__":
                 cbar2.set_label("Mean start and end solar zenith angle (degrees)", rotation=270, labelpad=15)
 
                 if N_STEPS == -1:
-                    plot_ixs = np.linspace(1.0+len(d["et_s"])*0.05, (len(d["et_s"])-1.0)*0.95, dtype=int)  # avoid first and last observations
+                    plot_ixs = np.linspace(1.0 + len(d["et_s"]) * 0.05, (len(d["et_s"]) - 1.0) * 0.95, dtype=int)  # avoid first and last observations
                 else:
-                    plot_ixs = np.linspace(1.0+len(d["et_s"])*0.05, (len(d["et_s"])-1.0)*0.95, N_STEPS, dtype=int)  # avoid first and last observations
+                    plot_ixs = np.linspace(1.0 + len(d["et_s"]) * 0.05, (len(d["et_s"]) - 1.0) * 0.95, N_STEPS, dtype=int)  # avoid first and last observations
 
                 print("plot indices:", len(d["et_s"]), plot_ixs)
 

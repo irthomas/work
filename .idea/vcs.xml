@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="VcsDirectoryMappings">
+    <mapping directory="" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/repos/ExoMars" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/repos/common_functions" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/repos/hapi2" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/repos/nomad-gse_py3" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/repos/nomad_observation_errors" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/repos/nomad_sim" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/repos/nomad_tools" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/repos/pytran" vcs="Git" />
+  </component>
+</project>

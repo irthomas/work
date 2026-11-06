@@ -79,14 +79,20 @@ class forward:
 
         logger.debug("### Starting SO forward model %s###", datetime.now())
 
-        mol_scaler = params["mol_scaler"].value
-        logger.debug("mol_scaler = %f", mol_scaler)
-
         path_lengths_km = self.geom_d["path_lengths_km"]
         alt_grid = self.geom_d["alt_grid"]
 
+        hapi_transs = []
+
         for molecule in self.molecule_d.keys():
+
+            if "%s_mol_scaler" % molecule.lower() not in params.keys():
+                print("Info: molecule %s in dictionary but not in params" % molecule)
+                continue
+            mol_scaler = params["%s_mol_scaler" % molecule.lower()].value
+            logger.debug("mol_scaler = %f", mol_scaler)
             logger.info("molecule = %s", molecule)
+
             print(molecule, mol_scaler)
 
             if "hr" in plot:
@@ -98,10 +104,9 @@ class forward:
             isos = self.molecule_d[molecule]["isos"]
 
             """make HR transmittance spectra for all isotopes and molecules at the given altitudes"""
-            hapi_transs = []
 
             for i in range(len(alt_grid)):
-                print("Altitude %0.2fkm, path length %0.2fkm" % (alt_grid[i], path_lengths_km[i]))
+                logger.info("Altitude %0.2fkm, path length %0.2fkm", alt_grid[i], path_lengths_km[i])
 
                 t_raw = self.molecule_d[molecule]["ts"][i]
                 # round temperature to nearest 5K
@@ -110,11 +115,11 @@ class forward:
                 p = self.molecule_d[molecule]["pressures"][i] * self.molecule_d[molecule]["mol_ppmvs"][i] / 1.0e6
                 for iso in isos:
 
-                    # print("t:",  molecule_d[molecule]["ts"][i], \
-                    # "pressure:",  molecule_d[molecule]["pressures"][i], \
-                    # "mol_ppmv:",  molecule_d[molecule]["mol_ppmvs"][i], \
-                    # "mol_ppmv_scaled:",  mol_ppmv_scaled, \
-                    # "co2_ppmv:",  molecule_d[molecule]["co2_ppmvs"][i])
+                    # print("t:", self.molecule_d[molecule]["ts"][i],
+                    #       "pressure:", self.molecule_d[molecule]["pressures"][i],
+                    #       "mol_ppmv:", self.molecule_d[molecule]["mol_ppmvs"][i],
+                    #       "mol_ppmv_scaled:", self.molecule_d[molecule]["mol_ppmvs"][i] * mol_scaler,
+                    #       "co2_ppmv:", self.molecule_d[molecule]["co2_ppmvs"][i])
 
                     hapi_nus, hapi_abs_coeffs = get_abs_coeff(self.centre_order, molecule, iso, t)
 
@@ -246,7 +251,7 @@ class forward:
                     # summed ils with absorption lines - changes with pixel and order
                     ils_sums_spectrum[order_ix, px] = np.sum(ils * hapi_trans_grid)
 
-                # other orders, may or may not be covered by hapi range!
+                # FIXME: other orders, may or may not be covered by hapi range!
                 else:
 
                     # if at the end of the hapi range, if no absorption lines no need to do ils spectrum calculation
@@ -275,7 +280,7 @@ class forward:
 
                             else:
                                 # if real absorptions present, extend the ranges
-                                extra_nus = np.arange(hapi_nus[ix_end-1]+0.001, hapi_nus[ix_start]+1.4002, 0.001)
+                                extra_nus = np.arange(hapi_nus[ix_end - 1] + 0.001, hapi_nus[ix_start] + 1.4002, 0.001)
                                 logger.info("Hapi grid extended from %0.3f to %0.3f", extra_nus[0], extra_nus[-1])
                                 hapi_grid = np.concatenate((hapi_nus[ix_start:ix_end], extra_nus)) - px_nu
                                 hapi_trans_grid = np.concatenate((hapi_trans_total[ix_start:ix_end], np.ones_like(extra_nus)))
@@ -342,7 +347,7 @@ class forward:
             # loop through orders
             for order_ix, order in enumerate(self.orders):
                 # 1.0e-9 added to numerator and denominator to avoid divide by zero
-                rel_cont[order_ix, :] = 1.0 - (1.0 - ((ils_sums_spectrum[order_ix, :]+1.0e-9) / (ils_sums[order_ix, :]+1.0e-9))
+                rel_cont[order_ix, :] = 1.0 - (1.0 - ((ils_sums_spectrum[order_ix, :] + 1.0e-9) / (ils_sums[order_ix, :] + 1.0e-9))
                                                ) * (blaze_aotf[order_ix] / (np.sum(blaze_aotf[:, :], axis=0)))
 
             rel_1_cont = 1.0 - rel_cont
@@ -368,30 +373,30 @@ class forward:
 
         return spectrum
 
-    def fit(self, params, y_raw, plot=[]):
+    # def residual(self, params, y_raw, plot=[]):
 
-        mol_scaler = params["mol_scaler"].value
+    #     mol_scaler = params["mol_scaler"].value
 
-        # normalise raw SO spectrum
-        y_raw /= np.max(y_raw)
+    #     # normalise raw SO spectrum
+    #     y_raw /= np.max(y_raw)
 
-        self.spectrum_norm = self.forward_so(params, plot=plot)
-        sum_sq = np.sum(np.square(y_raw - self.spectrum_norm))
+    #     self.spectrum_norm = self.forward_so(params, plot=plot)
+    #     sum_sq = np.sum(np.square(y_raw - self.spectrum_norm))
 
-        if "fit" in plot:
-            plt.figure(figsize=FIG_SIZE, constrained_layout=True)
-            plt.xlabel("Wavenumber cm-1")
-            plt.ylabel("SO transmittance")
+    #     if "fit" in plot:
+    #         plt.figure(figsize=FIG_SIZE, constrained_layout=True)
+    #         plt.xlabel("Wavenumber cm-1")
+    #         plt.ylabel("SO transmittance")
 
-            plt.plot(self.cal_d["orders"][self.centre_order]["px_nus"], y_raw, label="SO raw spectrum")
-            plt.plot(self.cal_d["orders"][self.centre_order]["px_nus"], self.spectrum_norm, label="Simulation")
-            plt.grid()
-            plt.title("%s: %0.4f %0.4f" % (self.molecules, sum_sq, mol_scaler))
-            plt.legend()
-            # plt.savefig(("%0.8f" %ssd).replace(".","p")+".png")
+    #         plt.plot(self.cal_d["orders"][self.centre_order]["px_nus"], y_raw, label="SO raw spectrum")
+    #         plt.plot(self.cal_d["orders"][self.centre_order]["px_nus"], self.spectrum_norm, label="Simulation")
+    #         plt.grid()
+    #         plt.title("%s: %0.4f %0.4f" % (self.molecules, sum_sq, mol_scaler))
+    #         plt.legend()
+    #         # plt.savefig(("%0.8f" %ssd).replace(".","p")+".png")
 
-        print("sum_sq=", sum_sq)
-        return np.square(y_raw - self.spectrum_norm)
+    #     print("sum_sq=", sum_sq)
+    #     return np.square(y_raw - self.spectrum_norm)
 
     def forward_toa(self, plot=[]):
 
@@ -455,7 +460,7 @@ class forward:
             plt.figure(figsize=FIG_SIZE, constrained_layout=True)
             plt.xlabel("Wavenumber")
             plt.ylabel("AOTF / solar radiance")
-            plt.plot(hr_nu_grid, solar_hr_rad/np.max(solar_hr_rad), label="Solar spectrum")
+            plt.plot(hr_nu_grid, solar_hr_rad / np.max(solar_hr_rad), label="Solar spectrum")
             plt.plot(hr_nu_grid, self.cal_d["aotf"]["F_aotf"], label="AOTF function")
             plt.legend()
             plt.grid()
@@ -559,7 +564,8 @@ class forward_solar:
                     #     hapi_min = 1.0
                     # else:
                     hapi_min = np.min(ils_sums_spectrum[order_ix, px])
-                    logger.debug("order %i, px %i: px_nu = %f, ix_start = %i, ix_end = %i, grid_start = %f, grid_end = %f, hapi_grid has %i points, min trans = %0.8f, blaze_aotf = %f, \
+                    logger.debug("order %i, px %i: px_nu = %f, ix_start = %i, ix_end = %i, grid_start = %f, grid_end = %f, hapi_grid has %i points, \
+                                 min trans = %0.8f, blaze_aotf = %f, \
                                  ils_sums_spectrum = %f",
                                  order, px, px_nu, ix_start, ix_end, hapi_nus[0], hapi_nus[-1], len(hapi_grid), hapi_min, blaze_aotf[order_ix, px],
                                  ils_sums_spectrum[order_ix, px])
@@ -614,30 +620,31 @@ class forward_solar:
 
         return spectrum
 
-    def fit(self, params, y_raw, plot=[]):
+    # def fit(self, params, y_raw, plot=[]):
 
-        mol_scaler = params["mol_scaler"].value
+    #     # FIXME: separate molecules
+    #     mol_scaler = params["mol_scaler"].value
 
-        # normalise raw SO spectrum
-        y_raw /= np.max(y_raw)
+    #     # normalise raw SO spectrum
+    #     y_raw /= np.max(y_raw)
 
-        self.spectrum_norm = self.forward_so(params, plot=plot)
-        sum_sq = np.sum(np.square(y_raw - self.spectrum_norm))
+    #     self.spectrum_norm = self.forward_so(params, plot=plot)
+    #     sum_sq = np.sum(np.square(y_raw - self.spectrum_norm))
 
-        if "fit" in plot:
-            plt.figure(figsize=FIG_SIZE, constrained_layout=True)
-            plt.xlabel("Wavenumber cm-1")
-            plt.ylabel("SO transmittance")
+    #     if "fit" in plot:
+    #         plt.figure(figsize=FIG_SIZE, constrained_layout=True)
+    #         plt.xlabel("Wavenumber cm-1")
+    #         plt.ylabel("SO transmittance")
 
-            plt.plot(self.cal_d["orders"][self.centre_order]["px_nus"], y_raw, label="SO raw spectrum")
-            plt.plot(self.cal_d["orders"][self.centre_order]["px_nus"], self.spectrum_norm, label="Simulation")
-            plt.grid()
-            plt.title("%s: %0.4f %0.4f" % (self.molecules, sum_sq, mol_scaler))
-            plt.legend()
-            # plt.savefig(("%0.8f" %ssd).replace(".","p")+".png")
+    #         plt.plot(self.cal_d["orders"][self.centre_order]["px_nus"], y_raw, label="SO raw spectrum")
+    #         plt.plot(self.cal_d["orders"][self.centre_order]["px_nus"], self.spectrum_norm, label="Simulation")
+    #         plt.grid()
+    #         plt.title("%s: %0.4f %0.4f" % (self.molecules, sum_sq, mol_scaler))
+    #         plt.legend()
+    #         # plt.savefig(("%0.8f" %ssd).replace(".","p")+".png")
 
-        print("sum_sq=", sum_sq)
-        return np.square(y_raw - self.spectrum_norm)
+    #     print("sum_sq=", sum_sq)
+    #     return np.square(y_raw - self.spectrum_norm)
 
     def forward_toa(self, plot=[]):
 
@@ -701,7 +708,7 @@ class forward_solar:
             plt.figure(figsize=FIG_SIZE, constrained_layout=True)
             plt.xlabel("Wavenumber")
             plt.ylabel("AOTF / solar radiance")
-            plt.plot(hr_nu_grid, solar_hr_rad/np.max(solar_hr_rad), label="Solar spectrum")
+            plt.plot(hr_nu_grid, solar_hr_rad / np.max(solar_hr_rad), label="Solar spectrum")
             plt.plot(hr_nu_grid, self.cal_d["aotf"]["F_aotf"], label="AOTF function")
             plt.legend()
             plt.grid()
