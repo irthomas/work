@@ -97,7 +97,8 @@ for filename in cache_filenames:
         filename_dts.append(dt)
 
 
-# define possible timedelta range
+# Allowed ITL-to-filename time offsets vary by mission period. Each row is
+# [period start, period end, minimum offset seconds, maximum offset seconds].
 timedelta_ranges = [
     [datetime(2018, 3, 1), datetime(2018, 4, 1), -120, 0],
     [datetime(2018, 4, 1), datetime(2018, 4, 5), -80, 20],
@@ -118,7 +119,8 @@ off_periods = [
 ]
 
 
-# go through itl observations
+# Match each cached HDF5 filename to an ITL execution. The ITL cursor advances
+# as filenames are processed, so the two ordered lists are compared in sequence.
 
 # first, find first match between itl and tree
 i = -1
@@ -147,12 +149,14 @@ while i < len(filename_dts) - 1:
 
         tdelta = (itl_dt - filename_dt).total_seconds()
 
-        # get timedelta range:
+        # Select the allowable time offset for the filename's mission period.
         for timedelta_range in timedelta_ranges:
             if timedelta_range[0] < filename_dt < timedelta_range[1]:
                 start = timedelta_range[2]
                 end = timedelta_range[3]
 
+        # An execution matches when its timestamp is in range and one of its
+        # listed channels appears in the filename.
         if start < tdelta < end:
             for channel in channels:
                 if channel in filename:
@@ -162,9 +166,12 @@ while i < len(filename_dts) - 1:
                     matches[key] = [filename, tdelta, channel]
 
                     found = True
+                    # Revisit nearby ITL rows for the next filename; the
+                    # filename-to-execution relationship is not one-to-one.
                     j -= 3
 
 
+# Any ITL execution/channel pair not matched above is a missing observation.
 print("Finding missing observations")
 missing_dts = {}
 for i, (itl_dt, channels) in enumerate(zip(d_itl["tc20_exec_start"], d_itl["channels"])):
@@ -235,6 +242,7 @@ def match_pdhu_filename(dt, d_itl):
 
 
 def get_dts_from_error_log(log_path):
+    """Extract timestamped pipeline RuntimeErrors and their associated reasons."""
     with open(log_path, "r") as f:
         lines = f.readlines()
 
@@ -245,6 +253,7 @@ def get_dts_from_error_log(log_path):
         if "RuntimeError: 20" in line:
             error_list.append(line)
 
+    # Capture the timestamp fields and the trailing parenthesized error detail.
     regex = re.compile(r"RuntimeError: (\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2}).*(\(\d+\).*)")
 
     error_log_dts = {}
@@ -263,34 +272,37 @@ if LOG_NAME != "":
 else:
     error_log_dts = {}
 
-
 print("Writing missing files to file")
 # h = "<!DOCTYPE html><html><head><title>%s GAP REPORT</title>\n</head><body>\n" %level.upper()
 h = ""
 h += "<table border=1>\n"
-h += "<tr><th>Expected TC20 Execution Time</th><th>Channel(s) Affected</th><th>Reason for Failure</th><th>Expected EXM filename prefix (if missing)</th></tr>\n"
+h += "<tr><th>Expected TC20 Execution Time</th><th>Channel(s) Affected</th><th>Reason for Failure<br>Green=known issue, yellow=investigate at BIRA, "
+h += "red=missing at ESAC</th><th>Expected EXM filename prefix (if missing)</th></tr>\n"
 for missing_dt in missing_dts.keys():
 
     reason = ""
     pdhu_filenames = ["", ""]
     colour = "#FFFFFF"
 
-    # check for known off-periods
+    # Known outages may either explain a gap or exclude it from the report.
     include = True
     for off_period in off_periods:
         if off_period[0] < missing_dt < off_period[1]:
             include = off_period[3]
             reason = off_period[2]
+            colour = "#007000"
 
-    # if not a known off-period, check pipeline log if exists
+    # A matching pipeline-log error supplies a more specific reason when available.
     if len(error_log_dts) > 0:
         matches = [dt for dt in error_log_dts.keys() if abs(missing_dt - dt) < timedelta(minutes=1)]
         if len(matches) > 1:
             print("Error: too many matches")
         elif len(matches) == 1:
             reason = error_log_dts[matches[0]]
+            colour = "#007000"
 
-    # if not a known off-period
+    # Otherwise infer the failure reason from whether the expected EXM appears
+    # in the local cache and/or on the ESAC tree.
     if reason == "":
         pdhu_filenames = match_pdhu_filename(missing_dt, d_itl)
 
@@ -306,27 +318,33 @@ for missing_dt in missing_dts.keys():
             [s for s in esac_filenames if pdhu_filenames[0] in s],
         ]
 
-        # if neither string is found in cache or at ESAC
+        # Neither source has the expected file.
         if (len(strings1[0]) == 0 and len(strings1[1]) == 0) and (len(strings2[0]) == 0 and len(strings2[1]) == 0):
-            reason = "EXM not found in datastore or on ESAC server"
+            reason = "EXM not found at BIRA or on ESAC server"
             colour = "#DD0000"
 
-        # if neither string is found in cache but one is found at ESAC
+        # An ESAC lookup finds one candidate, but the local datastore does not.
         elif (len(strings1[0]) == 0 and len(strings1[1]) == 0) and (len(strings2[0]) == 1 or len(strings2[1]) == 1):
-            reason = "EXM not found in datastore but is present on ESAC server"
+            reason = "EXM not found at BIRA datastore but is present on ESAC server"
+            colour = "#D18400"
 
-        # if neither string is found in cache but two or more are found at ESAC
+        # ESAC has multiple versions, but the local datastore does not.
         elif (len(strings1[0]) == 0 and len(strings1[1]) == 0) and (len(strings2[0]) > 1 or len(strings2[1]) > 1):
-            reason = "EXM not found in datastore but multiple versions are present on ESAC server"
+            reason = "EXM not found at BIRA but multiple versions are present on ESAC server"
+            colour = "#D18400"
 
-        # if either string is found in cache
+        # The EXM reached the datastore, so the missing HDF5 likely failed later.
         elif (len(strings1[0]) == 1 or len(strings1[1]) == 1):
-            reason = "EXM file received, HDF5s not generated due to another error"
+            string = "<br>".join(strings1[0] + strings1[1])
+            reason = "EXM file received at BIRA:<br>%s<br>HDF5s not generated due to another error" % string
+            colour = "#D18400"
             pdhu_filenames = ["", ""]  # don't include in PDHU column
 
-        # if either string is found in cache multiple times
+        # Multiple cached EXMs make the expected input ambiguous.
         elif (len(strings1[0]) > 1 or len(strings1[1]) > 1):
-            reason = "Multiple EXM files found in datastore, HDF5s not generated due to another error"
+            string = "<br>".join(strings1[0] + strings1[1])
+            reason = "Multiple EXM files found at BIRA:<br>%s<br>HDF5s not generated due to another error" % string
+            colour = "#D18400"
             pdhu_filenames = ["", ""]  # don't include in PDHU column
             print("Multiple files for observation", missing_dt, strings1)
 
@@ -335,7 +353,8 @@ for missing_dt in missing_dts.keys():
 
     if include:
         channels = missing_dts[missing_dt]["channels"]
-        h += "<tr><td>%s</td><td>%s</td><td>%s</td><td style='color:%s'>%s</td></tr>\n" % (missing_dt, ", ".join(channels), reason, colour, pdhu_filenames[0])
+        h += "<tr><td>%s</td><td>%s</td><td style='color:%s'>%s</td><td style='color:%s'>%s</td></tr>\n" % (
+            missing_dt, ", ".join(channels), colour, reason, colour, pdhu_filenames[0])
 
     missing_dts[missing_dt]["reason"] = reason
 
@@ -348,6 +367,8 @@ with open("missing_%s.html" % level, "w") as f:
     f.writelines(h)
 
 
+# Generate reprocessing commands only for observations whose EXM is present
+# but whose HDF5 products were not produced.
 command = "./scripts/run_as_nomadr ./scripts/run_pipeline.py --log INFO make --from inserted --to hdf5_l10a --beg %s --end %s --n_proc=8 --all\n"
 with open("missing_%s_commands.txt" % level, "w") as f:
     for missing_dt, channels_reasons in missing_dts.items():

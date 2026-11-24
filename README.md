@@ -25,4 +25,4 @@ Add this line to `.bashrc` in your home directory if you want the change to be p
 
 Note that old scripts are not always adapted to the current directory structure and may not work.
 
-The directories `instrument` and `tools` are under active development and should work correctly.
+The directories `presentations`, `for_others`, `scripts`, `instrument` and `tools` are under active development and should work correctly.

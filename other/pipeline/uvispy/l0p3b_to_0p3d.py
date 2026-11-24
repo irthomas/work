@@ -604,9 +604,9 @@ def remove_linear_straylight(src, dst):
         if nm_ix > 0 and nm_ix < len(x[:, 0]) - 1:
             nms.append(nm)
 
-    print("nms considered:", nms)
+    logger.info("%s: nms considered: %s", hdf5_basename, nms)
     if len(nms) < 5:
-        print("Warning: may need more nms to fit quadratic")
+        logger.warning("Warning: may need more nms to fit quadratic")
 
     illum_d = {s: {nm: {"px": [], "fit": []} for nm in nms} for s in ["rises", "falls", "rises2"]}
 
@@ -631,7 +631,7 @@ def remove_linear_straylight(src, dst):
     i_line_bottom_start -= vstart
     nbr_well_illuminated_rows = i_line_bottom_start - i_line_top_start
 
-    print("Find illumination zone for each column and frame")
+    logger.info("%s: Find illumination zone for each column and frame", hdf5_basename)
     OCC_ILLUM_SHIFT_POLY_DEGREE = 3
     for i, nm in enumerate(nms):
         nm_ix = np.argmin(np.abs(x[:, 0] - nm))
@@ -694,15 +694,35 @@ def remove_linear_straylight(src, dst):
 
     # Average each wavelength's fitted displacement from its mean edge position;
     # this captures the common vertical motion without imposing a common edge row.
+    # Assume all rows are displaced by the same amount from the mean
     illum_d["rises"]["mean_fit"] = np.mean(np.asarray([illum_d["rises"][nm]["fit"] - illum_d["rises"][nm]["mean"] for nm in nms]), axis=0)
     illum_d["falls"]["mean_fit"] = np.mean(np.asarray([illum_d["falls"][nm]["fit"] - illum_d["falls"][nm]["mean"] for nm in nms]), axis=0)
 
+    # shift of both rise and fall from the mean
+    illum_d["mean_shift"] = np.mean([illum_d["rises"]["mean_fit"], illum_d["falls"]["mean_fit"]], axis=0)
+
     # Reconstruct each tracked edge row from its wavelength-specific mean and
-    # the shared frame-to-frame shift, then convert CCD rows to ROI row indices.
-    start_rows_roi = np.asarray([illum_d["rises"][nm]["mean"] + illum_d["rises"]["mean_fit"] for nm in nms]) - vstart
-    end_rows_roi = np.asarray([illum_d["falls"][nm]["mean"] + illum_d["falls"]["mean_fit"] for nm in nms]) - vstart
+    # # the shared frame-to-frame shift, then convert CCD rows to ROI row indices.
+    # start_rows_roi = np.asarray([illum_d["rises"][nm]["mean"] + illum_d["rises"]["mean_fit"] for nm in nms]) - vstart
+    # end_rows_roi = np.asarray([illum_d["falls"][nm]["mean"] + illum_d["falls"]["mean_fit"] for nm in nms]) - vstart
     # Store the spectral-column index associated with each wavelength in nms.
     col_ixs = np.asarray([illum_d[nm]["px"] for nm in nms])
+
+    # compare measured illumination pattern location to that of the initial mask
+    start_row_shift_from_mask = [np.asarray(illum_d["rises"][nm]["fit"]) - vstart - i_line_top_start[col_ixs[i]] for i, nm in enumerate(nms)]
+    start_row_shift_from_mask_mean = np.mean(start_row_shift_from_mask)
+
+    start_row_roi = i_line_top_start + start_row_shift_from_mask_mean
+    start_rows_roi = start_row_roi[:, None] + illum_d["mean_shift"][None, :]
+
+    end_row_shift_from_mask = [np.asarray(illum_d["falls"][nm]["fit"]) - vstart - i_line_bottom_start[col_ixs[i]] for i, nm in enumerate(nms)]
+    end_row_shift_from_mask_mean = np.mean(end_row_shift_from_mask)
+
+    end_row_roi = i_line_bottom_start + end_row_shift_from_mask_mean
+    end_rows_roi = end_row_roi[:, None] + illum_d["mean_shift"][None, :]
+
+    # simply apply to the initial well-illuminated mask
+    # can't use measured shift, as no info in UV
 
     if "rises_falls" in PLOT_TYPES:
         ax1a.plot(illum_d["rises"]["mean_fit"], color="k")
@@ -716,7 +736,7 @@ def remove_linear_straylight(src, dst):
     d_out["Science/IllumColNms"] = np.asarray(nms_all)
 
     """Calculate for all columns. Only for pFM occultation at present"""
-    print("Make illumination mask")
+    logger.info("%s: Make illumination mask", hdf5_basename)
     px_ixs = np.arange(nbr_lambda_pixels)
 
     # ix_non_illum_top, ix_non_illum_bottom = define_top_bottom_non_illuminated_lines(x_new)
@@ -729,15 +749,18 @@ def remove_linear_straylight(src, dst):
     # non_illum_matrix = np.zeros_like(Y)  # only 0 or 1, no values in between
 
     non_illum_matrix = define_non_illiminated_matrix(vstart, xpix_1b, nbr_rows, row_shift=0)
-    # TODO: shift non_illum up/down if necessary for illumination pattern shift
+    # TODO: shift non_illum up/down if necessary for illumination pattern shift if needed
 
     for obs_ix in np.arange(nbr_obs):
 
-        FIT_DEGREE = 1
-
-        poly = Polynomial.fit(col_ixs, start_rows_roi[:, obs_ix], FIT_DEGREE)
+        FIT_DEGREE = 3
+        # poly = Polynomial.fit(col_ixs, start_rows_roi[:, obs_ix], FIT_DEGREE)
+        # fit_line_top_start = poly(px_ixs)
+        # poly = Polynomial.fit(col_ixs, end_rows_roi[:, obs_ix], FIT_DEGREE)
+        # fit_line_bottom_start = poly(px_ixs)
+        poly = Polynomial.fit(px_ixs, start_rows_roi[:, obs_ix], FIT_DEGREE)
         fit_line_top_start = poly(px_ixs)
-        poly = Polynomial.fit(col_ixs, end_rows_roi[:, obs_ix], FIT_DEGREE)
+        poly = Polynomial.fit(px_ixs, end_rows_roi[:, obs_ix], FIT_DEGREE)
         fit_line_bottom_start = poly(px_ixs)
 
         for col_ix in range(nbr_lambda_pixels):
@@ -774,7 +797,7 @@ def remove_linear_straylight(src, dst):
 
     # ymaskframes = np.repeat(ymaskframe_NotBinForOccult[:, :, None], nbr_obs, axis=2)
 
-    logger.info("%s: %i bins not considered" % (hdf5_basename, np.sum(np.isnan(ymaskframe_NotBinForOccult))))
+    logger.info("%s: %i bins not considered", hdf5_basename, np.sum(np.isnan(ymaskframe_NotBinForOccult)))
 
     # new: make region of interest ymask for each frame 0 = non illuminated, 1=illuminated, nan = bad
     # ymaskframesBinROI = np.repeat(mat_bin_roi[:, :, None], nbr_obs, axis=2).astype(float)
@@ -812,7 +835,7 @@ def remove_linear_straylight(src, dst):
     middle_col_sums = np.nansum(Ynon[middle_col_ix, :, :], axis=0)
     middle_col_trans = middle_col_sums / np.nanmax(middle_col_sums)
 
-    print("Remove linear straylight")
+    logger.info("%s: Remove linear straylight", hdf5_basename)
     lin_sl_coeffs = np.zeros((nbr_lambda_pixels, nbr_obs, 2))
 
     for frame_ix in progress(range(nbr_obs)):

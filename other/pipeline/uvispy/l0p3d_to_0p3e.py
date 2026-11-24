@@ -187,8 +187,30 @@ def define_top_bottom_hill_lines(X):
     return iLineTopStart, iLineTopEnd, iLineBottomStart, iLineBottomEnd
 
 
+def define_top_hill_lines(X):
+    """outputs the top only row indices of the hill zone"""
+    delta_x = X[1] - X[0]
+    # when binned, take the value of the rightmost binned pix
+    x = np.floor(X + delta_x / 2)
+
+    # straylight hill
+    x_top_start = np.asarray([[9, 150], [59, 153], [109, 155], [159, 156], [209, 157], [259, 155], [309, 155], [359, 155], [409, 154], [
+                             459, 154], [509, 154], [609, 154], [709, 152], [809, 152], [909, 147], [1009, 144]])
+    x_top_end = np.asarray([[9, 170], [59, 169], [109, 169], [159, 168], [209, 168], [259, 166], [309, 165], [359, 165], [409, 164], [
+                           459, 163], [509, 162], [609, 159], [709, 158], [809, 154], [909, 151], [1009, 147]])
+
+    iLineTopStart = np.interp(x, x_top_start[:, 0], x_top_start[:, 1], left=None, right=None)
+    iLineTopEnd = np.interp(x, x_top_end[:, 0], x_top_end[:, 1], left=None, right=None)
+
+    iLineTopStart = np.ceil(iLineTopStart).astype(int)
+    iLineTopEnd = np.floor(iLineTopEnd).astype(int)
+
+    return iLineTopStart, iLineTopEnd
+
+
 if not LINUX:
     DIR_PATH = r"X:\projects\work\NOMAD\test\iant\hdf5"
+    DIR_PATH = r"C:\Users\iant\Documents\DATA\hdf5"
     h5 = "20240501_021829_0p3d_UVIS_E"  # 128 cols
     from tools.file.hdf5_functions import get_filepath
     src = get_filepath(h5, path=DIR_PATH)
@@ -231,7 +253,7 @@ if True:
         YWellIllumMask = f["Science/YIllumMask"][...]
         YNonIllumMask = f["Science/YNonIllumMask"][...]
 
-        # x = f['Science/X'][...]
+        x = f['Science/X'][0, :]
         xpix_1b = f['Science/Xpix_1b'][...]  # array of pixel centre indices for real columns in matlab indices e.g. [12.5, 20.5, 28.5,...]
         # xnb_bin = f['Science/XNbBin'][...]  # array of binning factors for real columns e.g. [8,8,8,...]
         # x_calib_ref = f.attrs.get('XCalibRef', 'N/A')
@@ -246,11 +268,17 @@ if True:
     logger.info("%s: acq_mode=%i, nbr_lambda_pixels=%i, vstart=%i, vend=%i, nbr_rows=%i, Yshape=%s",
                 hdf5_basename, acq_mode, nbr_lambda_pixels, vstart, vend, nbr_rows, Y.shape)
 
-    ix_sl_top_start, ix_sl_top_end, ix_sl_bottom_start, ix_sl_bottom_end = define_top_bottom_hill_lines(xpix_1b)
+    # top and bottom hill
+    # ix_sl_top_start, ix_sl_top_end, ix_sl_bottom_start, ix_sl_bottom_end = define_top_bottom_hill_lines(xpix_1b)
+    # ix_sl_top_start -= vstart
+    # ix_sl_top_end -= vstart
+    # ix_sl_bottom_start -= vstart
+    # ix_sl_bottom_end -= vstart
+
+    # top hill only
+    ix_sl_top_start, ix_sl_top_end = define_top_hill_lines(xpix_1b)
     ix_sl_top_start -= vstart
     ix_sl_top_end -= vstart
-    ix_sl_bottom_start -= vstart
-    ix_sl_bottom_end -= vstart
 
     ymask_illum = YWellIllumMask
     ymask_non_illum = YNonIllumMask
@@ -260,7 +288,6 @@ if True:
         # vertical indices to fit
         sl_ixs = np.concatenate((
             np.arange(ix_sl_top_start[col_ix], ix_sl_top_end[col_ix] + 1),
-            np.arange(ix_sl_bottom_start[col_ix], ix_sl_bottom_end[col_ix] + 1)
         ))
         ymask_sl[sl_ixs, col_ix] = 1
 
@@ -297,15 +324,25 @@ if True:
     # plt.ylabel("Pixel row (illumination direction)")
     # plt.title("Non-illuminated detector signal")
 
+    # hill region vertically binned into a spectrum
+    Y_hill_binned = np.sum(Y_hill_illum, axis=1)
+    Y_hill_max = np.max(Y_hill_illum, axis=1)
+    Y_binned = np.sum(Y_illum, axis=1)
+    plt.plot(x, Y_hill_binned[toa_ix, :])
+    plt.plot(x, Y_hill_max[toa_ix, :])
+    plt.plot(x, Y_binned[toa_ix, :] / 100)
+# %%
+
     # plot slices
-    plt.plot(Y[toa_ix, :, 10])
-    plt.plot(Y[toa_ix, :, middle_col_ix - 10])
-    plt.plot(Y[toa_ix, :, middle_col_ix])
-    plt.plot(Y[toa_ix, :, middle_col_ix + 10])
+    for slice_ix, slice_col in enumerate([10, middle_col_ix - 10, middle_col_ix, middle_col_ix + 10]):
+        plt.plot(Y[toa_ix, :, slice_col], color="C%i" % slice_ix)
+        plt.plot(Y_hill_illum[toa_ix, :, slice_col], color="C%i" % slice_ix, linestyle="--")
     plt.axhline(y=0)
 
-    stop()
+    """find zone of hill straylight and use it to generate a function of the amount of straylight"""
+    hill_sl_ix = 22
 
+# %%
     """Write corrected arrays and retained input datasets to the output HDF5."""
     indrec = np.arange(nbr_obs)  # all obs
     with h5py.File(src, 'r') as hdf5FileIn:

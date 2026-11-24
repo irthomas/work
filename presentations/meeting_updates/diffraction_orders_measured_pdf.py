@@ -42,23 +42,23 @@ planning_db_path = r"C:/Users/iant/Documents/PROGRAMS/nomad_obs/planning.db"
 # manually add order steps for all fast fullscans
 # slow fullscans are to be considered as calibration observations
 FULLSCAN_DICT = {
-    "Fullscan fast step4 all #1": [np.arange(128, 168+1, 4), "so"],
-    "Fullscan fast step5 all #1": [np.arange(119, 189+1, 5), "so"],
-    "All Fullscan Fast": [np.arange(110, 225+1, 1), "so"],
-    "All Fullscan Fast #2": [np.arange(110, 225+1, 1), "so"],
+    "Fullscan fast step4 all #1": [np.arange(128, 168 + 1, 4), "so"],
+    "Fullscan fast step5 all #1": [np.arange(119, 189 + 1, 5), "so"],
+    "All Fullscan Fast": [np.arange(110, 225 + 1, 1), "so"],
+    "All Fullscan Fast #2": [np.arange(110, 225 + 1, 1), "so"],
 
-    "CO2 Fullscan Fast": [np.arange(161, 170+1, 1), "so"],
-    "CO2 Fullscan Fast #2": [np.arange(161, 170+1, 1), "so"],
-    "CO2 Fullscan Fast #3": [np.arange(126, 135+1, 1), "so"],
-    "CO2 Fullscan Fast #4": [np.arange(166, 175+1, 1), "so"],
-    "CO2 Fullscan Fast #5": [np.arange(141, 150+1, 1), "so"],
+    "CO2 Fullscan Fast": [np.arange(161, 170 + 1, 1), "so"],
+    "CO2 Fullscan Fast #2": [np.arange(161, 170 + 1, 1), "so"],
+    "CO2 Fullscan Fast #3": [np.arange(126, 135 + 1, 1), "so"],
+    "CO2 Fullscan Fast #4": [np.arange(166, 175 + 1, 1), "so"],
+    "CO2 Fullscan Fast #5": [np.arange(141, 150 + 1, 1), "so"],
 
-    "CO Fullscan Fast": [np.arange(186, 195+1, 1), "so"],
-    "CO Fullscan Fast #2": [np.arange(186, 195+1, 1), "so"],
+    "CO Fullscan Fast": [np.arange(186, 195 + 1, 1), "so"],
+    "CO Fullscan Fast #2": [np.arange(186, 195 + 1, 1), "so"],
 
-    "LNO Occultation Fullscan 01": [np.arange(110, 215+1, 1), "lno"],
-    "LNO Occultation Fullscan Fast #2": [np.arange(110, 215+1, 1), "lno"],
-    "LNO CO Fullscan Fast #1": [np.arange(186, 195+1, 1), "lno"],
+    "LNO Occultation Fullscan 01": [np.arange(110, 215 + 1, 1), "lno"],
+    "LNO Occultation Fullscan Fast #2": [np.arange(110, 215 + 1, 1), "lno"],
+    "LNO CO Fullscan Fast #1": [np.arange(186, 195 + 1, 1), "lno"],
 
     "LNO Occultation Nominal Science 1xCO2 01": [[168, 134, 169, 121, 190, 0], "lno"],
 
@@ -68,8 +68,8 @@ FULLSCAN_DICT = {
 }
 
 
-MAKE_PDF = True
-# MAKE_PDF = False  # list orders, name and frequency to add to spreadsheet
+# MAKE_PDF = True  # much slower - don't use for listing orders
+MAKE_PDF = False  # list orders, name and frequency to add to a spreadsheet
 
 CHANNELS = ["so", "lno"]
 # CHANNELS = ["so"]
@@ -307,7 +307,7 @@ for channel in CHANNELS:
             obs_freqs = [month_d[t]["obs"][unique_ir_observation_name] for t in unique_times]
 
             mean_n_months = np.mean(obs_freqs[-N_MONTHS:])
-            sum_n_months = np.round(np.sum([month_d[t]["obs"][unique_ir_observation_name]/100 * month_d[t]["n_obs"] for t in unique_times[-N_MONTHS:]]))
+            sum_n_months = np.round(np.sum([month_d[t]["obs"][unique_ir_observation_name] / 100 * month_d[t]["n_obs"] for t in unique_times[-N_MONTHS:]]))
 
             if len(orders) == 1:  # skip fullscans and weird observations
                 if unique_ir_observation_name not in FULLSCAN_DICT:
@@ -332,7 +332,7 @@ for channel in CHANNELS:
                     s = ", ".join([str(i) if i > 0 else "dark" for i in sorted(orders)])
                 else:
                     # if too many orders, truncate title
-                    s = "%i to %i in steps of %i (fullscan)" % (min(orders), max(orders-1), orders[1]-orders[0])
+                    s = "%i to %i in steps of %i (fullscan)" % (min(orders), max(orders - 1), orders[1] - orders[0])
                 title = "%s %s with diffraction order combination %s" % (channel.upper(), obs_type, s)
 
             if MAKE_PDF:
@@ -349,10 +349,10 @@ for channel in CHANNELS:
                 ax1a.grid()
                 ax1a.set_ylim((0, y_lim))
                 ax1a.tick_params(axis='x', rotation=90)
-                ax1a.set_yticks(range(y_lim+1))
+                ax1a.set_yticks(range(y_lim + 1))
 
                 ax1a.axhline(y=mean_n_months, color="k", linestyle="--")
-                ax1a.text(0, mean_n_months+0.1,
+                ax1a.text(0, mean_n_months + 0.1,
                           "Mean %% of observations in the last %i months\n(%i observations in %i months)" % (N_MONTHS, sum_n_months, N_MONTHS))
 
                 for order2 in orders2:
